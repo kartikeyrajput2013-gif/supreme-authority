@@ -370,6 +370,28 @@
     display: block;
   }
 
+  /* ---------- my apps ---------- */
+  .app-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  .app-search { flex: 1 1 220px; min-width: 0; }
+  .app-search input {
+    width: 100%; padding: 9px 12px; border-radius: 10px; font: inherit; font-size: 13px;
+    background: rgba(5, 13, 26, 0.95); color: var(--text); border: 1px solid var(--line2); outline: none;
+  }
+  .app-search input:focus { border-color: rgba(56, 189, 248, 0.65); }
+  .app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; max-height: 268px; overflow: auto; padding-right: 4px; }
+  .app-btn {
+    display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer;
+    padding: 8px 10px; border-radius: 10px; font-size: 12.5px; font-weight: 600;
+    background: rgba(13, 25, 48, 0.9); border: 1px solid var(--line2); color: #dbeafe;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    transition: border-color .15s, background .15s, transform .12s;
+  }
+  .app-btn:hover { border-color: rgba(45, 212, 191, 0.65); background: rgba(20, 38, 66, 0.95); transform: translateY(-1px); }
+  .app-btn b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+  .app-btn .dot { width: 8px; height: 8px; border-radius: 50%; background: #38bdf8; flex: 0 0 auto; opacity: .75; }
+  .app-empty { font-size: 12.5px; color: var(--muted); line-height: 1.6; margin: 0; }
+  .app-note { font-size: 11.5px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+
   /* ---------- knowledge shelf ---------- */
   .shelf { display: flex; flex-wrap: wrap; gap: 7px; }
   .shelf button {
@@ -476,6 +498,21 @@
           <button class="launch" type="button" data-cmd="open gmail"><span data-icon="mail" class="sm"></span><span>Gmail</span></button>
           <button class="launch" type="button" data-cmd="what is the weather"><span data-icon="cloud-sun" class="sm"></span><span>Weather</span></button>
         </div>
+      </section>
+
+      <section class="card" aria-labelledby="appsTitle">
+        <div class="card-head">
+          <div>
+            <h2 id="appsTitle">Every app on <span class="accent">this laptop</span></h2>
+            <p class="sub" id="appsSub">Start me with Start_Sophia.bat and this list fills with your real apps.</p>
+          </div>
+          <button class="btn ghost sm" id="refreshApps" type="button">Refresh list</button>
+        </div>
+        <div class="app-tools">
+          <div class="app-search"><input id="appSearch" type="search" placeholder="Find an app, then click it once" autocomplete="off" aria-label="Find an app"></div>
+        </div>
+        <div class="app-grid" id="appGrid"></div>
+        <p class="app-note" id="appsNote">One click opens it straight away. Say or type "open word" and Sophia finds it too.</p>
       </section>
 
       <section class="card" aria-labelledby="moodTitle">
@@ -2810,21 +2847,43 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
     function previewLine(what) { return 'Preview only: on your laptop I would ' + what + '.'; }
 
     /* ----- opening things ----- */
+    // How a link behaves when the person presses it, so a link is never a dead end.
+    function linkAttrs(url) {
+      const ext = /^(?:https?|mailto):/i.test(url) && !/^https?:\/\/(?:127\.0\.0\.1|localhost)/i.test(url);
+      return ext ? { target: '_blank', rel: 'noopener noreferrer', sameTab: false }
+                 : { target: '', rel: '', sameTab: true };
+    }
+    const APP_TARGET = /\bshell:AppsFolder\b/i;
+    const EXE_TARGET = /\.exe\b/i;
     async function openUrl(url, label, out) {
+      // 1. the laptop helper opens the real browser window on the laptop
       if (mode() === 'laptop') {
         const r = await helper('open_url', { url: url });
         if (r.ok) return true;
       }
+      // 2. the page opens a tab itself
       let res = null;
       try { res = env.openUrl ? await env.openUrl(url) : null; } catch (e) { res = null; }
       if (res && res.ok) return true;
-      out.link('Open ' + label, url);
+      // 3. the browser refused: point this tab at the link, so it still works
+      if (env.follow) {
+        if (out) out.link('Open ' + label, url);
+        env.follow(url);
+        return true;
+      }
+      if (out) out.link('Open ' + label, url);
       return false;
     }
     function blockedLine(labels) {
-      let s = 'Your browser stopped me from opening ' + (labels.length > 1 ? 'new tabs' : 'a new tab') + '. Click the button below to open ' + joinNatural(labels) + '.';
-      if (!state.tips.popup) { state.tips.popup = true; s += ' To let me open sites on my own, allow pop-ups for this page.'; }
+      let s = 'I opened ' + joinNatural(labels) + ' for you. If nothing happened, press the button under this message.';
+      if (!state.tips.popup) { state.tips.popup = true; s += ' (Your browser blocks new tabs until you allow pop-ups for this page.)'; }
       return s;
+    }
+    function browserLine(labels) {
+      const one = labels.length === 1;
+      return 'You are in browser mode, so I cannot start ' + joinNatural(labels) + ' myself. ' +
+             (one ? 'Press the button under this message' : 'Press the buttons under this message') +
+             ' and Windows will ' + (one ? 'open it' : 'open them') + ' for you. For apps, volume and brightness, start me with Start_Sophia.bat.';
     }
     async function openUri(uri) {
       if (mode() === 'laptop') {
@@ -2878,7 +2937,24 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
           out.link('Open ' + tg.label, tg.uri);
           return { state: 'uri', label: tg.label };
         }
+        // no uri known: fall back to the AppID / exe so a button always exists
+        const guess = tg.path || tg.appId || (tg.helper ? tg.helper + '.exe' : '');
+        if (guess) { out.link('Open ' + tg.label, guess); return { state: 'uri', label: tg.label }; }
         return { state: md === 'preview' ? 'preview' : 'need', label: tg.label };
+      }
+      if (tg.kind === 'installed') {
+        if (md === 'laptop' || md === 'preview') {
+          const r = await helper('open_path', { path: tg.path || tg.name });
+          if (r.ok) {
+            if (!r.preview) state.lastOpened = { label: tg.label, path: tg.path || tg.name, at: Date.now() };
+            return { state: r.preview ? 'preview' : 'ok', label: tg.label };
+          }
+          if (lostHelper(r)) return { state: 'lost', label: tg.label };
+          if (md === 'laptop') return { state: 'missing', label: tg.label };
+        }
+        // browser mode: give a button Windows can hand straight to the app
+        if (tg.path) { out.link('Open ' + tg.label, tg.path); return { state: 'uri', label: tg.label }; }
+        return { state: 'need', label: tg.label };
       }
       if (tg.kind === 'folder') {
         if (md === 'laptop' || md === 'preview') {
@@ -2915,7 +2991,11 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       }
       if (groups.blocked.length) out.say(blockedLine(groups.blocked));
       if (groups.preview.length) out.say(previewLine('open ' + joinNatural(groups.preview)));
-      if (groups.need.length) out.say(needLaptop('open ' + joinNatural(groups.need)));
+      if (groups.need.length) {
+        const names = groups.need;
+        out.say(browserLine(names));
+        state.tips.laptop = true;
+      }
       if (groups.lost.length) out.say(LOST);
       if (groups.unknown.length) {
         const name = groups.unknown[0];
@@ -3657,7 +3737,12 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
         return;
       }
       if (it === 'clear') { if (ui.clearChat) ui.clearChat(); out.say('Chat cleared. What would you like to do?', { silent: true }); return; }
-      if (it === 'hub.open') { if (ui.openHub) ui.openHub(); out.say('Opening Sophia, your wisdom and discovery companion.'); return; }
+      if (it === 'hub.open') {
+        if (mode() === 'laptop') await helper('open_self', {});
+        if (ui.openHub) ui.openHub();
+        out.say('Opening Sophia, your wisdom and discovery companion.');
+        return;
+      }
       if (it === 'hub.close') { if (ui.closeHub) ui.closeHub(); out.say('Closed.', { silent: true }); return; }
       if (it === 'macro') {
         if (meta.depth > 2) return;
@@ -3770,6 +3855,18 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
 
     return {
       handle: handle,
+      openTarget: async function (tg) {
+        const out = makeOut();
+        state.pending = null;
+        const r = await openTarget(tg, out);
+        return { state: r.state, label: r.label, text: out.lines.map(function (l) { return l.text; }).join('\n'), links: out.links };
+      },
+      /* "open the last one again" after the app list has been used */
+      reopenLast: async function () {
+        if (!state.lastOpened) return null;
+        if (Date.now() - state.lastOpened.at > 30 * 60 * 1000) return null;
+        return this.openTarget({ kind: 'installed', label: state.lastOpened.label, path: state.lastOpened.path });
+      },
       memory: function () { return JSON.parse(JSON.stringify(mem)); },
       setName: function (name) { mem.name = name ? nameCase(name) : null; saveMemory(); return mem.name; },
       forgetAll: function () { mem = { v: 1, name: null, facts: [], shortcuts: {} }; saveMemory(); },
@@ -3910,12 +4007,29 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
         });
         const data = await res.json().catch(function () { return null; });
         if (!data) return { ok: false, error: 'bad_response' };
-        if (data.error === 'bad_token') { this.state = 'browser'; }
+        if (data.error === 'bad_token') { this.state = 'browser'; this.probeSoon(); }
         return data;
       } catch (e) {
         this.state = 'browser';
+        this.probeSoon();
         return { ok: false, error: 'unreachable' };
       }
+    },
+    probeSoon() {
+      const me = this;
+      if (me._probeTimer) return;
+      me._probeTimer = setTimeout(async function () {
+        me._probeTimer = null;
+        const before = me.state;
+        await me.probe();
+        if (me.state !== before) {
+          updatePrivacyTag();
+          if (me.state === 'laptop' || me.state === 'preview') {
+            toast('Connected to the laptop helper.');
+            loadApps(true);
+          }
+        }
+      }, 4000);
     }
   };
 
@@ -4144,6 +4258,10 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
     } catch (e) { /* blocked */ }
     return { ok: false };
   }
+  function follow(url) {
+    // last resort when pop-ups are blocked: move this tab to the link
+    try { location.assign(url); return true; } catch (e) { return false; }
+  }
   function openUri(uri) {
     try {
       const a = document.createElement('a');
@@ -4192,8 +4310,11 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
       links.forEach(function (l) {
         const a = document.createElement('a');
         a.href = l.url;
-        a.target = '_blank';
-        a.rel = 'noopener';
+        // web pages get a new tab; files, apps and folders stay in this tab
+        if (/^(?:https?|mailto):/i.test(l.url) && !/^https?:\/\/(?:127\.0\.0\.1|localhost)/i.test(l.url)) {
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+        }
         a.textContent = l.label;
         box.appendChild(a);
       });
@@ -4243,6 +4364,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
       hostBrowser: detectBrowser(),
       savedSpecs: LAPTOP_DATA,
       openUrl: openUrl,
+      follow: follow,
       openUri: openUri,
       helper: function (action, params) { return api.call(action, params); },
       navigate: function (href) { location.href = href; },
@@ -4273,6 +4395,9 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
         }
       }
     });
+  }
+  function loadedBrain() {
+    return buildBrain();
   }
 
   /* ----------------------------------------------------------- talk flow */
@@ -4324,6 +4449,95 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
     ask(text);
   });
 
+
+
+  /* ---------------------------------------------------------- my apps list */
+  const APPS_KEY = 'sophia.apps.v1';
+  let appList = readJSON(APPS_KEY, []) || [];
+  let appsLoading = false;
+
+  function appTargetFor(app) {
+    if (app.lnk) return { kind: 'installed', label: app.name, path: app.lnk };
+    if (app.id && app.id.indexOf('!') > 0) return { kind: 'installed', label: app.name, path: 'shell:AppsFolder\\' + app.id };
+    if (app.exe) return { kind: 'installed', label: app.name, path: app.exe };
+    return { kind: 'unknown', name: app.name };
+  }
+
+  function paintApps(filter) {
+    const grid = document.getElementById('appGrid');
+    const note = document.getElementById('appsNote');
+    const sub = document.getElementById('appsSub');
+    if (!grid) return;
+    const q = String(filter || '').trim().toLowerCase();
+    const list = appList.filter(function (a) { return !q || (a.name + ' ' + (a.quick || '')).toLowerCase().indexOf(q) >= 0; });
+    grid.textContent = '';
+    if (!appList.length) {
+      const p = document.createElement('p');
+      p.className = 'app-empty';
+      if (appsLoading) p.textContent = 'Reading your app list from Windows\u2026 this takes a few seconds the first time.';
+      else if (api.state === 'browser') p.textContent = 'Browser mode: Windows will not let a web page list your apps. Start me with Start_Sophia.bat and this fills with every app on the laptop.';
+      else p.textContent = 'No apps found yet. Press "Refresh list" once Windows has finished starting.';
+      grid.appendChild(p);
+      if (note) note.textContent = 'The launcher buttons above always work in browser mode.';
+      return;
+    }
+    if (sub) sub.textContent = appList.length + ' apps found on this laptop. Click one to open it.';
+    if (note) note.textContent = 'One click opens it straight away. Say or type "open ' + (appList[0] ? (appList[0].quick || appList[0].name) : 'word') + '" and Sophia finds it too.';
+    list.slice(0, 400).forEach(function (app) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'app-btn';
+      b.title = app.name;
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      const name = document.createElement('b');
+      name.textContent = app.name;
+      b.appendChild(dot);
+      b.appendChild(name);
+      b.addEventListener('click', function () {
+        toast('Opening ' + app.name + '\u2026');
+        brainApi.openTarget(appTargetFor(app)).then(function (r) {
+          if (!r) return;
+          if (r.state === 'need') {
+            addMessage('Windows will not let a web page start ' + app.name + '. Press the button below, or start me with Start_Sophia.bat.', 'meta', log, r.links);
+          } else if (r.links && r.links.length) {
+            addMessage('Press this if ' + app.name + ' did not appear:', 'meta', log, r.links);
+          }
+        });
+      });
+      grid.appendChild(b);
+    });
+    if (!list.length) {
+      const p = document.createElement('p');
+      p.className = 'app-empty';
+      p.textContent = 'Nothing matches "' + q + '". Try a shorter word.';
+      grid.appendChild(p);
+    }
+  }
+
+  async function loadApps(force) {
+    if (appsLoading) return;
+    const search = document.getElementById('appSearch');
+    if (api.state !== 'laptop') { paintApps(search ? search.value : ''); return; }
+    const cached = readJSON(APPS_KEY + '.meta', null);
+    appList = readJSON(APPS_KEY, []) || [];
+    const fresh = cached && (Date.now() - cached.at < 6 * 60 * 60 * 1000);
+    if (appList.length && fresh && !force) { paintApps(search ? search.value : ''); return; }
+    appsLoading = true;
+    paintApps('');
+    const r = await api.call('list_apps', {});
+    appsLoading = false;
+    if (r && r.ok && Array.isArray(r.apps) && r.apps.length) {
+      appList = r.apps;
+      writeJSON(APPS_KEY, appList);
+      writeJSON(APPS_KEY + '.meta', { at: Date.now(), count: appList.length });
+      toast('Found ' + appList.length + ' apps on this laptop.');
+    }
+    paintApps(search ? search.value : '');
+  }
+
+  document.getElementById('appSearch').addEventListener('input', function (e) { paintApps(e.target.value); });
+  document.getElementById('refreshApps').addEventListener('click', function () { loadApps(true); });
 
   /* ---------------------------------------------- feelings, shelf, mood UI */
   const MOOD_PHRASES = {
@@ -4797,15 +5011,17 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
   }
   async function boot() {
     renderIcons(document);
-    brainApi = buildBrain();
+    brainApi = loadedBrain();
     welcome();
     updateListenUi();
     syncSettingsUi();
     refreshMemoryList();
     buildShelf();
     paintMoodStrip();
+    paintApps('');
     const state = await api.probe();
     notice(state);
+    if (state === 'laptop' || state === 'preview') loadApps(true);
     updatePrivacyTag();
     updateListenUi();
     if (!voice.supported()) setHeard('Voice input is not available in this browser. Typing works.');

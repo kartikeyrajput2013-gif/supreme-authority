@@ -1,60 +1,70 @@
-SOPHIA UPDATE - HOW TO PUT IT ON YOUR LAPTOP
-============================================
+SOPHIA - PUT IT ON YOUR LAPTOP IN ONE STEP
+==========================================
 
-I cannot open your laptop from here, so this is the one part only you can do.
-It takes about one minute and it is just copying one file.
+I cannot reach your laptop from here. No program on my side can open your
+folders or install anything on your computer. So this file does the installing
+for you: you download it, you double-click one thing, and it copies itself
+into place.
 
-STEP 1  Download the new file
-    Sophia-Updated.zip is in this folder on GitHub.
-    Click it, then click the download button.
-    Windows saves it in Downloads.
+WHAT YOU DO (about one minute)
+------------------------------
 
-STEP 2  Unzip it
-    Right-click the ZIP, choose "Extract All", then Extract.
-    You will see a folder with these files:
-        assistant.html      <- the new Sophia
-        sophia_helper.py    <- lets her control the laptop
-        Start_Sophia.bat    <- double-click this to start her
-        README.md           <- the full guide
+1. Download Sophia-Updated.zip from GitHub.
+   Open it, and click "Extract All" (or right-click > Extract All).
 
-STEP 3  Keep the old one as a backup
-    Go to the folder where Sophia lives now.
-    It is the same folder as your delivery app, probably called
-    "DELIVERY APP STUFF".
-    Right-click the old assistant.html, choose Rename, and name it
-    assistant-old.html
-    Do not delete it yet.
+2. Inside the extracted folder, double-click:
 
-STEP 4  Copy the new one in
-    Copy assistant.html (and sophia_helper.py and Start_Sophia.bat)
-    from the extracted folder into the folder from Step 3.
-    Windows will ask "There is already a file with this name".
-    Choose "Replace the file in the destination".
+        INSTALL_SOPHIA.bat
 
-STEP 5  Start her
-    Double-click Start_Sophia.bat as usual.
-    Look for the new things:
-        - a "How are you feeling right now?" card with faces
-        - a "Things I can teach without internet" shelf
-        - in Settings, "How your week has felt"
+3. A black window opens and asks you where Sophia should live.
+   It looks for your delivery app folder by itself and offers it to you.
+   Press 1 to accept, or 2 to pick another folder.
 
-IF SOMETHING LOOKS WRONG
-    Delete the new assistant.html, rename assistant-old.html back to
-    assistant.html, and you are exactly where you were before.
-    Nothing else on your laptop is changed by this update.
+4. It then:
+     - copies assistant.html, sophia_helper.py and Start_Sophia.bat
+     - keeps a backup of your old assistant.html
+     - puts a shortcut called "Sophia" on your Desktop
+
+5. It asks "Start Sophia now? [Y/n]". Press Enter.
+
+That is it. From now on, just double-click Sophia on the Desktop.
+
+If Windows shows a blue "Windows protected your PC" box
+--------------------------------------------------------
+Click "More info", then "Run anyway". That warning appears for any file
+downloaded from the internet; it is not a virus warning. If you prefer, you
+can instead right-click Install_Sophia.ps1 and choose "Run with PowerShell".
+
+WHAT NEEDS PYTHON
+-----------------
+Full laptop control (volume, brightness, closing apps, the app list) needs
+Python. If Python is not on the laptop, Sophia still starts in browser mode:
+websites, maths, memory, feelings, knowledge, quiz and games all work, and
+Windows will still open apps from her buttons. To get the full version,
+install Python from python.org and tick "Add python.exe to PATH", then run
+Start_Sophia.bat again.
+
+IF SOMETHING GOES WRONG
+-----------------------
+Your old page is kept as assistant-old-<date>.html in the same folder.
+Rename it back to assistant.html and you are exactly where you were before.
+The installer never deletes your delivery app, your photos or anything else.
 
 WHAT IS NEW IN THIS VERSION
-    - 13 feeling families (sad, lonely, worried, angry, tired, bored,
-      confused, ashamed, grieving, unwell, hungry, can't sleep, and happy)
-      and a gentle answer for each one.
-    - A crisis answer: if you say you want to die, she stops and gives
-      real helpline numbers (Tele-MANAS 14416, Childline 1098, 112) and
-      asks you to talk to an adult today.
-    - 30 knowledge topics, about 190 notes, 96 quiz questions, 60 quick
-      facts and 12 riddles that work with no internet at all.
-    - A mood history you can see and clear any time.
+---------------------------
+- A card called "Every app on this laptop": every app Windows knows about,
+  with a search box. One click opens it.
+- Open buttons no longer do nothing. Every open either works, opens a tab,
+  or tells you in words why it could not and what to press instead.
+- The launcher buttons and the "Open" links now work in browser mode too.
+- Feelings: 16 kinds, with gentle answers and real helpline numbers.
+- Knowledge: 30 topics, about 190 notes, 96 quiz questions, 60 quick facts,
+  12 riddles, everything offline.
 
 WHAT IS STILL HONEST ABOUT HER
-    - She reads the words you type or say. She cannot see your face or
-      hear your tone, and she is not a doctor.
-    - She is a program, not a person.
+------------------------------
+- She reads the words you type or say. She cannot see your face, cannot hear
+  your tone, and is not a doctor.
+- She is a program, not a person.
+- A web page cannot start programs by itself; only Windows can. That is why
+  the app list and the buttons exist, and why the .bat matters.

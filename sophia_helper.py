@@ -21,6 +21,7 @@ import argparse
 import json
 import os
 import platform
+import re
 import socket
 import subprocess
 import sys
@@ -30,7 +31,7 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, unquote
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 IS_WINDOWS = os.name == "nt"
 MAX_BODY = 16 * 1024          # 16 KB is plenty for one command
 DEFAULT_PORTS = list(range(8765, 8775))
@@ -508,6 +509,146 @@ def action_system_info(params):
     return ok(info=info)
 
 
+def _lnk_target(path):
+    """Read where a Start Menu shortcut really points (Windows .lnk)."""
+    try:
+        raw = open(path, "rb").read()
+    except OSError:
+        return None
+    # a .lnk stores the local path right after a shell-item header; look for drive letters
+    best = None
+    for match in re.finditer(rb"[A-Za-z]:\\[^\x00]{3,240}", raw):
+        text = match.group(0).decode("mbcs", "ignore").strip()
+        if text.lower().endswith((".exe", ".msc", ".ico", ".bat", ".cmd")):
+            if best is None or len(text) > len(best):
+                best = text
+    return best
+
+
+def _fast_start_apps():
+    """One PowerShell call instead of a slow start-menu walk."""
+    script = (
+        "$out = @();"
+        "Get-StartApps | ForEach-Object { $out += [pscustomobject]@{ name = $_.Name; id = $_.AppID } };"
+        "$out | ConvertTo-Json -Compress -Depth 3"
+    )
+    res = ps_command(script, timeout=45)
+    if not res.get("ok"):
+        return []
+    try:
+        data = json.loads(res.get("output", "[]") or "[]")
+    except ValueError:
+        return []
+    if isinstance(data, dict):
+        data = [data]
+    items = []
+    for row in data:
+        name = str(row.get("name") or "").strip()
+        app_id = str(row.get("id") or "").strip()
+        if not name:
+            continue
+        exe = app_id.split("!")[0] if "!" in app_id else ""
+        items.append({
+            "name": name,
+            "id": app_id,
+            "exe": exe,
+            "store": "!" in app_id,
+            "quick": _quick_name(name),
+        })
+    return items
+
+
+def _quick_name(name):
+    """A short handle so 'open words' finds Microsoft Word."""
+    base = re.sub(r"\s*[\(\-].*$", "", name).strip()   # drop "(x86)" and version tails
+    base = re.sub(r"\s+(\d{4}|\d+(\.\d+)+)$", "", base).strip()
+    return base.lower()
+
+
+def _start_menu_apps():
+    """Fallback: every .lnk under the two Start Menu folders."""
+    found = []
+    roots = [
+        os.path.join(os.environ.get("APPDATA", ""), r"Microsoft\Windows\Start Menu\Programs"),
+        r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs",
+    ]
+    for root in roots:
+        if not root or not os.path.isdir(root):
+            continue
+        for folder, _dirs, files in os.walk(root):
+            for f in files:
+                if not f.lower().endswith(".lnk"):
+                    continue
+                full = os.path.join(folder, f)
+                label = os.path.splitext(f)[0].strip()
+                if not label or label.lower().startswith(("uninstall", "readme", "help")):
+                    continue
+                found.append({
+                    "name": label,
+                    "id": "",
+                    "exe": _lnk_target(full) or "",
+                    "lnk": full,
+                    "store": False,
+                    "quick": _quick_name(label),
+                })
+    return found
+
+
+def action_list_apps(params):
+    """Every app Windows knows about, so 'open <anything>' can find it."""
+    if not IS_WINDOWS:
+        return fail("unsupported_os")
+    apps = _fast_start_apps()
+    if not apps:
+        apps = _start_menu_apps()
+    # de-duplicate on the short handle, keeping the friendliest name
+    best = {}
+    for app in apps:
+        key = app["quick"] or app["name"].lower()
+        if not key:
+            continue
+        have = best.get(key)
+        if have is None or (len(app["name"]) < len(have["name"]) and not app["store"]):
+            best[key] = app
+    out = sorted(best.values(), key=lambda a: a["name"].lower())
+    cache_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".sophia-apps.json")
+    try:
+        with open(cache_path, "w", encoding="utf-8") as fh:
+            json.dump({"at": int(time.time()), "apps": out}, fh)
+    except OSError:
+        pass
+    return ok(apps=out, count=len(out))
+
+
+def action_open_self(params):
+    """Bring Sophia's own page to the front (opens the default browser on her)."""
+    if not IS_WINDOWS:
+        return fail("unsupported_os")
+    page = os.path.join(os.path.dirname(os.path.abspath(__file__)), PAGE_NAME)
+    if not os.path.isfile(page):
+        return fail("not_found", "assistant.html is not next to the helper.")
+    try:
+        os.startfile(page)  # the normal Windows way to hand a file to its program
+        return ok(opened=page)
+    except OSError as exc:
+        return fail("open_failed", str(exc)[:120])
+
+
+def action_open_path(params):
+    """Open one exact file, folder or app, straight from the app list."""
+    path = str(params.get("path", "")).strip()
+    if not path or any(c in path for c in "\r\n\t"):
+        return fail("bad_path")
+    if not IS_WINDOWS:
+        return fail("unsupported_os")
+    if os.path.exists(path):
+        return _start(path)
+    lowered = path.lower()
+    if lowered.startswith(("shell:appsfolder", "ms-", "http", "https")) or lowered.endswith((".exe", ".lnk", ".url")):
+        return _start(path)
+    return fail("not_found", "That file is not there any more.")
+
+
 ACTIONS = {
     "open_app": action_open_app,
     "close_app": action_close_app,
@@ -525,6 +666,9 @@ ACTIONS = {
     "sleep": action_sleep,
     "signout": action_signout,
     "system_info": action_system_info,
+    "list_apps": action_list_apps,
+    "open_path": action_open_path,
+    "open_self": action_open_self,
 }
 # In preview mode these are never run, even if someone sends them.
 DANGEROUS = {"shutdown", "restart", "sleep", "signout"}

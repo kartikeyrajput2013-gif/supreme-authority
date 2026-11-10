@@ -254,3 +254,92 @@ class TestBinding(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+class AppListTests(unittest.TestCase):
+    """The new app-discovery actions, tested without needing Windows."""
+
+    def test_short_names_for_the_apps_list(self):
+        self.assertEqual(helper._quick_name("Microsoft Word 2016"), "microsoft word")
+        self.assertEqual(helper._quick_name("Microsoft Edge (x86)"), "microsoft edge")
+        self.assertEqual(helper._quick_name("VLC media player"), "vlc media player")
+        self.assertEqual(helper._quick_name("WinRAR 6.24 (64-bit)"), "winrar")
+
+    def test_app_actions_are_registered(self):
+        self.assertIn("list_apps", helper.ACTIONS)
+        self.assertIn("open_path", helper.ACTIONS)
+        self.assertNotIn("list_apps", helper.DANGEROUS)
+        self.assertNotIn("open_path", helper.DANGEROUS)
+
+    def test_open_path_refuses_newlines(self):
+        res = helper.action_open_path({"path": "a\nb"})
+        self.assertFalse(res["ok"])
+        self.assertEqual(res["error"], "bad_path")
+
+    def test_open_path_refuses_empty(self):
+        res = helper.action_open_path({"path": "   "})
+        self.assertFalse(res["ok"])
+
+    def test_list_apps_is_windows_only(self):
+        if helper.IS_WINDOWS:
+            self.skipTest("this check is for the Linux sandbox")
+        res = helper.action_list_apps({})
+        self.assertFalse(res["ok"])
+        self.assertEqual(res["error"], "unsupported_os")
+
+
+class OpenButtonTests(unittest.TestCase):
+    """The page must never hand out a link that does nothing."""
+
+    def test_every_open_gets_a_link_or_a_reason(self):
+        html = open(os.path.join(ROOT, "assistant.html"), encoding="utf-8").read()
+        # the fallback link helper still exists and is used by the open path
+        self.assertIn("out.link('Open ' + label", html)
+        self.assertIn("function browserLine", html)
+        self.assertIn("function follow", html)
+        # links know when they may take over the tab
+        self.assertIn("target: '_blank'", html)
+
+    def test_app_card_can_call_the_brain(self):
+        html = open(os.path.join(ROOT, "assistant.html"), encoding="utf-8").read()
+        self.assertIn("brainApi.openTarget(appTargetFor(app))", html)
+        self.assertIn("shell:AppsFolder", html)
+
+class InstallerTests(unittest.TestCase):
+    """The one-step installer must be safe to double-click."""
+
+    def setUp(self):
+        self.ps1 = open(os.path.join(ROOT, "Install_Sophia.ps1"), encoding="utf-8-sig").read()
+        self.bat = open(os.path.join(ROOT, "INSTALL_SOPHIA.bat"), encoding="utf-8").read()
+
+    def test_installer_only_copies_lists_and_links(self):
+        # it may copy, make a folder, and make a shortcut - never delete or download
+        self.assertNotIn("Remove-Item", self.ps1)
+        self.assertNotIn("Invoke-WebRequest", self.ps1)
+        self.assertNotIn("Invoke-Expression", self.ps1)
+        self.assertNotIn("del ", self.bat.lower())
+        self.assertNotIn("rd ", self.bat.lower())
+
+    def test_installer_copies_exactly_the_three_files(self):
+        for name in ("assistant.html", "sophia_helper.py", "Start_Sophia.bat"):
+            self.assertIn(name, self.ps1)
+
+    def test_installer_backs_up_the_old_page(self):
+        self.assertIn("assistant-old-", self.ps1)
+        self.assertIn("Copy-Item $old $backup", self.ps1)
+
+    def test_installer_makes_a_desktop_shortcut(self):
+        self.assertIn("WScript.Shell", self.ps1)
+        self.assertIn("'Sophia.lnk'", self.ps1)
+
+    def test_bat_calls_the_script_and_pauses(self):
+        self.assertIn("Install_Sophia.ps1", self.bat)
+        self.assertIn("-ExecutionPolicy Bypass", self.bat)
+        self.assertIn("pause", self.bat.lower())
+
+    def test_new_helper_actions_are_not_dangerous(self):
+        for action in ("list_apps", "open_path", "open_self"):
+            self.assertIn(action, helper.ACTIONS)
+            self.assertNotIn(action, helper.DANGEROUS)
+
+    def test_helper_version_is_current(self):
+        self.assertEqual(helper.VERSION, "1.1.0")

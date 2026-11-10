@@ -11,22 +11,21 @@ except for the things that need the internet (websites, Wikipedia, voice).
 
 ---
 
-## 1. What you need to copy
+## 1. What goes on the laptop
 
-Put these three files **in the same folder as your delivery app**
-(`DELIVERY APP STUFF`):
+Sophia is five small files that sit together in one folder:
 
 | File | What it is |
 | --- | --- |
 | `assistant.html` | Sophia herself. This is the page you open. |
-| `sophia_helper.py` | A small helper that lets Sophia control Windows. |
+| `sophia_helper.py` | A small helper that lets Sophia use Windows. |
 | `Start_Sophia.bat` | Double-click this to start Sophia. |
+| `INSTALL_SOPHIA.bat` | The one-step installer. |
+| `Install_Sophia.ps1` | The script the installer runs. |
 
-Your delivery app stays exactly where it is. Sophia looks for `index.html` in
-that same folder when you say "open delivery app".
-
-> Important: keep the files in the folder. If you move `Start_Sophia.bat` to
-> the desktop without the other two files, it will not work.
+You do not need to place them by hand: **`INSTALL_SOPHIA.bat`** copies them to
+the right folder, keeps a backup of the old page and makes a Desktop shortcut.
+See section 8.
 
 ---
 
@@ -275,40 +274,25 @@ the laptop.
 
 ---
 
-## 8. Getting the file onto your laptop (replace the old one)
+## 8. Putting Sophia on the laptop (one step)
 
-I cannot reach your laptop myself. No program on my side can open your folders
-or replace a file on your computer. You have to do this one copy-and-paste, and
-after that you are done. It takes about a minute.
+I cannot reach your laptop from here: nothing on my side can open your folders
+or install anything for you. So the download installs itself.
 
-1. Open this link in your browser:
+1. Download `Sophia-Updated.zip` from GitHub and unzip it.
+2. Double-click **`INSTALL_SOPHIA.bat`** inside the unzipped folder.
+3. It finds your delivery app folder, asks once to confirm, then:
+   * copies `assistant.html`, `sophia_helper.py` and `Start_Sophia.bat`,
+   * keeps your old page as `assistant-old-<date>.html`,
+   * puts a **Sophia** shortcut on your Desktop,
+   * offers to start her straight away.
 
-   ```
-   https://github.com/kartikeyrajput2013-gif/supreme-authority/tree/arena/291eb775-supreme-authority
-   ```
+If Windows shows "Windows protected your PC", click **More info** then
+**Run anyway**; that box appears for every downloaded file. You can also
+right-click `Install_Sophia.ps1` and choose **Run with PowerShell**.
 
-2. Click **assistant.html** in the list, then click the **download** button (the
-   small arrow at the top right of the file). The file lands in your
-   **Downloads** folder.
-
-3. Go to the folder where your old Sophia lives, the same folder as your
-   delivery app. Right-click the old `assistant.html`, choose **Rename**, and
-   rename it to `assistant-old.html`. This is your backup. Do not delete it yet.
-
-4. Copy the new `assistant.html` from **Downloads** into that same folder.
-
-5. Double-click **`Start_Sophia.bat`** as usual. The window opens, and the new
-   Sophia is there with her feelings card and knowledge shelf.
-
-If something looks wrong, rename the old file back. Nothing else on your laptop
-is touched, and your memories and settings are kept by the browser, so they are
-still there after the swap.
-
-If you also want the helper file up to date, download `sophia_helper.py` and
-`Start_Sophia.bat` the same way and let them replace the old copies.
-
-> Only these three files are needed: `assistant.html`, `sophia_helper.py` and
-> `Start_Sophia.bat`. They sit next to your delivery app's `index.html`.
+To undo everything: rename `assistant-old-<date>.html` back to
+`assistant.html`. Nothing else on the laptop is touched.
 
 ---
 
@@ -318,9 +302,11 @@ If you also want the helper file up to date, download `sophia_helper.py` and
 | --- | --- |
 | `assistant.html` | Sophia: the brain, the page, the look. One file, no build step. |
 | `sophia_helper.py` | Local Windows helper and tiny web server (Python standard library only). |
-| `Start_Sophia.bat` | Double-click starter. Falls back to browser mode without Python. |
-| `tests/brain.test.js` | 27 tests for what Sophia understands. `node --test tests/brain.test.js` |
-| `tests/test_helper.py` | 23 tests for the helper's safety and server. `python3 -m unittest discover tests` |
+| `Start_Sophia.bat` | Double-click starter. Finds Python, then opens Sophia. |
+| `INSTALL_SOPHIA.bat` | One-step installer: copies the files and makes a Desktop shortcut. |
+| `Install_Sophia.ps1` | The PowerShell script behind the installer. |
+| `tests/brain.test.js` | 38 tests for what Sophia understands. `node --test tests/brain.test.js` |
+| `tests/test_helper.py` | 37 tests for the helper, the installer and the server. `python3 -m unittest discover tests` |
 
 Old versions: `git show 09ca826:assistant.html` is the file exactly as you
 first uploaded it.
