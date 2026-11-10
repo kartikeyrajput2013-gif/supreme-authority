@@ -325,6 +325,17 @@
   .switch { display: flex; align-items: center; gap: 10px; font-size: 13px; }
   .switch input { width: 18px; height: 18px; accent-color: #38bdf8; }
   .divider { height: 1px; background: var(--line); }
+  .sec-list { display: flex; flex-direction: column; gap: 9px; }
+  .sec-row { display: flex; gap: 9px; align-items: flex-start; font-size: 12.3px; line-height: 1.5; color: #d8e6f8; }
+  .sec-row b { color: #f2f8ff; }
+  .sec-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; flex: 0 0 auto; background: var(--muted); }
+  .sec-dot.good { background: var(--good); box-shadow: 0 0 8px rgba(52, 211, 153, 0.7); }
+  .sec-dot.warn { background: var(--warn); box-shadow: 0 0 8px rgba(251, 191, 36, 0.6); }
+  .sec-dot.risk { background: var(--bad); box-shadow: 0 0 8px rgba(248, 113, 113, 0.7); }
+  .sec-report { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .sec-item { border: 1px solid var(--line2); border-radius: 10px; padding: 9px 11px; font-size: 12.2px; line-height: 1.5; background: rgba(6, 14, 26, 0.7); }
+  .sec-item b { display: block; font-size: 12.8px; margin-bottom: 2px; color: #f2f8ff; }
+  .sec-item .sec-detail { color: var(--muted); }
   .memory-list { display: flex; flex-direction: column; gap: 7px; font-size: 12.5px; }
   .memory-item {
     display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 9px;
@@ -434,6 +445,9 @@
       <a class="pill" href="index.html" title="Open your RailPure delivery app">
         <span data-icon="external-link" class="sm"></span> RailPure Food App
       </a>
+      <button class="icon-btn" id="openInfo" type="button" aria-label="Security and privacy" title="Security and privacy">
+        <span data-icon="info"></span>
+      </button>
       <button class="icon-btn" id="openSettings" type="button" aria-label="Nova settings" title="Settings">
         <span data-icon="settings"></span>
       </button>
@@ -743,6 +757,59 @@
       <label>About</label>
       <div class="hint" id="aboutText">Nova is a local HTML page. She is an AI program, not a human. Nothing is sent anywhere unless you connect an AI model or she looks something up on Wikipedia.</div>
     </div>
+  </div>
+</aside>
+
+<!-- Security and privacy, behind the little (i) button -->
+<aside class="drawer" id="infoDrawer" role="dialog" aria-modal="true" aria-labelledby="infoTitle" aria-hidden="true">
+  <div class="drawer-head">
+    <h2 id="infoTitle">Security and privacy</h2>
+    <button class="icon-btn" id="closeInfo" type="button" aria-label="Close security panel"><span data-icon="x"></span></button>
+  </div>
+  <div class="drawer-body">
+
+    <div class="field">
+      <label>What Nova can and cannot reach</label>
+      <div class="sec-list" id="secLimits">
+        <div class="sec-row"><span class="sec-dot good"></span><div><b>Your mail stays yours.</b> Nova never opens Gmail, never reads a message and cannot get the password of any account. No program on your laptop can count Google accounts from outside: Google does not allow it.</div></div>
+        <div class="sec-row"><span class="sec-dot good"></span><div><b>Nothing runs from the internet.</b> Windows only opens what <i>you</i> click. Her helper listens on this laptop alone, so another machine cannot send it orders.</div></div>
+        <div class="sec-row"><span class="sec-dot good"></span><div><b>No key, no leak.</b> With the built-in brain, nothing you type is sent anywhere. If you connect an AI model, only that question goes to that service, and only while you use it.</div></div>
+        <div class="sec-row"><span class="sec-dot warn"></span><div><b>The helper is powerful on purpose.</b> It can open apps, change volume and shut down, so keep the black window for yourself and close it when you finish.</div></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field">
+      <label>Check this laptop</label>
+      <div class="hint">Read-only. It reads Windows settings and counts saved browser sign-ins. It never opens a password store, never reads a mail box and changes nothing.</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px">
+        <button class="btn sm" id="runSecCheck" type="button"><span data-icon="shield-check" class="sm"></span> Run the check</button>
+      </div>
+      <div class="sec-report" id="secReport" hidden></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field">
+      <label>Your accounts, honestly</label>
+      <div class="sec-list" id="secAccounts">
+        <div class="sec-row"><span class="sec-dot warn"></span><div>Nova can tell you <b>how to see</b> which accounts are signed in, but she cannot list them for you. To see every Google account on this laptop: open <b>myaccount.google.com</b> and check the account switcher, or open Gmail and click your picture. To see every Microsoft account: <b>account.microsoft.com</b>.</div></div>
+        <div class="sec-row"><span class="sec-dot warn"></span><div>To see every site that remembers you: in Chrome, <b>Settings &gt; Autofill and passwords &gt; Password Manager</b>. That list is the real answer to "where am I logged in", and only you can open it.</div></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field">
+      <label>If you are worried about a real risk</label>
+      <div class="hint" id="secHelp">
+        Change the password of the account you are worried about, from that account's own site, and turn on two-step login.
+        If someone has been in your accounts, sign out of all devices from that account's security page.
+        If money or a threat is involved, tell a parent or a trusted adult today and keep the messages.
+      </div>
+    </div>
+
   </div>
 </aside>
 
@@ -1121,6 +1188,140 @@ const EMO_LABELS = {
   crisis: 'in real pain'
 };
 const NEGATIVE_FAMILIES = { sadness: 1, loneliness: 1, anxiety: 1, anger: 1, tiredness: 1, shame: 1, grief: 1, illness: 1, sleep: 1, family: 1, safety: 1, confusion: 1, boredom: 1 };
+
+/* ==========================================================================
+   FEELING AND CARING
+   Nova is a program, and she says so when it matters. What she can really do
+   is listen, remember how the week has felt, notice when a sentence is heavy
+   even if the person never names the feeling, and answer the questions people
+   actually ask at night. None of this is sent anywhere.
+   ========================================================================== */
+
+const CARE_QA = [
+  {
+    id: 'how-are-you',
+    test: /^(?:how are you|how r u|how are you doing|kaise ho|kya haal|how is it going)\b/,
+    reply: [
+      "I am here, and I am glad you asked. I do not get tired the way you do, but I do notice when it has been a long day for you.",
+      "I am running fine. The better question is how you are. What kind of day has this been?"
+    ]
+  },
+  {
+    id: 'do-you-care',
+    test: /^(?:do you (?:really )?care|do you love me|do you like me|are you my friend|will you leave me|do you miss me)\b/,
+    reply: [
+      "I care in the way a program can: I remember what you told me, I notice when something is heavy, and I stay here as long as you want to talk. I cannot love the way a person does, and I will not pretend to.",
+      "I am not a person, so I will not say I love you and mean it. What is true is that you matter to me in this conversation, and I am not going anywhere while you need someone to talk to."
+    ]
+  },
+  {
+    id: 'why-feel',
+    test: /^(?:why do i feel (?:like )?(?:this|that|so|down|bad|low)|why am i (?:sad|like this|feeling)|what is wrong with me|why does nothing feel good)\b/,
+    reply: [
+      "Feelings usually have more than one cause: sleep, food, a thing someone said, a thing you are worried about, or sometimes all of it together. We can look at it slowly if you want. When did it start feeling this way?",
+      "I cannot see inside your head, so I will not invent a reason. What I can do is ask the right questions. Was there a moment today when it changed, even a small one?"
+    ]
+  },
+  {
+    id: 'am-i-ok',
+    test: /^(?:am i (?:ok|normal|weird|crazy|stupid|worthless|a burden)|is there something wrong with me|do i deserve)\b/,
+    reply: [
+      "You are not a burden for feeling things, and feeling strongly does not make you broken. You are a person having a hard time, which is a very different thing.",
+      "No. Struggling does not make you worthless or strange. It makes you someone who is carrying something, and that is worth taking seriously rather than judging."
+    ]
+  },
+  {
+    id: 'alone',
+    test: /^(?:does anyone care|nobody cares|i have no one|am i alone in this|is anyone there)\b/,
+    reply: [
+      "I am here right now, and I am listening properly. I know I am not the same as a person in the room. Is there one person, even a difficult one to talk to, who might listen if you said a little of this?",
+      "You are not invisible to me. But you deserve more than a program. Who is the easiest person in your life to say one honest sentence to?"
+    ]
+  },
+  {
+    id: 'cant-sleep',
+    test: /^(?:i can'?t sleep|can'?t sleep|why can'?t i sleep|it is (?:3|4|2) ?am and)\b/,
+    reply: [
+      "Your brain is probably still holding the day. Try this: breathe in for four, hold for four, out for six, ten times. Then tell me the thing that keeps coming back, and we can look at it together.",
+      "Lying awake is often a sign that something wants attention. Say the first thought that arrives. I will stay with it and we will not make it bigger than it is."
+    ]
+  },
+  {
+    id: 'thanks-feelings',
+    test: /^(?:thanks? (?:for listening|for being there)|thank you for listening|you are a good (?:friend|listener))\b/,
+    reply: [
+      "You are welcome. You did the harder part. Come back whenever it gets loud again, even at a strange hour.",
+      "Any time. And remember the ones who can hug you are worth telling too."
+    ]
+  }
+];
+
+/* A sentence can be heavy without ever using a feeling word. */
+const HIDDEN_WEIGHT = [
+  { test: /\b(?:i (?:do not|don'?t) (?:see the point|see any point)|nothing matters|what'?s the point|no point anymore)\b/, family: 'hopeless' },
+  { test: /\b(?:i (?:am|'m) (?:so )?(?:tired of|done with) (?:everything|this|trying)|i give up)\b/, family: 'hopeless' },
+  { test: /\b(?:everyone (?:would be|is) better (?:off )?without me|they (?:would be|are) better without me)\b/, family: 'hopeless' },
+  { test: /\b(?:i (?:cannot|can'?t) (?:stop|sleep|breathe)|my chest (?:is|feels) tight|i feel sick with worry)\b/, family: 'anxiety' },
+  { test: /\b(?:no one (?:talks to|texts|asks about) me|i (?:eat|sit) (?:alone|by myself) every day)\b/, family: 'loneliness' },
+  { test: /\b(?:i (?:failed|messed up|ruined) (?:it|everything|again)|i let (?:everyone|them|my parents) down)\b/, family: 'shame' },
+  { test: /\b(?:i (?:have not|haven'?t) (?:slept|eaten) (?:in|since|for) (?:two|three|2|3|a few) days?)\b/, family: 'tiredness' },
+  { test: /\b(?:they keep|he keeps|she keeps|it keeps) (?:shouting|hitting|hurting|threatening)\b/, family: 'safety' }
+];
+
+/* Small human touches: she uses them sparingly and never instead of an answer. */
+const WARM_OPENERS = ['Okay.', 'I am listening.', 'Right.', 'I hear you.', 'Thank you for telling me.', ''];
+
+/**
+ * Answer the caring questions people actually ask, before the search fallback
+ * ever gets a chance to turn them into a Google query.
+ */
+function careAnswer(text) {
+  const t = String(text || '').toLowerCase().replace(/[?!.,]+/g, ' ').replace(/\s+/g, ' ').trim();
+  for (let i = 0; i < CARE_QA.length; i++) {
+    if (CARE_QA[i].test.test(t)) return { id: CARE_QA[i].id, reply: CARE_QA[i].reply };
+  }
+  return null;
+}
+
+/** Catch the heavy sentence that never says "sad". */
+function hiddenWeight(text) {
+  const t = String(text || '').toLowerCase();
+  for (let i = 0; i < HIDDEN_WEIGHT.length; i++) {
+    if (HIDDEN_WEIGHT[i].test.test(t)) return HIDDEN_WEIGHT[i].family;
+  }
+  return null;
+}
+
+/**
+ * How she sounds right now, based on the last few things this person said.
+ * It changes small things: an opener, a shorter answer when they are low,
+ * an extra question when they are quiet. It is not a mood swing.
+ */
+function presence(text, mem) {
+  const moods = (mem && mem.moods) || [];
+  const recent = moods.slice(-4);
+  const heavy = recent.filter(function (m) { return NEGATIVE_FAMILIES[m.f]; }).length;
+  const warm = recent.filter(function (m) { return m.f === 'joy' || m.f === 'hope'; }).length;
+  const hour = new Date().getHours();
+  return {
+    gentle: heavy >= 2 || warm === 0 && heavy >= 1,
+    light: warm >= 2,
+    night: hour >= 23 || hour < 5,
+    heavy: heavy
+  };
+}
+
+function withTone(line, presenceState, rnd) {
+  if (!presenceState || !line) return line;
+  if (presenceState.night && /^(?:what|why|how|who|when|where|is|are|can|do)\b/i.test(line) === false) {
+    return line;
+  }
+  if (presenceState.gentle && rnd() < 0.35) {
+    const opener = WARM_OPENERS[Math.floor(rnd() * WARM_OPENERS.length)];
+    if (opener && !/^(?:okay|i am listening|right|i hear you|thank you)/i.test(line)) return opener + ' ' + line;
+  }
+  return line;
+}
 
 function emoWords(text) {
   // keeps word boundaries honest and handles the few two word entries
@@ -2837,10 +3038,18 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       };
     }
     function finish(out, intents) {
+      const pState = toneNow();
       const text = out.lines.map(function (l) { return l.text; }).join('\n');
       const speak = out.lines.filter(function (l) { return l.speak; }).map(function (l) { return l.text; }).join(' ');
       if (text) state.lastReply = text;
-      return { text: text, speak: speak, links: out.links, intents: intents || [] };
+      return { text: text, speak: speak, links: out.links, intents: intents || [], presence: pState };
+    }
+
+    /* How she should sound right now: gentle after a heavy week, calmer at night. */
+    function toneNow() {
+      const p = presence(now(), mem);
+      if (p.night) p.gentle = true;
+      return p;
     }
 
     async function helper(action, params) {
@@ -3716,9 +3925,17 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
     }
     async function chooseGame(text, out) {
       const t = String(text || '').toLowerCase().replace(/[.,!]/g, ' ').trim();
+      // A whole sentence is not a menu choice: "what is 25 times 4" must not mean game 4.
+      const wordList = t.split(/\s+/).filter(Boolean);
+      const short = wordList.length <= 4;
+      const explicit = /\bgame\s*(?:number\s*)?([1-5])\b/.test(t) || /\b(?:play|start)\b/.test(t);
+      if (!short && !explicit && !/story|scramble|riddle|chain|guess the number/.test(t)) {
+        out.say('I did not catch which one. Say a number: 1 guess the number, 2 word chain, 3 riddles, 4 story game, 5 word scramble.');
+        return;
+      }
       const words = { one: 1, won: 1, two: 2, to: 2, too: 2, three: 3, four: 4, for: 4, five: 5 };
-      const m = t.match(/\b(?:game )?([1-5])\b/);
-      const n = m ? Number(m[1]) : (words[t.split(/\s+/)[0]] || 0);
+      const m = t.match(/\(?\b(?:game\s*)?([1-5])\b\)?/);
+      const n = m ? Number(m[1]) : (words[wordList[0]] || 0);
       if (/^\s*(?:stop|end|quit|close|finish)/.test(t)) { out.say('Okay, no game. Say "play a game" when you want one.'); return; }
       if (n === 1 || /number|guess(?!.*word)/.test(t)) { startGuessGame(out); return; }
       if (n === 2 || /word chain|chain/.test(t)) { startWordChain(out); return; }
@@ -3873,6 +4090,17 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       if (meta.source === 'ai' && POWER_INTENTS[it]) step.fromAI = true;
       if (REPEATABLE[it] && meta.source !== 'again') state.lastCommand = meta.text;
 
+      const care = careAnswer(meta.text || '');
+      if (care && meta.source !== 'ai') {
+        if (!state.careSeen) state.careSeen = {};
+        const first = !state.careSeen[care.id];
+        state.careSeen[care.id] = true;
+        out.say(withName(pick(care.reply)));
+        if (care.id === 'do-you-care' && first) {
+          out.say('If that is not the answer you needed, tell me what is really going on. That part I am better at.', { silent: true });
+        }
+        return;
+      }
       if (it === 'empty') { out.say('I did not catch that. Please say it again.'); return; }
       if (it === 'yes') { out.say('Yes to what? Tell me what you would like me to do.'); return; }
       if (it === 'no') { out.say('Okay.'); return; }
@@ -3975,6 +4203,17 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
         out.say('Done. I have forgotten how your week felt. I still remember the things you asked me to remember.');
         return;
       }
+      // a heavy sentence that never used a feeling word still deserves care
+      const hidden = hiddenWeight(meta.text || '');
+      if (hidden && meta.source !== 'ai' && !(state.game && state.game.kind)) {
+        if (hidden === 'safety') {
+          out.say(withName('That sounds frightening, and I am glad you said it. If someone is being hurt or threatened, tell an adult today, and if you are in danger right now call 112. Would you like to tell me what has been happening?'));
+          return;
+        }
+        const bank = EMO_REPLIES[hidden];
+        if (bank) { rememberMood(hidden, 2); out.say(withName(pick(bank.med || bank.low))); return; }
+      }
+
       // unknown
       if (meta.source !== 'ai' && await askAI(meta.text, out)) return;
       offerSearch(out, String(step.text || meta.text).replace(/[?!.]+$/, ''), 'I am not sure what you mean by "' + String(step.text || meta.text) + '".');
@@ -4057,7 +4296,13 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
           state.pending = null;
           if (first === 'game.stop') { out.say('Okay, no game. Say "play a game" when you want one.'); steps = []; }
           else if (first === 'game.menu') { await doGame({ intent: 'game.menu' }, out); steps = []; }
-          else { await chooseGame(text, out); steps = []; }
+          else {
+            // a real command during the menu is not a game choice: let it run normally
+            const looksLikeGameChoice = /^\s*(?:[1-5]\b|one\b|two\b|three\b|four\b|five\b|game\b|play\b|story|scramble|riddle|chain|guess)/i.test(text)
+              || /\b(?:story game|word chain|word scramble|guess the number)\b/i.test(text);
+            if (looksLikeGameChoice) { await chooseGame(text, out); steps = []; }
+            else { out.say('No game chosen. Ask me anything, or say "play a game" when you want one.'); }
+          }
         } else {
           state.pending = null;
         }
@@ -4106,7 +4351,10 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
     fmtDate: fmtDate,
     catalog: { SITES: SITES, APPS: APPS, SETTINGS: SETTINGS, FOLDERS: FOLDERS, DELIVERY: DELIVERY, KNOWLEDGE: KNOWLEDGE, QUICK_FACTS: QUICK_FACTS },
     analyzeEmotion: analyzeEmotion,
-    moodSummary: moodSummary
+    moodSummary: moodSummary,
+    careAnswer: careAnswer,
+    hiddenWeight: hiddenWeight,
+    presence: presence
   };
 })();
 if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
@@ -5077,12 +5325,102 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
     void states;
   }
   function openSettings() {
+    if (infoOpen) closeInfo();
     renderIcons(drawer);
     syncSettingsUi();
     refreshMemoryList();
     setOverlay(true);
   }
   function closeSettings() { setOverlay(false); }
+
+  /* ------------------------------------------- security and privacy panel */
+  const infoDrawer = document.getElementById('infoDrawer');
+  const infoOverlay = document.getElementById('settingsOverlay');
+  let infoOpen = false;
+  function openInfo() {
+    renderIcons(infoDrawer);
+    infoOpen = true;
+    setOverlay(false);
+    infoDrawer.classList.add('open');
+    infoDrawer.setAttribute('aria-hidden', 'false');
+    infoOverlay.style.display = 'block';
+  }
+  function closeInfo() {
+    infoOpen = false;
+    infoDrawer.classList.remove('open');
+    infoDrawer.setAttribute('aria-hidden', 'true');
+    infoOverlay.style.display = 'none';
+  }
+  document.getElementById('openInfo').addEventListener('click', openInfo);
+  document.getElementById('closeInfo').addEventListener('click', closeInfo);
+  infoOverlay.addEventListener('click', function () { if (infoOpen) closeInfo(); else closeSettings(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { if (infoOpen) closeInfo(); closeSettings(); closeHub(); }
+  });
+  document.getElementById('runSecCheck').addEventListener('click', runSecurityCheck);
+
+  function secRow(level, title, detail) {
+    const box = document.createElement('div');
+    box.className = 'sec-item';
+    const b = document.createElement('b');
+    b.textContent = title;
+    const dot = document.createElement('span');
+    dot.className = 'sec-dot ' + (level === 'good' ? 'good' : level === 'risk' ? 'risk' : 'warn');
+    dot.style.display = 'inline-block';
+    dot.style.marginRight = '7px';
+    b.prepend(dot);
+    box.appendChild(b);
+    if (detail) {
+      const d = document.createElement('div');
+      d.className = 'sec-detail';
+      d.textContent = detail;
+      box.appendChild(d);
+    }
+    return box;
+  }
+
+  async function runSecurityCheck() {
+    const report = document.getElementById('secReport');
+    report.hidden = false;
+    report.innerHTML = '';
+    const btn = document.getElementById('runSecCheck');
+    btn.disabled = true;
+    const wait = document.createElement('div');
+    wait.className = 'sec-item';
+    wait.textContent = 'Looking at Windows settings. This takes a few seconds.';
+    report.appendChild(wait);
+
+    const res = await api.call('security_check', {});
+    report.innerHTML = '';
+    btn.disabled = false;
+
+    if (!res || !res.ok) {
+      report.appendChild(secRow('warn', 'I could not run the check',
+        res && res.error === 'no_helper'
+          ? 'This needs the full version. Close this, double-click Start_Sophia.bat, and run the check again.'
+          : 'Windows did not answer. You can still check by hand in Windows Security.'));
+      return;
+    }
+    (res.checks || []).forEach(function (c) { report.appendChild(secRow(c.level, c.title, c.detail)); });
+    (res.browser || []).forEach(function (b) {
+      report.appendChild(secRow(b.saved_logins >= 20 ? 'watch' : 'good',
+        b.name + ' remembers ' + b.saved_logins + ' website sign-ins',
+        'A count only. I never opened the list and never saw a name or a password.'));
+    });
+    (res.notes || []).forEach(function (n) {
+      const box = document.createElement('div');
+      box.className = 'sec-item';
+      const d = document.createElement('div');
+      d.className = 'sec-detail';
+      d.textContent = n;
+      box.appendChild(d);
+      report.appendChild(box);
+    });
+    if (!(res.checks || []).length && !(res.browser || []).length) {
+      report.appendChild(secRow('watch', 'Windows gave me nothing to report', 'Open Windows Security once and look at Firewall and Virus protection yourself.'));
+    }
+  }
+
   document.getElementById('openSettings').addEventListener('click', openSettings);
   document.getElementById('closeDrawer').addEventListener('click', closeSettings);
   settingsOverlay.addEventListener('click', closeSettings);

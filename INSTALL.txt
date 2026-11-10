@@ -53,6 +53,14 @@ The installer never deletes your delivery app, your photos or anything else.
 
 WHAT IS NEW IN THIS VERSION (3.0)
 ---------------------------------
+- A small (i) button in the top corner opens "Security and privacy". It tells
+  you plainly what Nova can and cannot reach, and it can check this laptop:
+  firewall, virus protection, updates, disk encryption, sign-in accounts and
+  a COUNT of saved browser sign-ins. It never reads a password and never
+  opens your mail. She cannot list your Gmail accounts, and she says so.
+- Feeling and caring: "why do I feel like this", "do you care about me",
+  "i can't sleep" and heavy sentences like "nothing matters" now get a kind,
+  honest answer instead of a Google search.
 - She has a name now: Nova. Say "hey Nova"; "hey Sophia" still wakes her.
 - ChatGPT, Gemini, Grok, Claude and Antigravity are on her list like any
   other site. Say "ask grok why is the sky blue" and she opens Grok with

@@ -231,7 +231,7 @@ class TestToken(unittest.TestCase):
             token = json.loads(s.get("/api/status")[2])["token"]
             self.assertTrue(token)
             code, _headers, _body = s.post("/api/action", {"action": "lock", "params": {}},
-                                           headers={"X-Sophia-Token": token})
+                                           headers={"X-Nova-Token": token})
             self.assertEqual(code, 200)
         finally:
             s.close()

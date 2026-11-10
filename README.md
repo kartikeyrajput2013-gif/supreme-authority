@@ -183,7 +183,56 @@ instead. That path is optional; everything above works with no key at all.
 
 ---
 
-## 3c. Games when the internet is off
+## 3b. Security, and what she can and cannot see (new)
+
+There is a small **(i)** button in the top right, next to the gear. It opens
+**Security and privacy**, and it is written to be useful rather than scary.
+
+It answers four things:
+
+* **What Nova can and cannot reach.** She never opens Gmail, never reads a
+  message, and cannot get the password of any account. No program on a laptop
+  can count your Google accounts from outside, because Google does not allow
+  it, so she says that plainly instead of pretending.
+* **Check this laptop.** One button reads real Windows settings: firewall,
+  virus protection, Windows Update, disk encryption, the sign-in accounts,
+  and remote-access rules. It then counts the saved sign-ins in Chrome, Edge
+  and Brave. It reads **a number only**: never a saved password, never a site
+  name from that list, and the temporary copy it makes is deleted straight
+  away.
+* **Your accounts, honestly.** It tells you where to look: the account
+  switcher at myaccount.google.com, the Password Manager in your browser, and
+  account.microsoft.com. Only you can open those.
+* **If you are worried.** Change that one password from the site itself, turn
+  on two-step login, sign out of all devices, and tell a trusted adult the
+  same day if money or a threat is involved.
+
+Her helper already listens on **127.0.0.1 only**, so another machine cannot
+send it orders, and it checks every request's Host, Origin and a random token
+that is new on each start. That is real, not decoration.
+
+---
+
+## 3c. Feeling and caring (new)
+
+She is still a program and still says so, but she no longer answers a heavy
+sentence with "should I search Google?".
+
+```
+why do I feel like this        do you care about me
+am I a burden                  nobody cares about me
+i can't sleep                  nothing matters anymore
+how are you                    i have not slept in three days
+```
+
+Two things happen. **Care answers** handle the questions people actually ask
+at night, and **hidden weight** catches the sentences that never use a feeling
+word ("nothing matters", "i let everyone down again") and answers them
+gently instead of searching. If the week has been heavy, or it is late at
+night, her replies get a softer opener. She never claims to love you, and
+never says she is human.
+
+## 3d. Games when the internet is off
 
 Say **"play a game"** and she offers five, and she keeps playing turn by turn
 while you just type your answer:
@@ -207,7 +256,7 @@ inside `assistant.html` itself. Everything she says can also be read aloud.
 
 ---
 
-## 3d. Feelings and knowledge
+## 3e. Feelings and knowledge
 
 **Talking about feelings.** Nova reads the *words* you use and answers
 gently. She is not a doctor and she cannot see your face or hear your voice
@@ -376,7 +425,7 @@ To undo everything: rename `assistant-old-<date>.html` back to
 | `Start_Sophia.bat` | Double-click starter. Finds Python, then opens Nova. |
 | `INSTALL_SOPHIA.bat` | One-step installer: copies the files and makes a Desktop shortcut. |
 | `Install_Sophia.ps1` | The PowerShell script behind the installer. |
-| `tests/brain.test.js` | 41 tests for what Nova understands. `node --test tests/brain.test.js` |
+| `tests/brain.test.js` | 47 tests for what Nova understands. `node --test tests/brain.test.js` |
 | `tests/test_helper.py` | 37 tests for the helper, the installer and the server. `python3 -m unittest discover tests` |
 
 Old versions: `git show 09ca826:assistant.html` is the file exactly as you

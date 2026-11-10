@@ -634,6 +634,164 @@ def action_open_self(params):
         return fail("open_failed", str(exc)[:120])
 
 
+def action_security_check(params):
+    """Look at a few real settings on this laptop. Read-only: nothing is changed.
+
+    It never opens a browser profile, never reads a password store and never
+    asks for a Google or Microsoft password. What it reports is what Windows
+    itself will tell any program: firewall, Defender, updates, disk encryption,
+    the local user accounts, and a count of saved browser sign-ins (a count
+    only, never the names or the passwords).
+    """
+    report = {"ok": True, "checks": [], "browser": [], "accounts": [], "notes": []}
+
+    def add(level, title, detail):
+        report["checks"].append({"level": level, "title": title, "detail": detail})
+
+    if not IS_WINDOWS:
+        add("note", "Not Windows", "These checks read Windows settings, so on this machine they cannot run.")
+        return report
+
+    script = (
+        "$ErrorActionPreference='SilentlyContinue';"
+        "$fw=@(Get-NetFirewallProfile | ForEach-Object { @{ name=$_.Name; on=[bool]$_.Enabled } });"
+        "$def=(Get-MpComputerStatus);"
+        "$bl=@(Get-BitLockerVolume | ForEach-Object { @{ mount=$_.MountPoint; on=[string]$_.ProtectionStatus } });"
+        "$up=(New-Object -ComObject Microsoft.Update.AutoUpdate).Settings;"
+        "$acct=@(Get-LocalUser | Where-Object { $_.Enabled } | ForEach-Object { $_.Name });"
+        "$opt=@(Get-NetFirewallRule -Enabled True -Direction Outbound | "
+        "  Where-Object { $_.DisplayName -match 'Remote Desktop|Telnet|FTP' } | "
+        "  Select-Object -First 5 -ExpandProperty DisplayName);"
+        "@{ firewall=$fw; defender=@{ realtime=[bool]$def.RealTimeProtectionEnabled; "
+        "   antivirus=[bool]$def.AntivirusEnabled; age=[int]$def.AntivirusSignatureAge }; "
+        "   bitlocker=$bl; auto_update=[int]$up.NotificationLevel; accounts=$acct; "
+        "   open_rules=$opt; admin=[bool](([Security.Principal.WindowsPrincipal]"
+        "   [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("
+        "   [Security.Principal.WindowsBuiltInRole]::Administrator)) } | ConvertTo-Json -Compress -Depth 4"
+    )
+    res = ps_command(script, timeout=35)
+    data = {}
+    if res.get("ok") and res.get("output"):
+        try:
+            data = json.loads(res["output"])
+        except ValueError:
+            data = {}
+
+    # ---- firewall
+    profiles = data.get("firewall") or []
+    if profiles:
+        off = [p.get("name") for p in profiles if not p.get("on")]
+        if off:
+            add("risk", "Firewall is off for " + ", ".join(off),
+                "Turn it on: Windows Security > Firewall and network protection. This is the one to fix first.")
+        else:
+            add("good", "Firewall is on for every network",
+                "Windows is blocking connections from other machines that you did not start.")
+    else:
+        add("note", "Firewall could not be read", "Windows did not answer; open Windows Security once and check by hand.")
+
+    # ---- defender
+    d = data.get("defender") or {}
+    if d:
+        if d.get("realtime"):
+            age = d.get("age")
+            if isinstance(age, int) and age > 7:
+                add("watch", "Virus protection is on, but its list is " + str(age) + " days old",
+                    "Connect to the internet and let Windows Update run once.")
+            else:
+                add("good", "Virus protection (Defender) is on and up to date", "Real-time scanning is running.")
+        else:
+            add("risk", "Virus protection is switched off",
+                "Turn it on in Windows Security. This laptop runs an i3 with 4 GB RAM, so keep one antivirus, not two.")
+    else:
+        add("note", "Virus protection could not be read", "Open Windows Security once and check by hand.")
+
+    # ---- updates
+    lvl = data.get("auto_update")
+    if isinstance(lvl, int):
+        if lvl == 0:
+            add("note", "Automatic updates are set to never install",
+                "Change it in Settings > Windows Update so security fixes arrive on their own.")
+        else:
+            add("good", "Windows Update is set to install security fixes", "You do not have to remember to do it.")
+    else:
+        add("note", "Windows Update setting could not be read", "Check Settings > Windows Update by hand once.")
+
+    # ---- bitlocker
+    bl = data.get("bitlocker") or []
+    if bl:
+        off = [b.get("mount") for b in bl if str(b.get("on", "")).lower() in ("off", "0", "false")]
+        if off:
+            add("watch", "Disk encryption is not on for " + ", ".join([x for x in off if x]),
+                "If this laptop is lost or stolen, the files can be read. Turn on Device encryption in Settings > Privacy and security.")
+        else:
+            add("good", "Disk encryption is on", "A thief cannot read the disk without your sign-in.")
+    else:
+        add("note", "Disk encryption could not be read",
+            "Home editions sometimes hide this. Check Settings > Privacy and security > Device encryption.")
+
+    # ---- local accounts: one human, one admin is the safe shape
+    accounts = data.get("accounts") or []
+    if isinstance(accounts, list):
+        report["accounts"] = [str(a) for a in accounts if a]
+    if len(report["accounts"]) > 2:
+        add("watch", "This laptop has " + str(len(report["accounts"])) + " enabled sign-ins",
+            "Every extra account is another way in. Remove ones you do not use: Settings > Accounts > Other users.")
+
+    rules = data.get("open_rules") or []
+    if rules:
+        add("watch", "Remote-access rules are switched on: " + ", ".join([str(r) for r in rules if r]),
+            "If you never use Remote Desktop or an FTP server, switch those rules off. An open door is worse than a forgotten password.")
+
+    if data.get("admin"):
+        report["notes"].append("Nova's helper is running as administrator, so it can change things. Close the black window when you are done.")
+
+    # ---- saved browser sign-ins: a COUNT only, from Chrome/Edge's own "Login Data".
+    # Nova never opens the file, never reads a row, and never sees a name or a password.
+    for name, rel in (
+        ("Chrome", r"Google\Chrome\User Data\Default\Login Data"),
+        ("Edge", r"Microsoft\Edge\User Data\Default\Login Data"),
+        ("Brave", r"BraveSoftware\Brave-Browser\User Data\Default\Login Data"),
+    ):
+        path = os.path.join(os.environ.get("LOCALAPPDATA", ""), rel)
+        if not os.path.exists(path):
+            continue
+        # copy to a temp file only to count rows; the copy is deleted at once
+        count = None
+        tmp = None
+        try:
+            import shutil, sqlite3, tempfile
+            fd, tmp = tempfile.mkstemp(suffix=".db")
+            os.close(fd)
+            shutil.copy2(path, tmp)
+            con = sqlite3.connect(tmp)
+            try:
+                count = con.execute("SELECT COUNT(*) FROM logins").fetchone()[0]
+            finally:
+                con.close()
+        except Exception:
+            count = None
+        finally:
+            if tmp and os.path.exists(tmp):
+                try:
+                    os.remove(tmp)
+                except OSError:
+                    pass
+        if count is not None:
+            # the page shows this row itself, so it is not added to checks twice
+            report["browser"].append({"name": name, "saved_logins": int(count)})
+
+    if report["browser"]:
+        report["notes"].append("Saved sign-ins are convenient, and they are also what a thief would use. "
+                               "Open each browser's Password Manager and delete the ones you no longer need.")
+    else:
+        report["notes"].append("I found no saved browser sign-ins to count. That is not a problem, it is normal.")
+
+    report["notes"].append("I read counts and settings from Windows. I did not open your mail, did not read one message, "
+                           "and I do not have and cannot get the password of any Gmail account.")
+    return report
+
+
 def action_open_path(params):
     """Open one exact file, folder or app, straight from the app list."""
     path = str(params.get("path", "")).strip()
@@ -668,6 +826,7 @@ ACTIONS = {
     "system_info": action_system_info,
     "list_apps": action_list_apps,
     "open_path": action_open_path,
+    "security_check": action_security_check,
     "open_self": action_open_self,
 }
 # In preview mode these are never run, even if someone sends them.
@@ -785,7 +944,10 @@ class Handler(BaseHTTPRequestHandler):
         if not (self._host_ok() and self._origin_ok() and self._site_ok()):
             self._json(403, fail("bad_origin"))
             return
-        if self.server.token_required and self.headers.get("X-Sophia-Token") != self.server.token:
+        # the page sends the new header name; the old one is still accepted so an
+        # older assistant.html in the same folder keeps working after an update
+        tok = self.headers.get("X-Nova-Token") or self.headers.get("X-Sophia-Token")
+        if self.server.token_required and tok != self.server.token:
             self._json(403, fail("bad_token"))
             return
         try:

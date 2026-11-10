@@ -573,3 +573,80 @@ test('she calls herself Nova, and still answers to Sophia', async () => {
   const old = await sophia.handle('hey sophia');
   assert.ok(old.text.length > 0);
 });
+
+/* ------------------------------------------------ caring, security, privacy */
+
+test('a heavy sentence is met with care, never with a Google search', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser', now: () => new Date('2026-11-10T23:30:00') });
+  for (const q of ['nothing matters anymore', 'i have not slept in three days', 'i let everyone down again']) {
+    const r = await sophia.handle(q);
+    assert.ok(!/search Google/i.test(r.text), q + ' -> ' + r.text);
+    assert.ok(r.text.length > 30, q);
+  }
+});
+
+test('the questions people ask at night get a real answer', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser', now: () => new Date('2026-11-10T22:00:00') });
+  const cases = {
+    'why do i feel like this': /more than one cause|cannot see inside your head/i,
+    'do you care about me': /program|not a person|cannot love/i,
+    'am i a burden': /burden|worthless|hard time/i,
+    'i cant sleep': /breathe|brain|thought|awake/i,
+    'nobody cares about me': /here right now|not invisible/i
+  };
+  for (const [q, re] of Object.entries(cases)) {
+    const r = await sophia.handle(q);
+    assert.match(r.text, re, q + ' -> ' + r.text);
+    assert.ok(!/search Google/i.test(r.text), q);
+  }
+});
+
+test('the caring layer never answers for a command or a game', async () => {
+  const opened = [];
+  const sophia = Brain.create({
+    store: { load: () => null, save: () => {} },
+    mode: () => 'browser',
+    now: () => new Date('2026-11-10T22:00:00'),
+    openUrl: async (u) => { opened.push(u); return { ok: true }; }
+  });
+  const open = await sophia.handle('open youtube');
+  assert.match(open.text, /YouTube/);
+  assert.ok(opened.some((u) => /youtube/i.test(u)));
+
+  const menu = await sophia.handle('play a game');
+  assert.match(menu.text, /Guess the number/);
+
+  const maths = await sophia.handle('what is 25 times 4');
+  assert.match(maths.text, /\b100\b/);
+
+  const fact = await sophia.handle('tell me a fact about space');
+  assert.ok(!/more than one cause/i.test(fact.text));
+});
+
+test('she stays honest about being a program when asked about caring', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser' });
+  const r = await sophia.handle('do you love me');
+  assert.match(r.text, /not a person|program|cannot love|will not pretend/i);
+});
+
+test('the security panel text never claims she can read mail or accounts', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'assistant.html'), 'utf8');
+  const panel = html.slice(html.indexOf('id="infoDrawer"'), html.indexOf('id="toast"'));
+  assert.ok(panel.length > 1000, 'the info panel is missing');
+  assert.match(panel, /never opens Gmail/i);
+  assert.match(panel, /Run the check/i);
+  assert.match(panel, /Password Manager/);
+  // it must not promise to list someone's accounts for them
+  assert.ok(!/I can list (?:all|your) (?:gmail|google) accounts/i.test(panel));
+  assert.ok(!/\bpassword:\s/i.test(panel));
+});
+
+test('the helper only reports counts, never passwords', () => {
+  const py = fs.readFileSync(path.join(__dirname, '..', 'sophia_helper.py'), 'utf8');
+  const fn = py.slice(py.indexOf('def action_security_check'), py.indexOf('def action_open_path'));
+  assert.match(fn, /SELECT COUNT\(\*\) FROM logins/);
+  assert.ok(!/SELECT \* FROM logins/i.test(fn), 'the helper must not read rows of saved logins');
+  assert.ok(!/password_value/i.test(fn));
+  assert.ok(!/cookies/i.test(fn));
+  assert.match(fn, /os\.remove\(tmp\)/);
+});
