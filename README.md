@@ -206,7 +206,24 @@ the laptop.
 
 ---
 
-## 8. Files in this repository
+## 8. Getting the files from GitHub
+
+Open this in your browser:
+
+```
+https://github.com/kartikeyrajput2013-gif/supreme-authority/tree/arena/291eb775-supreme-authority
+```
+
+Click the green **Code** button, then **Download ZIP**. Unzip it, and copy
+`assistant.html`, `sophia_helper.py` and `Start_Sophia.bat` into your
+`DELIVERY APP STUFF` folder.
+
+Do not copy the whole ZIP folder into your app. Only those three files are
+needed next to `index.html`.
+
+---
+
+## 9. Files in this repository
 
 | File | Purpose |
 | --- | --- |
@@ -221,7 +238,7 @@ first uploaded it.
 
 ---
 
-## 9. Honest limits
+## 10. Honest limits
 
 * Sophia is a program, not a person. She has no feelings, no body, and she
   cannot really "think" like a human. The "human intelligence" part is a
