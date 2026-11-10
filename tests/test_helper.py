@@ -77,9 +77,9 @@ class TestActionGuards(unittest.TestCase):
 class ServerFixture:
     """Starts a real helper server in preview mode on a free port."""
 
-    def __init__(self, token_required=False):
+    def __init__(self, token_required=False, preview=True):
         self.folder = ROOT
-        self.server = helper.bind_server("127.0.0.1", 0, self.folder, preview=True, token_required=token_required)
+        self.server = helper.bind_server("127.0.0.1", 0, self.folder, preview=preview, token_required=token_required)
         self.port = self.server.server_address[1]
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
@@ -189,15 +189,36 @@ class TestServer(unittest.TestCase):
         self.assertEqual(code, 413)
 
     def test_other_websites_cannot_drive_the_helper(self):
-        code, _headers, _body = self.s.post("/api/action", {"action": "lock", "params": {}},
-                                            headers={"Origin": "https://evil.example"})
-        self.assertEqual(code, 403)
-        code, _headers, _body = self.s.post("/api/action", {"action": "lock", "params": {}},
-                                            headers={"Sec-Fetch-Site": "cross-site"})
-        self.assertEqual(code, 403)
-        code, _headers, _body = self.s.post("/api/action", {"action": "lock", "params": {}},
-                                            headers={"Origin": "http://127.0.0.1:{}".format(self.s.port)})
-        self.assertEqual(code, 200)
+        # a real (not preview) server, asked to do something harmless
+        real = ServerFixture(preview=False)
+        try:
+            code, _headers, _body = real.post("/api/action", {"action": "system_info", "params": {}},
+                                              headers={"Origin": "https://evil.example"})
+            self.assertEqual(code, 403)
+            code, _headers, _body = real.post("/api/action", {"action": "system_info", "params": {}},
+                                              headers={"Sec-Fetch-Site": "cross-site"})
+            self.assertEqual(code, 403)
+            code, _headers, _body = real.post("/api/action", {"action": "system_info", "params": {}},
+                                              headers={"Origin": "http://127.0.0.1:{}".format(real.port)})
+            self.assertEqual(code, 200)
+        finally:
+            real.close()
+
+    def test_other_host_names_cannot_drive_the_helper(self):
+        real = ServerFixture(preview=False)
+        try:
+            req = urllib.request.Request(real.base + "/api/action",
+                                         data=json.dumps({"action": "system_info", "params": {}}).encode(),
+                                         method="POST",
+                                         headers={"Content-Type": "application/json", "Host": "evil.example"})
+            try:
+                with urllib.request.urlopen(req, timeout=5) as res:
+                    code = res.status
+            except urllib.error.HTTPError as err:
+                code = err.code
+            self.assertEqual(code, 403)
+        finally:
+            real.close()
 
 
 class TestToken(unittest.TestCase):

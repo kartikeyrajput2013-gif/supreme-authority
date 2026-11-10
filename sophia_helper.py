@@ -593,19 +593,23 @@ class Handler(BaseHTTPRequestHandler):
         self._send(code, json.dumps(data), extra={"Content-Security-Policy": "default-src 'none'"})
 
     def _host_ok(self):
+        # Preview mode can never change the computer, so it also answers when
+        # the page is opened through a tunnel or another local host name.
+        if self.server.preview:
+            return True
         host = (self.headers.get("Host") or "").split(":")[0].strip().lower()
         return host in ("127.0.0.1", "localhost", "[::1]", "::1")
 
     def _origin_ok(self):
         origin = self.headers.get("Origin")
-        if not origin:
+        if not origin or self.server.preview:
             return True  # same-origin GETs and the page's own fetches send no Origin
         parsed = urlparse(origin)
         return parsed.hostname in ("127.0.0.1", "localhost", "::1")
 
     def _site_ok(self):
         site = (self.headers.get("Sec-Fetch-Site") or "").strip().lower()
-        return site in ("", "same-origin", "none")
+        return self.server.preview or site in ("", "same-origin", "none")
 
     def do_GET(self):
         path = unquote(urlparse(self.path).path)

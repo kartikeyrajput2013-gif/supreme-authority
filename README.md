@@ -214,7 +214,7 @@ the laptop.
 | `sophia_helper.py` | Local Windows helper and tiny web server (Python standard library only). |
 | `Start_Sophia.bat` | Double-click starter. Falls back to browser mode without Python. |
 | `tests/brain.test.js` | 27 tests for what Sophia understands. `node --test tests/brain.test.js` |
-| `tests/test_helper.py` | 22 tests for the helper's safety and server. `python3 -m unittest discover tests` |
+| `tests/test_helper.py` | 23 tests for the helper's safety and server. `python3 -m unittest discover tests` |
 
 Old versions: `git show 09ca826:assistant.html` is the file exactly as you
 first uploaded it.
