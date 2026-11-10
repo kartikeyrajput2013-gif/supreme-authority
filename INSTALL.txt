@@ -1,0 +1,60 @@
+SOPHIA UPDATE - HOW TO PUT IT ON YOUR LAPTOP
+============================================
+
+I cannot open your laptop from here, so this is the one part only you can do.
+It takes about one minute and it is just copying one file.
+
+STEP 1  Download the new file
+    Sophia-Updated.zip is in this folder on GitHub.
+    Click it, then click the download button.
+    Windows saves it in Downloads.
+
+STEP 2  Unzip it
+    Right-click the ZIP, choose "Extract All", then Extract.
+    You will see a folder with these files:
+        assistant.html      <- the new Sophia
+        sophia_helper.py    <- lets her control the laptop
+        Start_Sophia.bat    <- double-click this to start her
+        README.md           <- the full guide
+
+STEP 3  Keep the old one as a backup
+    Go to the folder where Sophia lives now.
+    It is the same folder as your delivery app, probably called
+    "DELIVERY APP STUFF".
+    Right-click the old assistant.html, choose Rename, and name it
+    assistant-old.html
+    Do not delete it yet.
+
+STEP 4  Copy the new one in
+    Copy assistant.html (and sophia_helper.py and Start_Sophia.bat)
+    from the extracted folder into the folder from Step 3.
+    Windows will ask "There is already a file with this name".
+    Choose "Replace the file in the destination".
+
+STEP 5  Start her
+    Double-click Start_Sophia.bat as usual.
+    Look for the new things:
+        - a "How are you feeling right now?" card with faces
+        - a "Things I can teach without internet" shelf
+        - in Settings, "How your week has felt"
+
+IF SOMETHING LOOKS WRONG
+    Delete the new assistant.html, rename assistant-old.html back to
+    assistant.html, and you are exactly where you were before.
+    Nothing else on your laptop is changed by this update.
+
+WHAT IS NEW IN THIS VERSION
+    - 13 feeling families (sad, lonely, worried, angry, tired, bored,
+      confused, ashamed, grieving, unwell, hungry, can't sleep, and happy)
+      and a gentle answer for each one.
+    - A crisis answer: if you say you want to die, she stops and gives
+      real helpline numbers (Tele-MANAS 14416, Childline 1098, 112) and
+      asks you to talk to an adult today.
+    - 30 knowledge topics, about 190 notes, 96 quiz questions, 60 quick
+      facts and 12 riddles that work with no internet at all.
+    - A mood history you can see and clear any time.
+
+WHAT IS STILL HONEST ABOUT HER
+    - She reads the words you type or say. She cannot see your face or
+      hear your tone, and she is not a doctor.
+    - She is a program, not a person.

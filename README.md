@@ -139,6 +139,75 @@ microphone button and the 8 launcher buttons all use the same brain.
 
 ---
 
+## 3b. Feelings and knowledge (new in this version)
+
+**Talking about feelings.** Sophia reads the *words* you use and answers
+gently. She is not a doctor and she cannot see your face or hear your voice
+tone, so this is pattern matching, not mind reading. Say any of these:
+
+```
+i am sad                     i feel lonely
+i am stressed about my exam  my parents are fighting
+i am angry at my friend      i cannot sleep
+i feel like a failure        i miss my grandmother
+nobody talks to me at school i am so tired of everything
+i am happy today             i topped my class
+i am hungry                  i have a headache
+```
+
+She answers with one short, kind line, then usually asks **one** question or
+offers **one** small step, such as a breathing round, a glass of water, or
+"tell a parent". She does not lecture and she does not pretend to be a person.
+
+Some things get a different answer on purpose:
+
+- If you say something like **"i want to die"** or you are hurting yourself,
+  Sophia stops being a chatbot and asks you to talk to a real adult **today**.
+  She gives the free Indian helplines: **Tele-MANAS 14416**, **Childline 1098**
+  and **112** if you are in danger.
+- If someone is hurting you, she tells you it is not your fault and asks you to
+  tell one adult you trust, and to keep the messages or screenshots as proof.
+- She says clearly that she is an AI program, so she is not a replacement for a
+  parent, a teacher or a counsellor.
+
+**How your week looked.** Tap a face in the *How are you feeling right now?*
+card (or in the Sophia Hub). The little bars under it show the last dozen
+feelings, and **Settings > How your week has felt** shows a simple count.
+Everything stays in this browser on this laptop. **Forget my feelings** clears
+it. Sophia uses that history only to be a little gentler, for example asking
+about sleep if you have been tired lately.
+
+**Knowledge without internet.** She carries her own notes so she can still
+answer when the Wi-Fi is down. Right now that is:
+
+- **30 topics** with about **190 honest notes**, for example the solar system,
+  photosynthesis, the human body, the water cycle, atoms, electricity,
+  computers, AI, India, Indian history, India's freedom fighters, world
+  history, world geography, maths, English, languages, animals, earthquakes,
+  matter and forces, health, sports, inventions, space missions, the
+  environment, money, coding and how the body works.
+- **60 quick facts** ("tell me a fact" gives a new one each time).
+- **12 riddles** with hints.
+- **96 quiz questions**, five per round, with a score and a streak.
+- **60+ country capitals**, unit conversion (km/miles, kg/pounds, cm/inches,
+  litres/ml, Celsius/Fahrenheit) and averages.
+
+Try:
+
+```
+tell me about the solar system     quiz me on space
+tell me a fact                     tell me a riddle
+capital of australia               convert 10 km to miles
+average of 12 18 25                my laptop is hanging
+play a game                        play word chain
+```
+
+If she does not know, she says so, then offers Wikipedia, then Google. She
+never invents a fact to look clever. When she answers from her own notes she
+says so, so you always know where an answer came from.
+
+---
+
 ## 4. The voice button
 
 Voice input uses your browser's speech recognition, so it needs the internet
@@ -206,20 +275,40 @@ the laptop.
 
 ---
 
-## 8. Getting the files from GitHub
+## 8. Getting the file onto your laptop (replace the old one)
 
-Open this in your browser:
+I cannot reach your laptop myself. No program on my side can open your folders
+or replace a file on your computer. You have to do this one copy-and-paste, and
+after that you are done. It takes about a minute.
 
-```
-https://github.com/kartikeyrajput2013-gif/supreme-authority/tree/arena/291eb775-supreme-authority
-```
+1. Open this link in your browser:
 
-Click the green **Code** button, then **Download ZIP**. Unzip it, and copy
-`assistant.html`, `sophia_helper.py` and `Start_Sophia.bat` into your
-`DELIVERY APP STUFF` folder.
+   ```
+   https://github.com/kartikeyrajput2013-gif/supreme-authority/tree/arena/291eb775-supreme-authority
+   ```
 
-Do not copy the whole ZIP folder into your app. Only those three files are
-needed next to `index.html`.
+2. Click **assistant.html** in the list, then click the **download** button (the
+   small arrow at the top right of the file). The file lands in your
+   **Downloads** folder.
+
+3. Go to the folder where your old Sophia lives, the same folder as your
+   delivery app. Right-click the old `assistant.html`, choose **Rename**, and
+   rename it to `assistant-old.html`. This is your backup. Do not delete it yet.
+
+4. Copy the new `assistant.html` from **Downloads** into that same folder.
+
+5. Double-click **`Start_Sophia.bat`** as usual. The window opens, and the new
+   Sophia is there with her feelings card and knowledge shelf.
+
+If something looks wrong, rename the old file back. Nothing else on your laptop
+is touched, and your memories and settings are kept by the browser, so they are
+still there after the swap.
+
+If you also want the helper file up to date, download `sophia_helper.py` and
+`Start_Sophia.bat` the same way and let them replace the old copies.
+
+> Only these three files are needed: `assistant.html`, `sophia_helper.py` and
+> `Start_Sophia.bat`. They sit next to your delivery app's `index.html`.
 
 ---
 
@@ -247,6 +336,13 @@ first uploaded it.
 * She understands the commands in this guide well. Ask her something far away
   from those patterns and she will use Wikipedia, the AI model if you
   connected one, or offer a Google search.
+* Her feeling reader is **text only**. She reads the words you type or dictate,
+  not your face, your voice tone, or your heartbeat, and she does not diagnose
+  anything. If something feels really heavy, a real adult is always better than
+  a program, and she says so.
+* Her offline knowledge is a fixed set of notes (30 topics, about 190 notes).
+  It is real, checked-by-hand information, but it is not the whole internet.
+  Anything outside it goes to Wikipedia, then a Google search.
 * Timers, reminders, weather readings inside the app, and controlling other
   phones or printers are not built yet.
 * A real AI key needs an adult's account and may cost money. Ask a parent.

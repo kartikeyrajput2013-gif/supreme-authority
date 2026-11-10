@@ -169,8 +169,8 @@
     margin-top: 14px; border-radius: 14px; border: 1px solid var(--line);
     background: #050d1a; padding: 10px 12px; display: flex; align-items: center; gap: 12px;
   }
-  #wave { flex: 1 1 auto; width: 100%; height: 46px; display: block; }
-  .wave-meta { flex: 0 0 auto; text-align: right; font-size: 11px; color: var(--muted); min-width: 92px; }
+  #wave { flex: 1 1 auto; min-width: 0; width: 100%; height: 46px; display: block; }
+  .wave-meta { flex: 0 0 auto; flex-shrink: 0; text-align: right; font-size: 11px; color: var(--muted); min-width: 92px; }
   .wave-meta b { display: block; font-size: 13px; color: var(--cyan); font-weight: 650; }
 
   .heard {
@@ -351,6 +351,41 @@
     background: rgba(120, 170, 255, 0.12); border: 1px solid var(--line2); color: #dbeafe;
     font-family: Consolas, monospace;
   }
+  /* ---------- how are you feeling ---------- */
+  .mood-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .mood {
+    display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+    padding: 8px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+    background: rgba(13, 25, 48, 0.9); border: 1px solid var(--line2); color: #dbeafe;
+    transition: border-color .15s, background .15s, transform .12s;
+  }
+  .mood:hover { border-color: rgba(56, 189, 248, 0.6); transform: translateY(-1px); }
+  .mood .emoji { font-size: 15px; line-height: 1; }
+  .mood[data-mood="sad"]:hover, .mood[data-mood="anxious"]:hover, .mood[data-mood="angry"]:hover { border-color: rgba(167, 139, 250, 0.7); }
+  .mood-note { font-size: 11.5px; color: var(--muted); margin-top: 9px; line-height: 1.5; }
+  .mood-note b { color: #c7d9f5; font-weight: 600; }
+  .week-strip { display: flex; gap: 5px; align-items: flex-end; height: 34px; margin-top: 10px; }
+  .week-strip span {
+    flex: 0 0 20px; width: 20px; border-radius: 4px 4px 2px 2px; background: rgba(56, 189, 248, 0.35);
+    display: block;
+  }
+
+  /* ---------- knowledge shelf ---------- */
+  .shelf { display: flex; flex-wrap: wrap; gap: 7px; }
+  .shelf button {
+    font-size: 12px; padding: 6px 10px; border-radius: 999px; cursor: pointer;
+    background: rgba(13, 25, 48, 0.9); border: 1px dashed var(--line2); color: #cfe0f7;
+    transition: border-color .15s, color .15s;
+  }
+  .shelf button:hover { border-color: rgba(45, 212, 191, 0.7); color: #fff; }
+  .shelf-title { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
+
+  /* ---------- settings: mood history ---------- */
+  .mood-bars { display: flex; flex-direction: column; gap: 6px; }
+  .mood-bar { display: grid; grid-template-columns: 96px 1fr 30px; gap: 8px; align-items: center; font-size: 12px; color: #cfe0f7; }
+  .mood-bar .track { height: 8px; border-radius: 999px; background: rgba(120, 170, 255, 0.14); overflow: hidden; }
+  .mood-bar .fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #38bdf8, #a78bfa); }
+  .mood-bar .num { text-align: right; color: var(--muted); }
   @media (prefers-reduced-motion: reduce) {
     * { animation-duration: .001s !important; transition-duration: .001s !important; }
   }
@@ -443,6 +478,37 @@
         </div>
       </section>
 
+      <section class="card" aria-labelledby="moodTitle">
+        <div class="card-head">
+          <div>
+            <h2 id="moodTitle">How are you feeling <span class="accent">right now?</span></h2>
+            <p class="sub">Pick one and Sophia will listen, then help. Nothing leaves this laptop.</p>
+          </div>
+        </div>
+        <div class="mood-row" id="moodRow">
+          <button class="mood" type="button" data-mood="happy"><span class="emoji" aria-hidden="true">🙂</span> Happy</button>
+          <button class="mood" type="button" data-mood="okay"><span class="emoji" aria-hidden="true">😐</span> Okay</button>
+          <button class="mood" type="button" data-mood="sad"><span class="emoji" aria-hidden="true">😢</span> Sad</button>
+          <button class="mood" type="button" data-mood="anxious"><span class="emoji" aria-hidden="true">😰</span> Worried</button>
+          <button class="mood" type="button" data-mood="angry"><span class="emoji" aria-hidden="true">😠</span> Angry</button>
+          <button class="mood" type="button" data-mood="tired"><span class="emoji" aria-hidden="true">🥱</span> Tired</button>
+          <button class="mood" type="button" data-mood="lonely"><span class="emoji" aria-hidden="true">😔</span> Lonely</button>
+          <button class="mood" type="button" data-mood="bored"><span class="emoji" aria-hidden="true">😴</span> Bored</button>
+        </div>
+        <p class="mood-note" id="moodNote">Sophia keeps a gentle note of how your week has gone, only on this laptop. You can clear it any time in Settings.</p>
+        <div class="week-strip" id="weekStrip" aria-hidden="true"></div>
+      </section>
+
+      <section class="card" aria-labelledby="shelfTitle">
+        <div class="card-head">
+          <div>
+            <h2 id="shelfTitle">Things I can teach <span class="accent">without internet</span></h2>
+            <p class="sub">Ask about any of these, or say "quiz me".</p>
+          </div>
+        </div>
+        <div class="shelf" id="shelf"></div>
+      </section>
+
       <section class="card" id="noticeCard">
         <div class="notice">
           <div class="row">
@@ -523,6 +589,14 @@
       </button>
     </div>
 
+    <div class="mood-row" style="margin-bottom:12px" aria-label="How are you feeling">
+      <button class="mood" type="button" data-hub-mood="sad"><span class="emoji" aria-hidden="true">😢</span> Sad</button>
+      <button class="mood" type="button" data-hub-mood="lonely"><span class="emoji" aria-hidden="true">😔</span> Lonely</button>
+      <button class="mood" type="button" data-hub-mood="anxious"><span class="emoji" aria-hidden="true">😰</span> Worried</button>
+      <button class="mood" type="button" data-hub-mood="tired"><span class="emoji" aria-hidden="true">🥱</span> Tired</button>
+      <button class="mood" type="button" data-hub-mood="happy"><span class="emoji" aria-hidden="true">🙂</span> Good</button>
+    </div>
+
     <div class="privacy" id="hubPrivacy"><span data-icon="shield-check" class="sm"></span> <span id="hubPrivacyText">Private: nothing leaves this laptop.</span></div>
 
     <div class="modal-log" id="hubLog" role="log" aria-live="polite" aria-label="Conversation with Sophia"></div>
@@ -601,6 +675,18 @@
       <button class="btn ghost sm" id="saveAi" type="button"><span data-icon="check" class="sm"></span> Save</button>
     </div>
     <div class="status-line" id="aiStatus"><span class="dot"></span><span>Not checked</span></div>
+
+    <div class="divider"></div>
+
+    <div class="field">
+      <label>How your week has felt</label>
+      <div class="mood-bars" id="moodBars"></div>
+      <div class="hint" id="moodHint">Sophia only notices this to be kinder next time. It stays on this laptop.</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px">
+        <button class="btn ghost sm" id="refreshMood" type="button">Refresh</button>
+        <button class="btn danger sm" id="clearMood" type="button">Forget my feelings</button>
+      </div>
+    </div>
 
     <div class="divider"></div>
 
@@ -923,6 +1009,360 @@ const SophiaBrain = (function () {
     if (fz) return Object.assign({}, fz, { hint: hint, fuzzy: true });
     return { kind: 'unknown', name: n2, label: n2, hint: hint };
   }
+/* ==========================================================================
+   EMOTIONAL UNDERSTANDING
+   Works out how the person is feeling from what they write: the words they
+   choose, how strong they are, and what is going on in their life. Then it
+   chooses a reply that first listens, then helps, then asks one question.
+   Nothing here is a diagnosis and nothing pretends to read faces or voices.
+   ========================================================================== */
+
+const SAFETY_RE = /\b(?:bully|bullied|bullying|ragging|hit me|hits me|beat me|beats me|slapped|slaps me|touches me|touched me|touch me there|touched me there|in a bad way|blackmailed|blackmail|threatened me|threatening me|abused me|molest|molested|child abuse|someone is following me)\b/;
+const HOPELESS_RE = /\b(?:no point|nothing matters|nothing will change|i give up|gave up on me|hopeless|worthless|i am useless|i'm useless|i cant do anything right|i can't do anything right|tired of living|what is the point|kya faayda|kya fayda)\b/;
+const SELF_CRITIC_RE = /\b(?:i am (?:so )?(?:stupid|dumb|ugly|fat|worthless|a failure|useless|nothing)|i'm (?:so )?(?:stupid|dumb|ugly|fat|worthless|a failure|useless|nothing)|i hate myself|i am not good at anything|i'm not good at anything|main bekaar|main useless)\b/;
+
+// family: how strong the word is on its own (1 = mild, 3 = strong)
+const EMO_WORDS = {
+  sadness: { sad: 2, unhappy: 2, depressed: 3, heartbroken: 3, crying: 3, cry: 2, cried: 2, tears: 2, miserable: 3, gloomy: 2, upset: 2, devastated: 3, disappointed: 2, hopeless: 3, empty: 2, numb: 2, broken: 2, sobbing: 3, low: 1, down: 1, dukhi: 2, udaas: 2, rona: 2, 'bura lag': 2 },
+  loneliness: { lonely: 3, alone: 2, 'left out': 3, ignored: 2, invisible: 2, akela: 3, akeli: 3, 'no friends': 3, 'nobody likes me': 3, 'no one likes me': 3, 'nobody talks to me': 3, 'no one talks to me': 3, 'nobody cares': 3, 'no one cares': 3 },
+  anxiety: { anxious: 3, nervous: 2, worried: 2, worry: 2, stressed: 3, stress: 2, tension: 2, panic: 3, panicking: 3, scared: 2, afraid: 2, fear: 2, frightened: 3, terrified: 3, overwhelmed: 3, restless: 2, 'cant breathe': 2, 'can\'t breathe': 2, 'heart racing': 2, pareshan: 3, ghabrahat: 3, dar: 2, 'ghabra': 3, bothered: 2, uneasy: 2, jittery: 2, 'unable to sleep': 3, 'not able to sleep': 3 },
+  anger: { angry: 3, mad: 2, furious: 3, annoyed: 2, irritated: 2, frustrated: 3, frustrating: 2, rage: 3, unfair: 2, hatred: 3, gussa: 3, 'chidh': 2, 'fed up': 3, 'had enough': 3, 'so annoying': 2 },
+  tiredness: { tired: 2, sleepy: 2, exhausted: 3, drained: 3, 'no energy': 3, 'cant focus': 2, 'can\'t focus': 2, thak: 2, thaka: 2, thaki: 2, neend: 2, 'burnt out': 3 },
+  boredom: { bored: 2, boring: 1, dull: 2, 'nothing to do': 3, 'time pass': 1 },
+  confusion: { confused: 2, puzzled: 2, 'dont understand': 2, 'don\'t understand': 2, 'not sure': 1, 'cant decide': 2, 'can\'t decide': 2, stuck: 2, uljhan: 2, 'samajh nahi': 2 },
+  shame: { ashamed: 3, embarrassed: 2, guilty: 2, 'my fault': 2, failure: 2, useless: 2, worthless: 3, sharm: 2, 'let everyone down': 3, 'let my parents down': 3 },
+  grief: { died: 3, death: 2, funeral: 3, 'passed away': 3, 'no more with us': 3, 'miss him': 2, 'miss her': 2, 'miss them': 2, 'miss my': 2, 'i miss': 2 },
+  illness: { sick: 2, unwell: 2, fever: 2, headache: 2, 'stomach ache': 2, stomachache: 2, 'throat pain': 2, 'body pain': 2, ill: 2, 'not feeling well': 2, 'vomit': 2, dard: 2 },
+  hunger: { hungry: 2, starving: 2, bhookh: 2, bhook: 2, bhukh: 2 },
+  sleep: { 'cant sleep': 3, 'can\'t sleep': 3, 'cannot sleep': 3, 'can not sleep': 3, insomnia: 3, 'not sleeping': 2, 'wide awake': 2, 'no sleep': 2, 'not able to sleep': 3, 'unable to sleep': 3, 'cannot sleep at night': 3 },
+  fine: {
+    low: ['Good to hear. What has been the best part of today?', 'Okay is a perfectly good place to be. Anything on your mind?', 'I am here. Tell me more about how you are feeling.'],
+    med: ['Glad you are doing okay. Do you want a fact, a game, or just to talk?', 'Nice. Anything you want to tell me about today?'],
+    high: ['That is lovely to hear! Tell me what made it good.', 'Brilliant. What has been going well?']
+  },
+  joy: { happy: 2, glad: 2, excited: 3, wonderful: 2, fantastic: 2, amazing: 2, awesome: 2, proud: 2, delighted: 3, khush: 3, khushi: 2, 'best day': 3, 'so good': 1, 'topped': 2, 'i topped': 3, 'first position': 3, 'got full marks': 3, 'full marks': 3, 'got 9': 1 },
+  hope: { hopeful: 2, 'feeling better': 2, 'better now': 2, relieved: 2, 'i did it': 2, 'i passed': 2, 'maza aaya': 2 }
+};
+
+// Longer phrases are checked first because they are more specific.
+const EMO_PHRASES = [
+  ['safety', 3, /(?:someone|he|she|they|my uncle|my cousin|my teacher|senior|seniors)\s+(?:is |are )?(?:hitting|beating|touching|following|threatening|blackmailing)\s+me/],
+  ['safety', 3, /(?:my photos?|my pictures?|my video)\b.{0,40}\b(?:leaked|shared|blackmail)/],
+  ['anxiety', 3, /\b(?:exam|test|paper|result|marks?)\b.{0,30}\b(?:tomorrow|today|next week|coming|scared|tension|stress|nervous|pressure)\b/],
+  ['anxiety', 2, /\b(?:my|the|an?)\s+(?:exam|test|paper|result)\b.{0,20}\b(?:tomorrow|today|this week|next week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/],
+  ['anxiety', 2, /\b(?:too much|so much)\s+(?:pressure|expectations?|competition)\b/],
+  ['anxiety', 2, /\b(?:parents|papa|mummy|mom|dad|father|mother)\b.{0,30}\b(?:expect|compare|comparison|topper|sharma ji|sharmaji)/],
+  ['family', 3, /\b(?:parents|papa|mummy|mom|dad|mother|father|ghar)\b.{0,30}\b(?:fighting|fight|scold|scolding|yell|yelling|shout|shouting|argue|arguing|hit|beat)\b/],
+  ['joy', 3, /\b(?:i (?:got|scored)|topped|first position|first rank|full marks)\b.{0,18}(?:\d|marks|percent|%|class|school|science|maths|math|english)\b/],
+  ['family', 2, /\b(?:mummy|mom|mother|papa|dad|father|teacher|parents?)\b\s+(?:shouted|yelled|scolded|screamed)\s+(?:at\s+|on\s+)?me\b/],
+  ['hope', 3, /\b(?:i am|i'm|im)?\s*(?:feeling )?(?:much )?better\b(?: now| today)?$/],
+  ['sadness', 2, /\b(?:failed|fail|failing)\b.{0,20}\b(?:exam|test|paper|class|subject|maths|math|science|english)\b/],
+  ['sadness', 2, /\b(?:marks?|result)\b.{0,20}\b(?:bad|low|poor|less)\b/],
+  ['loneliness', 3, /\b(?:no one|nobody)\s+(?:sits|talks|speaks|plays|invites|likes|understands)\b/],
+  ['loneliness', 3, /\bi have no (?:friends|one to talk to)\b/],
+  ['loneliness', 2, /\b(?:my friends?|group)\b.{0,25}\b(?:ignore|left|leave|forgot|not including|exclude)\b/],
+  ['anger', 2, /\b(?:it is|its|it's|this is)\s+(?:so )?(?:unfair|not fair)\b/],
+  ['tiredness', 3, /\b(?:no sleep|didnt sleep|didn't sleep|not slept|slept late|studied all night)\b/],
+  ['shame', 2, /\b(?:i am|i'm|im)\s+(?:such )?(?:a )?(?:failure|loser|disappointment)\b/],
+  ['joy', 2, /\b(?:i got|i scored|i won|i topped|topped the)\b.{0,20}\b(?:marks|rank|prize|medal|selected)\b/],
+  ['hope', 2, /\b(?:i am|i'm|im)?\s*(?:feeling )?better (?:now|today)\b/],
+  ['grief', 2, /\bi miss (?:my |him|her|them|you|grandma|grandmother|grandpa|grandfather|dad|mom|papa|mummy|nani|dadi|nana|dada)\b/],
+  ['tiredness', 2, /\b(?:i am|i'm|im)\s+(?:so |very |really )?(?:sleepy|drowsy)\b/]
+];
+
+const EMO_INTENSIFIERS = ['very', 'so', 'really', 'extremely', 'super', 'too', 'totally', 'completely', 'absolutely', 'bahut', 'bohot', 'bhot', 'itna', 'itni', 'zyada', 'jyada', 'bilkul', 'ekdum'];
+const EMO_DIMINISHERS = ['little', 'slightly', 'kinda', 'kindof', 'somewhat', 'thoda', 'zara', 'abit', 'maybe'];
+const EMO_NEGATIONS = ['not', 'no', 'never', 'dont', 'don\'t', 'doesnt', 'doesn\'t', 'isnt', 'isn\'t', 'nahi', 'nahin', 'nhi', 'mat'];
+
+const EMO_LABELS = {
+  sadness: 'sad', loneliness: 'lonely', anxiety: 'worried or anxious', anger: 'angry',
+  tiredness: 'tired', boredom: 'bored', confusion: 'confused', shame: 'upset with yourself',
+  grief: 'grieving', illness: 'unwell', hunger: 'hungry', sleep: 'unable to sleep',
+  joy: 'happy', hope: 'a bit better', family: 'upset about home', safety: 'unsafe',
+  crisis: 'in real pain'
+};
+const NEGATIVE_FAMILIES = { sadness: 1, loneliness: 1, anxiety: 1, anger: 1, tiredness: 1, shame: 1, grief: 1, illness: 1, sleep: 1, family: 1, safety: 1, confusion: 1, boredom: 1 };
+
+function emoWords(text) {
+  // keeps word boundaries honest and handles the few two word entries
+  return ' ' + String(text).toLowerCase()
+    .replace(/[^a-z0-9'\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim() + ' ';
+}
+
+function emoNegated(text, word) {
+  const flat = emoWords(text);
+  const at = flat.indexOf(' ' + word);
+  if (at < 0) return false;
+  const before = flat.slice(0, at).trim().split(' ').slice(-3);
+  return before.some(function (w) { return EMO_NEGATIONS.indexOf(w) >= 0; });
+}
+
+/**
+ * Read a sentence and work out the feeling.
+ * Returns { family, intensity (0-3), scores, signals, safety, crisis, hopeless, selfCritical, why }
+ */
+function analyzeEmotion(raw) {
+  const text = String(raw || '');
+  const lower = text.toLowerCase();
+  const out = { family: null, intensity: 0, scores: {}, signals: [], safety: false, crisis: false, hopeless: false, selfCritical: false, why: /(?:^|\s)(?:why|how come)\b/.test(lower.trim()) || /\bwhy (?:do i|am i)\b/.test(lower) };
+  if (CRISIS_RE.test(lower)) {
+    out.crisis = true; out.family = 'crisis'; out.intensity = 3; out.scores.crisis = 9;
+    return out;
+  }
+  out.fineHint = /\b(?:i am|i'm|im|i feel|feeling)\s+(?:doing\s+)?(?:fine|okay|ok|good|alright|not bad|theek|thik)\b/.test(lower) && !/\b(?:not|never|no)\s+(?:fine|okay|ok|good|alright)\b/.test(lower);
+  out.safety = SAFETY_RE.test(lower);
+  out.hopeless = HOPELESS_RE.test(lower);
+  out.selfCritical = SELF_CRITIC_RE.test(lower);
+
+  const flat = emoWords(text);
+  const exclaim = (text.match(/!/g) || []).length;
+  const caps = (text.match(/\b[A-Z]{3,}\b/g) || []).length;
+  const words = flat.trim().split(' ');
+
+  Object.keys(EMO_WORDS).forEach(function (family) {
+    const table = EMO_WORDS[family];
+    Object.keys(table).forEach(function (word) {
+      if (/2$/.test(word) && word.length > 3) return; // alias keys are skipped
+      let weight = table[word];
+      if ((' ' + flat.trim() + ' ').indexOf(' ' + word + ' ') < 0) return;
+      if (emoNegated(text, word)) {
+        // "not happy" tells us something real; "not sad" does not
+        if (family === 'joy') { out.scores.sadness = (out.scores.sadness || 0) + 2; out.signals.push('not happy'); }
+        else if (family === 'tiredness' && word === 'good') { out.scores.tiredness += 2; }
+        return;
+      }
+      const at = words.indexOf(word);
+      if (at > 0) {
+        if (EMO_INTENSIFIERS.indexOf(words[at - 1]) >= 0) weight += 1;
+        if (EMO_DIMINISHERS.indexOf(words[at - 1]) >= 0) weight -= 1;
+      }
+      if (word.length > 3 && text.indexOf(word.toUpperCase()) >= 0) weight += 1;
+      if (weight > 0) {
+        out.scores[family] = (out.scores[family] || 0) + weight;
+        out.signals.push(word);
+      }
+    });
+  });
+
+  EMO_PHRASES.forEach(function (rule) {
+    if (rule[2].test(lower)) {
+      out.scores[rule[0]] = (out.scores[rule[0]] || 0) + rule[1];
+      out.signals.push(rule[2].source.slice(0, 24));
+    }
+  });
+
+  if (exclaim >= 2) Object.keys(out.scores).forEach(function (f) { out.scores[f] += 1; });
+  if (caps >= 2) Object.keys(out.scores).forEach(function (f) { out.scores[f] += 1; });
+  if (out.hopeless) out.scores.sadness = (out.scores.sadness || 0) + 2;
+  if (out.selfCritical) out.scores.shame = (out.scores.shame || 0) + 3;
+  if (/\b(?:scolded|shouted|yelled|screamed|beat|hit|slapped)\b/.test(lower)) {
+    out.selfCritical = false;
+    delete out.scores.shame;
+  }
+  if (/\b(?:bad|weak|poor|worst)\s+at\s+(?:maths?|math|science|english|studies|study|exams?|school|sports?|drawing|coding)\b/.test(lower)) {
+    delete out.scores.shame;
+    out.scores.sadness = (out.scores.sadness || 0) + 2;
+  }
+  if (/\b(?:i am|i'm|im) not (?:fine|okay|ok|good|alright)\b/.test(lower)) {
+    out.scores.sadness = (out.scores.sadness || 0) + 3;
+    out.fineHint = false;
+  }
+  // being unwell or sleepy is not the same as being hard on yourself
+  if (out.scores.illness) out.scores.shame = Math.max(0, (out.scores.shame || 0) - out.scores.illness);
+  if (out.scores.sleep) out.scores.shame = Math.max(0, (out.scores.shame || 0) - out.scores.sleep);
+  // a neutral "fine" or "okay" should not beat a real feeling
+  if (out.scores.joy && /(?:fine|okay|ok|alright|not bad)/.test(lower) && !/(?:happy|great|excited|wonderful|amazing|proud)/.test(lower)) {
+    out.scores.joy = Math.max(0, out.scores.joy - 2);
+    if (!out.scores.joy) delete out.scores.joy;
+  }
+  // "mad" on its own is weak in Indian English ("mad" can mean silly); only strong with context
+  if (out.scores.anger && out.scores.anger <= 2 && !/\b(?:angry|furious|annoyed|irritated|frustrated|unfair|gussa|hate)\b/.test(lower)) {
+    delete out.scores.anger;
+  }
+  if (out.safety) out.scores.safety = 9;
+
+  if (out.fineHint && !Object.keys(out.scores).some(function (f) { return NEGATIVE_FAMILIES[f]; })) {
+    out.scores.fine = 2;
+  }
+  let best = null, bestScore = 0, second = 0;
+  Object.keys(out.scores).forEach(function (f) {
+    const s = out.scores[f];
+    if (s > bestScore) { second = bestScore; bestScore = s; best = f; }
+    else if (s > second) second = s;
+  });
+  out.family = best;
+  out.intensity = bestScore >= 6 ? 3 : bestScore >= 3 ? 2 : bestScore >= 2 ? 1 : 0;
+  if (best === 'joy' && out.why === false && bestScore >= 2) out.positive = true;
+  out.second = second;
+  return out;
+}
+
+/* ------------------------------------------------------------ what to say */
+const EMO_REPLIES = {
+  sadness: {
+    low: [
+      "I'm sorry you're feeling a bit low, {name}. That happens to everyone, and you do not have to push it away. Want to tell me what is going on?",
+      "That sounds like a heavy little cloud, {name}. I'm here. What has been on your mind today?"
+    ],
+    med: [
+      "I'm sorry you're feeling sad, {name}. It is okay to feel like this, and it does not mean something is wrong with you. Tell me what happened, if you want to.",
+      "That sounds properly hard, {name}. Thank you for saying it out loud instead of carrying it alone. What happened?"
+    ],
+    high: [
+      "I'm really sorry, {name}. That sounds like a lot of pain to carry, and I'm glad you told me. You deserve support from a real person too, not just me. Is there an adult at home you can talk to today?",
+      "I hear you, {name}, and I'm sorry it hurts this much. You are not a burden for feeling this way. Please also tell a parent, a teacher or another adult you trust, today if you can. What would feel okay to talk about right now?"
+    ]
+  },
+  loneliness: {
+    low: ["Feeling a bit left out is horrible, {name}. I'm glad you told me. Who do you wish you could talk to more?"],
+    med: [
+      "That sounds lonely, {name}, and loneliness is one of the heaviest feelings there is. It does not mean there is something wrong with you. Is there one person you could message today, even just a small hello?",
+      "I'm sorry it feels like nobody is there, {name}. I'm here right now, and I do not want that to be the only place you are heard. Who is the easiest person to reach out to?"
+    ],
+    high: [
+      "I'm sorry, {name}. Feeling invisible hurts, and you do not deserve to feel that. Please talk to a parent or a teacher you trust about how alone this feels. I'm also happy to stay and talk now. What happened today?"
+    ]
+  },
+  anxiety: {
+    low: ["Sounds like a bit of worry is sitting on your shoulders, {name}. What is the thought that keeps coming back?"],
+    med: [
+      "That sounds stressful, {name}. Let's slow it down for a second: breathe in for 4, hold for 4, out for 6. Do that twice with me. Then tell me the one thing worrying you the most.",
+      "Worry like that can feel huge, {name}. It helps to write it down and split it into what you can do today and what you cannot control. What is the biggest piece?"
+    ],
+    high: [
+      "That sounds really overwhelming, {name}, and I'm sorry. You are safe right now, in this moment. Put both feet on the floor and name three things you can see around you. Then we will take one small step together. What is the loudest worry?"
+    ]
+  },
+  anger: {
+    low: ["That sounds annoying, {name}. Tell me what happened, and I will listen without judging."],
+    med: [
+      "That would make me frustrated too, {name}. Your anger makes sense. What happened right before you started feeling it?",
+      "It sounds like something crossed a line for you, {name}. That is allowed. Do you want to vent first, or work out what to do next?"
+    ],
+    high: [
+      "That sounds really unfair, {name}. I am on your side about the feeling, even if I do not know the whole story. Take one slow breath before we talk about it. What exactly happened?"
+    ]
+  },
+  tiredness: {
+    low: ["You sound tired, {name}. Have you had water and a proper break today?"],
+    med: [
+      "You sound worn out, {name}. Being tired makes everything else feel bigger. Can you take ten minutes away from your screen, and drink some water?",
+      "That kind of tired usually means you have been carrying too much, {name}. What has been draining you most this week?"
+    ],
+    high: [
+      "You sound completely drained, {name}, and that needs rest, not more effort. Please tell a parent you are exhausted. Sleep, water and food first, then we can sort the rest together."
+    ]
+  },
+  boredom: {
+    low: ["Bored is a good sign your brain wants something new, {name}. Want a joke, a space fact, or a game?"],
+    med: ["Let's fix that, {name}. I can play a guessing game, tell you something surprising, or find you music. Which one?"],
+    high: ["That is a lot of bored, {name}! Pick a number from 1 to 3 and I will surprise you: 1 a game, 2 a fact, 3 a challenge."]
+  },
+  confusion: {
+    low: ["That is okay, {name}. Tell me the part that is confusing, and we will take it one piece at a time."],
+    med: ["Feeling stuck is normal, {name}. Let's make it smaller. What is the very first thing you are unsure about?"],
+    high: ["That sounds like a lot at once, {name}. Let's stop and untangle it: write down the three things you are unsure about and send me the first one."]
+  },
+  shame: {
+    low: ["You are being hard on yourself, {name}. One bad result is not who you are."],
+    med: [
+      "That sounds like you are blaming yourself, {name}, and that is a heavy thing to carry. Making a mistake does not make you a failure. What happened?",
+      "I'm sorry, {name}. You are allowed to get things wrong and still be worth a lot. Who is the person you are most afraid of disappointing?"
+    ],
+    high: [
+      "I hear you, {name}, and I want to say this clearly: you are not worthless, and you are not a failure, even if it feels that way tonight. Please talk to a trusted adult about how heavy this feels. I'm staying here with you."
+    ]
+  },
+  grief: {
+    low: ["I'm sorry, {name}. Missing someone is a real kind of pain. Do you want to tell me about them?"],
+    med: ["That is such a big loss, {name}, and I'm sorry. There is no right way to feel it. Would it help to tell me one thing you remember about them?"],
+    high: ["I'm so sorry, {name}. Grief this big needs people around you, not just a screen. Please be close to your family today, and tell them how you are feeling. I'm here if you want to talk, for as long as you need."]
+  },
+  illness: {
+    low: ["That does not sound nice, {name}. Rest and water, and tell a parent so they can keep an eye on you."],
+    med: [
+      "Sorry you are not feeling well, {name}. Please tell a parent or another adult at home right now, drink some water and rest. I'm an AI, so I cannot check how ill you are.",
+      "That sounds uncomfortable, {name}. Rest, water and tell an adult at home. If it gets worse or you have a high fever, they should take you to a doctor."
+    ],
+    high: ["Please tell a parent or adult at home right now, {name}. If the pain is strong, or you cannot keep water down, ask them to take you to a doctor. I am not able to judge how serious this is."]
+  },
+  hunger: {
+    low: ["A little hungry is easy to fix, {name}. Go and eat something!"],
+    med: ["That is real hunger, {name}! Please eat something, and let me know if you want your RailPure food app opened."],
+    high: ["You sound really hungry, {name}. Please eat something proper now. Should I open your RailPure food app?"]
+  },
+  sleep: {
+    low: ["Lying awake is frustrating, {name}. Try putting the screen away for ten minutes and breathing slowly. Is something on your mind?"],
+    med: ["Not being able to sleep usually means something is on your mind, {name}. Tell me what keeps coming back, and then we will do a slow breathing round."],
+    high: ["That is a lot of sleepless nights, {name}. Please tell a parent. Screens off, lights low, and no studying after midnight. What is keeping you awake?"]
+  },
+  joy: {
+    low: ["That is lovely, {name}! Tell me more."],
+    med: ["That is wonderful, {name}! I'm genuinely glad. What made it so good?"],
+    high: ["That is brilliant, {name}! You should be proud of that. Tell me everything."]
+  },
+  hope: {
+    low: ["I'm glad you are feeling a bit better, {name}. What helped?"],
+    med: ["That is really good to hear, {name}. What changed?"],
+    high: ["That is great, {name}! Hold on to what is working. What made the difference?"]
+  },
+  family: {
+    low: ["That sounds tense at home, {name}. Want to tell me what happened?"],
+    med: [
+      "Fights at home are scary and exhausting, {name}, even when they are not about you. You are allowed to feel upset. Is there a room you can go to for some quiet?",
+      "That sounds really unsettling, {name}. It is not your job to fix it. Is there an adult outside home, like a relative or teacher, you could talk to?"
+    ],
+    high: ["I'm sorry, {name}. That sounds frightening, and you do not have to handle it alone. Please tell a trusted adult, like a relative, teacher or school counsellor. If you ever feel unsafe at home, call Childline on 1098, it is free and 24 hours."]
+  }
+};
+
+const EMO_STEPS = {
+  sadness: ['Would listening to some music help a little? I can open it for you.'],
+  anxiety: ['Do you want me to open something calming, or would a small plan help more?'],
+  anger: ['If you want, we can work out what to say to them.'],
+  tiredness: ['Want me to lower the volume or dim the screen?'],
+  boredom: ['Say "play a game" and I will start one.'],
+  confusion: ['Send me the first small piece and I will explain it simply.'],
+  shame: ['You can tell me the mark or the mistake. I will not judge you.'],
+  grief: ['If you want, tell me one happy memory of them.'],
+  illness: ['Tell a parent or adult at home now, please.'],
+  hunger: ['Should I open your RailPure food app?'],
+  sleep: ['Let us do three slow breaths: in 4, hold 4, out 6.'],
+  loneliness: ['I can keep you company now. And one small message to a friend could help too.'],
+  family: ['Do you want to tell me what you wish you could say to them?'],
+  joy: ['Want me to play a song to match the mood?'],
+  hope: ['Nice. What is one thing you want to keep doing?'],
+  safety: ['Do not keep it secret. Telling one adult you trust is the most important step.'],
+  crisis: ['Please talk to a trusted adult today.']
+};
+
+const SAFETY_TEXT = "Thank you for trusting me with this, {name}. That is not your fault, and you should not have to handle it alone. Please tell one adult you trust today, like a parent, a relative, a teacher or your school counsellor. Do not keep it a secret, even if someone asks you to. In India you can call Childline on 1098, any time, free, and they will listen. If you are in danger right now, call 112. If it is happening online, do not delete anything, and tell an adult before blocking or reporting.";
+
+const WHY_ADDONS = {
+  sadness: 'Sadness usually shows up when something we care about feels lost, or when we are tired and everything feels heavier.',
+  loneliness: 'Loneliness is not a sign that something is wrong with you. It is a signal that you need connection, the same way hunger is a signal for food.',
+  anxiety: 'Anxiety is your body trying to protect you from something it thinks is dangerous, even when it is only an exam.',
+  anger: 'Anger usually turns up when something feels unfair, or when a boundary was crossed.',
+  tiredness: 'Tiredness is usually your body asking for rest, water or food, or telling you that you have been carrying too much.',
+  shame: 'Feeling like a failure usually comes from very high expectations, not from the truth about you.',
+  confusion: 'Confusion usually means the problem is too big to hold in your head all at once.'
+};
+
+/* A gentle summary of how the last week has felt, for "how am I feeling lately". */
+function moodSummary(moods, nowMs) {
+  const week = (moods || []).filter(function (m) { return m && m.at && nowMs - m.at < 7 * 24 * 3600 * 1000; });
+  if (!week.length) return null;
+  const counts = {};
+  week.forEach(function (m) { counts[m.f] = (counts[m.f] || 0) + 1; });
+  const parts = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; })
+    .map(function (f) { return (counts[f] > 1 ? counts[f] + ' times ' : 'once ') + (EMO_LABELS[f] || f); });
+  const neg = week.filter(function (m) { return NEGATIVE_FAMILIES[m.f]; }).length;
+  const pos = week.filter(function (m) { return m.f === 'joy' || m.f === 'hope'; }).length;
+  return { total: week.length, negative: neg, positive: pos, parts: parts, counts: counts, week: week };
+}
+
 
   /* ----------------------------------------------------------------- maths */
   function tryMath(text) {
@@ -1076,11 +1516,11 @@ const SophiaBrain = (function () {
 
   const YES_RE = /^(?:yes|yeah|yep|yup|ya|yes please|yes do it|ok|okay|okay do it|ok do it|sure|sure thing|of course|do it|go ahead|please do|confirm|confirmed|absolutely|definitely|alright|all right|y)$/;
   const NO_RE = /^(?:no|nope|nah|no thanks|no thank you|cancel|cancel it|cancel that|don't|dont|do not|never ?mind|leave it|not now|n)$/;
-  const CRISIS_RE = /\b(?:kill myself|killing myself|want to die|wanna die|wish i was dead|wish i were dead|suicide|suicidal|end my life|end it all|hurt myself|hurting myself|harm myself|self[- ]?harm|cut myself|don'?t want to live|do not want to live|no reason to live|marna chahta|marna chahti|mar jana chahta|mar jana chahti|jeena nahi chahta|jeena nahi chahti)\b/;
+  const CRISIS_RE = /\b(?:kill myself|killing myself|want to die|wanna die|wish i was dead|wish i were dead|suicide|suicidal|end my life|ending it all|end it all|hurt myself|hurting myself|harm myself|self[- ]?harm|cut myself|don'?t want to live|do not want to live|no reason to live|no point (?:in )?living|want to disappear|nothing left to live for|marna chahta|marna chahti|mar jana chahta|mar jana chahti|jeena nahi chahta|jeena nahi chahti)\b/;
   const HUB_OPEN_RE = /^(?:(?:open|launch|start|show|go to)\s+)?(?:the\s+)?(?:sophia|sofia|wisdom|discovery|life|knowledge)(?:'s)?\s+(?:hub|room|space|chat|modal|window|companion)$|^(?:talk|speak|chat) (?:to|with) (?:sophia|sofia)$|^(?:open|launch|show) (?:sophia|sofia)$/;
   const HUB_CLOSE_RE = /^(?:close|exit|leave|hide|quit)\s+(?:the\s+)?(?:(?:sophia|sofia|wisdom|discovery|life)(?:'s)?(?:\s+(?:hub|room|space|chat|modal|window))?|hub|popup|pop-up|modal|this window|this popup)$/;
 
-  const STRONG_START = /^(?:open|launch|start|run|go to|goto|visit|close|quit|exit|kill|play|watch|listen to|search|google|find|look up|lookup|volume|mute|unmute|louder|quieter|brightness|brighter|dim|increase|decrease|raise|lower|reduce|turn (?:on|off|up|down)|switch (?:on|off)|set (?:the |my )?(?:volume|brightness|sound)|take (?:a |the )?(?:screenshot|screen shot|snapshot)|capture|screenshot|lock|shut ?down|restart|reboot|sign out|log off|log out|pause|resume|next|previous|stop|show|check|talk to|remember|note)\b/;
+  const STRONG_START = /^(?:open|launch|start|run|go to|goto|visit|close|quit|exit|kill|play|watch|listen to|search|google|find|look up|lookup|volume|mute|unmute|louder|quieter|brightness|brighter|dim|increase|decrease|raise|lower|reduce|turn (?:on|off|up|down)|switch (?:on|off)|set (?:the |my )?(?:volume|brightness|sound)|take (?:a |the )?(?:screenshot|screen shot|snapshot)|capture|screenshot|lock|shut ?down|restart|reboot|sign out|log off|log out|pause|resume|next|previous|stop|show|check|talk to|remember|note|i am|i'm|im|i feel|i think|i want|i need|feeling)\b/;
   const WEAK_START = /^(?:what|what's|whats|who|who's|whos|when|where|why|how|tell me|is|are|do|does|did|can|could|calculate|define|explain|describe|give me|say)\b/;
   const FREE_TEXT_START = /^(?:play|watch|listen|search|google|find|look up|lookup|youtube|wikipedia|tell me|what|what's|whats|who|who's|whos|when|where|why|how|explain|describe|define|calculate|is|are|do|does|did|can|could|should|would|remember|note|say|when i say|whenever)\b/;
 
@@ -1179,6 +1619,7 @@ const SophiaBrain = (function () {
 
     if (/^(?:what do you (?:remember|know)(?: about me)?|what have i told you|what did i (?:tell|ask) you to remember|show (?:me )?(?:my |your )?(?:notes|memories|memory)|list (?:my )?(?:notes|memories)|my notes|do you remember anything(?: about me)?|what(?:'s| is) in your memory)$/.test(t)) return { intent: 'memory.list' };
     if (/^(?:forget everything|forget all|forget it all|forget me|(?:clear|erase|delete|wipe|reset) (?:your |my |all )?memor(?:y|ies))$/.test(t)) return { intent: 'memory.forgetAll' };
+    if (/^(?:forget|clear|delete|erase)(?: all)? (?:my |the )?(?:feelings?|moods?|emotions?)(?: history| data)?$/.test(t)) return { intent: 'mood.clear' };
     if ((m = t.match(/^forget (?:that |about |my )?(.+)$/))) return { intent: 'memory.forget', what: m[1].trim() };
 
     if ((m = t.match(/^(?:my name is|my name's|call me|you can call me|i am called|people call me|just call me)\s+(.+)$/)) && !/^(?:what|kya)\b/.test(m[1])) {
@@ -1194,6 +1635,34 @@ const SophiaBrain = (function () {
         !/\b(?:working|broken|slow|hanging|hanged|stuck|dead|hurting|paining|aching|gone|lost|missing|dying|crashing|freezing|lagging)\b/.test(m[3])) {
       return { intent: 'memory.remember', text: recoverCase(original, t), key: m[1], verb: m[2], value: recoverCase(original, m[3]), implicit: true };
     }
+    return null;
+  }
+
+  /* feelings, mood history, knowledge, games, laptop trouble */
+  const COMMAND_VERB_RE = /^(?:open|launch|start up|start|run|go to|visit|take me to|bring up|pull up|load|switch to|show|display|search|search for|look up|lookup|find|google|play|watch|listen to|close|quit|exit|kill|volume|mute|unmute|set|turn|increase|decrease|raise|lower|reduce|brightness|take|capture|screenshot|lock|shut ?down|restart|reboot|sleep|sign out|log out|media|next|previous|pause|resume|remember|note|forget|quiz|capital|convert|call|message|email|order|book|calculate|compute|how much|how many|convert)\b/;
+  const SELF_FEELING_RE = /\b(?:i am|i'm|im|i feel|i felt|feeling|i have been|ive been|i've been|mujhe|main|mai)\b|^(?:sad(?:ness)?|anxious|worried|lonely|angry|tired|bored|stressed|scared|happy|depressed|upset|heartbroken|exhausted|numb|empty|fine|okay|good)\b/;
+
+  function parseHuman(t) {
+    // never treat a command that happens to contain a feeling word as a feeling
+    if (COMMAND_VERB_RE.test(t) && !SELF_FEELING_RE.test(t)) return null;
+    const emo = analyzeEmotion(t);
+    if (emo.crisis) return { intent: 'talk.crisis' };
+    if (emo.safety) return { intent: 'talk.safety' };
+    if (emo.hopeless) return { intent: 'talk.feeling', mood: 'hopeless', intensity: 3 };
+    if (emo.selfCritical) return { intent: 'talk.feeling', mood: 'shame', intensity: 2 };
+    if (emo.family === 'family' && (emo.scores.family || 0) >= 2 && !/^(?:open|close|launch)\b/.test(t)) return { intent: 'talk.feeling', mood: 'family', intensity: emo.intensity };
+    if (emo.family === 'fine' && emo.intensity >= 1) return { intent: 'talk.feeling', mood: 'fine', intensity: 1 };
+    if (emo.family === 'anxiety' && emo.intensity >= 1) return { intent: 'talk.feeling', mood: 'anxiety', intensity: emo.intensity };
+    if (/^(?:i am|i'm|im|i feel|feeling|i'm feeling|i am feeling)?\s*(?:fine|okay|ok|good|alright|not bad|theek|thik)\b/.test(t) && emo.intensity <= 0) {
+      return { intent: 'talk.feeling', mood: 'fine', intensity: 1 };
+    }
+    if (emo.family && emo.family !== 'joy' && emo.family !== 'hope' && emo.intensity >= 1) {
+      return { intent: 'talk.feeling', mood: emo.family, intensity: emo.intensity, why: emo.why };
+    }
+    if (emo.family && (emo.family === 'joy' || emo.family === 'hope') && emo.intensity >= 2) {
+      return { intent: 'talk.feeling', mood: emo.family === 'joy' ? 'happy' : 'hope', intensity: emo.intensity };
+    }
+    if (/^(?:how am i feeling|how have i been feeling|how do i feel|what is my mood|whats my mood|am i sad|am i okay|do i seem (?:sad|angry|upset|okay)|how was my week|how is my mood)/.test(t)) return { intent: 'talk.mood' };
     return null;
   }
 
@@ -1248,6 +1717,33 @@ const SophiaBrain = (function () {
     return null;
   }
 
+  /* quizzes, games, knowledge, unit conversion, laptop trouble */
+  function parsePlay(t) {
+    let m;
+    if ((m = t.match(/^quiz(?: me)?(?: on| about)?\s*(.*)$/)) || (m = t.match(/^(?:test|ask) me(?: some)? questions?(?: on| about)?\s*(.*)$/))) {
+      return { intent: 'quiz.start', topic: (m[1] || '').replace(/^(?:the )/, '').trim() || null };
+    }
+    if (/^(?:tell me |give me |another |one more )?(?:a |one )?(?:quick |fun |random |cool )?fact(?: please)?$|^fact$|^surprise me$|^tell me something (?:interesting|new|amazing|cool)$/.test(t)) return { intent: 'fact' };
+    if ((m = t.match(/^(?:tell me |give me |another |one more )?(?:a |one )?(?:quick |fun |random |cool )?facts? (?:about|on) (.+)$/))) return { intent: 'fact', topic: m[1] };
+    if (/^(?:riddle|tell me a riddle|give me a riddle|puzzle|one more riddle)$/.test(t)) return { intent: 'riddle' };
+    if ((m = t.match(/^(?:the )?answer (?:is|:)\s*(.+)$/))) return { intent: 'quiz.answer', answer: m[1] };
+    if (/^(?:(?:i )?(?:do not|don'?t) know|no idea|dunno|pata nahi)$/.test(t)) return { intent: 'quiz.dontknow' };
+    if (/^(?:give me a hint|hint|clue|hint please)$/.test(t)) return { intent: 'hint' };
+    if (/^(?:play (?:a |the )?game|let'?s play|start (?:a )?game|game|play with me|i want to play)$/.test(t)) return { intent: 'game.menu' };
+    if (/^(?:stop the game|end the game|i do not want to play|i don'?t want to play|quit the game)$/.test(t)) return { intent: 'game.stop' };
+    if ((m = t.match(/^(?:capital of|what(?:'s| is)? the capital of)\s+(.+)$/)) || (m = t.match(/^(.+?) (?:ki|ka) capital (?:kya hai|kya h)$/))) {
+      return { intent: 'capital', ask: m[1].trim() };
+    }
+    const conv = convertUnits(t);
+    if (conv) return { intent: 'convert', conv: conv };
+    const avg = averageOf(t);
+    if (avg) return { intent: 'average', avg: avg };
+    const dev = deviceMatch(t);
+    if (dev) return { intent: 'device', device: dev };
+    if ((m = t.match(/^learn (?:a fact|something)(?: about)?\s*(.*)$/))) return { intent: 'fact', topic: m[1] || null };
+    return null;
+  }
+
   function parseQuestion(t, original) {
     let m;
     const clean = function (x) { return recoverCase(original, x.replace(/\s+(?:please|for me)$/, '').trim()); };
@@ -1259,6 +1755,763 @@ const SophiaBrain = (function () {
     if (/^(?:when|why|how|which|whose|whom|is|are|was|were|do|does|did|can|could|should|would|will|what|who|where)\b/.test(t) || /\?\s*$/.test(original)) return { intent: 'question', qtype: 'open', topic: null, raw: original };
     return null;
   }
+
+
+/* ==========================================================================
+   WHAT SOPHIA KNOWS
+   An offline pack of school-level facts, quick facts, riddles, quizzes,
+   country capitals, unit conversions, and a checklist for common laptop
+   problems. It is deliberately small and honest: real depth comes from the
+   Wikipedia lookup or a connected AI model, and she says so.
+   ========================================================================== */
+
+const KNOWLEDGE = [
+  {
+    id: 'solar', label: 'the solar system', names: ['solar system', 'planets', 'sun and planets', 'solar'],
+    facts: [
+      'The Solar System has eight planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus and Neptune. Pluto was reclassified as a dwarf planet in 2006.',
+      'The Sun holds about 99.8% of all the mass in the Solar System. Everything else, all the planets and moons and dust, is the remaining 0.2%.',
+      'Jupiter is so large that about 1,300 Earths would fit inside it, and its Great Red Spot is a storm wider than Earth that has been raging for centuries.',
+      'Saturn is not solid enough to stand on; it is mostly hydrogen and helium, and its average density is lower than water.',
+      'A day on Venus is longer than its year: it spins once every 243 Earth days but travels around the Sun in 225.',
+      'Light from the Sun takes about 8 minutes and 20 seconds to reach Earth, so you always see the Sun as it was eight minutes ago.',
+      'Earth is the only place we know of with liquid water on the surface, and about 71% of its surface is covered by water.'
+    ],
+    quiz: [
+      { q: 'How many planets are in the Solar System?', a: 'Eight' },
+      { q: 'Which planet is the largest?', a: 'Jupiter' },
+      { q: 'Which planet has the Great Red Spot?', a: 'Jupiter' },
+      { q: 'What is the closest planet to the Sun?', a: 'Mercury' },
+      { q: 'Which planet spins in the opposite direction to most others?', a: 'Venus' }
+    ]
+  },
+  {
+    id: 'space', label: 'space and the universe', names: ['space', 'universe', 'galaxy', 'galaxies', 'cosmos', 'stars', 'big bang', 'black hole', 'black holes', 'nebula'],
+    facts: [
+      'The universe is about 13.8 billion years old, and it has been expanding ever since the Big Bang.',
+      'A black hole is a place where gravity is so strong that nothing, not even light, can escape once it gets too close.',
+      'Our galaxy, the Milky Way, contains roughly 100 to 400 billion stars, and the Sun is just one of them.',
+      'Neutron stars are so dense that a teaspoon of their material would weigh about a billion tonnes on Earth.',
+      'The James Webb Space Telescope looks at infrared light, which lets it see through dust clouds and observe galaxies that formed within the first few hundred million years after the Big Bang.',
+      'There are more stars in the observable universe than there are grains of sand on all the beaches of Earth, roughly speaking.',
+      'A light year is the distance light travels in one year: about 9.46 trillion kilometres.'
+    ],
+    quiz: [
+      { q: 'How old is the universe, roughly?', a: 'About 13.8 billion years' },
+      { q: 'What is a light year a measure of?', a: 'Distance, not time' },
+      { q: 'What is at the centre of our galaxy?', a: 'A supermassive black hole, Sagittarius A*' },
+      { q: 'What kind of light does the James Webb telescope mainly use?', a: 'Infrared' }
+    ]
+  },
+  {
+    id: 'moon', label: 'the Moon and tides', names: ['moon', 'tides', 'lunar', 'eclipse', 'eclipses'],
+    facts: [
+      'The Moon is about 384,400 km away from Earth and takes about 27.3 days to orbit us.',
+      'We always see the same side of the Moon because it rotates exactly once for every orbit, a state called tidal locking.',
+      'A solar eclipse happens when the Moon passes between the Sun and Earth; a lunar eclipse happens when Earth\'s shadow falls on the Moon.',
+      'The Moon causes the tides: its gravity pulls the water on the side facing it, and the Earth itself is also pulled slightly.',
+      'Only 12 people have walked on the Moon, all of them through NASA\'s Apollo programme between 1969 and 1972.'
+    ],
+    quiz: [
+      { q: 'How long does the Moon take to orbit Earth?', a: 'About 27.3 days' },
+      { q: 'What causes the tides?', a: 'Mostly the Moon\'s gravity' },
+      { q: 'How many people have walked on the Moon?', a: 'Twelve' }
+    ]
+  },
+  {
+    id: 'plants', label: 'plants and photosynthesis', names: ['photosynthesis', 'plants', 'plant', 'leaves', 'chlorophyll', 'trees'],
+    facts: [
+      'Photosynthesis is the process where plants use sunlight, water and carbon dioxide to make glucose and release oxygen.',
+      'It happens mainly in the chloroplasts, which contain the green pigment chlorophyll.',
+      'The overall equation is: 6CO2 + 6H2O + light energy gives C6H12O6 + 6O2.',
+      'Plants take in carbon dioxide through tiny pores called stomata, mostly on the underside of leaves.',
+      'Trees cool cities and clean the air: one mature tree can absorb roughly 20 kg of carbon dioxide in a year.',
+      'Some plants, like cacti, store water in thick stems and open their stomata at night to save water in the desert.'
+    ],
+    quiz: [
+      { q: 'What gas do plants take in for photosynthesis?', a: 'Carbon dioxide' },
+      { q: 'What gas do they release?', a: 'Oxygen' },
+      { q: 'Which pigment makes leaves green?', a: 'Chlorophyll' },
+      { q: 'What are the tiny leaf pores called?', a: 'Stomata' }
+    ]
+  },
+  {
+    id: 'humanbody', label: 'the human body', names: ['human body', 'body', 'heart', 'brain', 'lungs', 'kidney', 'kidneys', 'stomach', 'blood', 'bones', 'muscles', 'skin', 'digestion'],
+    facts: [
+      'The heart beats about 100,000 times a day and pumps roughly 7,500 litres of blood through the body.',
+      'Your body has 206 bones in adulthood, but babies are born with about 270; some fuse together as you grow.',
+      'The brain uses about 20% of the oxygen and energy you take in, even though it is only about 2% of your body weight.',
+      'The small intestine is about 6 metres long and is where most nutrients are absorbed into the blood.',
+      'Red blood cells live for about 120 days and are replaced by your bone marrow.',
+      'Your skin is an organ, the largest one you have, and it renews itself roughly every 27 days.',
+      'The lungs contain about 480 million tiny air sacs called alveoli, where oxygen enters the blood.'
+    ],
+    quiz: [
+      { q: 'How many bones does an adult human have?', a: '206' },
+      { q: 'Which organ pumps blood?', a: 'The heart' },
+      { q: 'Where are most nutrients absorbed?', a: 'The small intestine' },
+      { q: 'What are the air sacs in the lungs called?', a: 'Alveoli' }
+    ]
+  },
+  {
+    id: 'water', label: 'the water cycle', names: ['water cycle', 'rain', 'evaporation', 'condensation', 'monsoon', 'clouds', 'cloud'],
+    facts: [
+      'The water cycle has four main steps: evaporation, condensation, precipitation and collection.',
+      'Water evaporates from oceans, rivers and lakes when the Sun heats it, turning liquid water into vapour.',
+      'When vapour rises and cools, it condenses into tiny droplets that form clouds.',
+      'When droplets become heavy enough, they fall as precipitation: rain, snow, sleet or hail.',
+      'The monsoon in India is a seasonal reversal of winds that brings most of the country\'s yearly rain between June and September.',
+      'The same water has been cycling for billions of years; the water in your glass may once have been part of a dinosaur.'
+    ],
+    quiz: [
+      { q: 'Name the four main stages of the water cycle.', a: 'Evaporation, condensation, precipitation, collection' },
+      { q: 'What forms when water vapour cools in the air?', a: 'Clouds' },
+      { q: 'When does the Indian monsoon usually arrive?', a: 'Around June, ending in September' }
+    ]
+  },
+  {
+    id: 'atoms', label: 'atoms and the periodic table', names: ['atom', 'atoms', 'molecule', 'electron', 'proton', 'neutron', 'periodic table', 'element', 'elements', 'chemistry'],
+    facts: [
+      'An atom has a nucleus of protons and neutrons, with electrons moving around it.',
+      'The number of protons decides which element an atom is: 1 is hydrogen, 6 is carbon, 26 is iron.',
+      'The periodic table orders elements by atomic number and groups those with similar behaviour.',
+      'Water is a molecule of two hydrogen atoms and one oxygen atom: H2O.',
+      'The only elements made in stars in large amounts are light ones; gold and uranium come from extreme events such as neutron star collisions.',
+      'Air is about 78% nitrogen, 21% oxygen, and the rest is argon, carbon dioxide and other gases.'
+    ],
+    quiz: [
+      { q: 'Which particle decides the element?', a: 'The proton' },
+      { q: 'What is the chemical formula of water?', a: 'H2O' },
+      { q: 'What gas makes up most of the air?', a: 'Nitrogen, about 78%' }
+    ]
+  },
+  {
+    id: 'energy', label: 'energy and electricity', names: ['electricity', 'energy', 'electric current', 'circuit', 'voltage', 'power', 'battery', 'solar panel', 'renewable'],
+    facts: [
+      'Energy cannot be created or destroyed, only changed from one form to another; this is the law of conservation of energy.',
+      'Electric current is a flow of electrons, measured in amperes; voltage is the push, measured in volts.',
+      'A circuit must be a complete loop for current to flow. A switch simply breaks or completes the loop.',
+      'India generates most of its electricity from coal, but solar and wind are growing quickly; the country aims for 500 GW of non-fossil capacity by 2030.',
+      'An LED bulb uses about one fifth of the electricity of an old incandescent bulb for the same light.',
+      'Short circuits happen when current takes a very short path with little resistance, which is why fuses and breakers exist.'
+    ],
+    quiz: [
+      { q: 'What is the unit of electric current?', a: 'The ampere' },
+      { q: 'What is the unit of voltage?', a: 'The volt' },
+      { q: 'Can energy be created?', a: 'No, only converted' }
+    ]
+  },
+  {
+    id: 'light', label: 'light, sound and waves', names: ['light', 'sound', 'colour', 'color', 'rainbow', 'wave', 'waves', 'reflection', 'refraction', 'speed of light', 'speed of sound', 'echo'],
+    facts: [
+      'Light travels at about 300,000 km per second in a vacuum, the fastest speed there is.',
+      'White light contains all colours; a prism or raindrop splits it into a rainbow by refraction.',
+      'Sound needs a medium: it travels through air, water and solids, but not through a vacuum.',
+      'Sound travels about 343 metres per second in air at room temperature, much slower than light, which is why thunder comes after lightning.',
+      'An echo is a sound wave bouncing back from a surface, like a wall or a cliff.',
+      'The colours of the rainbow in order are red, orange, yellow, green, blue, indigo, violet.'
+    ],
+    quiz: [
+      { q: 'How fast does light travel?', a: 'About 300,000 km per second' },
+      { q: 'Can sound travel in space?', a: 'No, it needs a medium' },
+      { q: 'What splits white light into colours?', a: 'Refraction, for example through a prism' }
+    ]
+  },
+  {
+    id: 'computers', label: 'computers and the internet', names: ['computer', 'computers', 'internet', 'cpu', 'ram', 'hard disk', 'ssd', 'software', 'hardware', 'binary', 'programming', 'code', 'operating system', 'wifi', 'wi-fi'],
+    facts: [
+      'A computer\'s CPU does the calculating, RAM is fast temporary memory, and a disk or SSD stores things when the power is off.',
+      'Computers store everything as binary: 0s and 1s. One byte is eight bits, and 1024 bytes make a kilobyte.',
+      'RAM forgets everything when the laptop turns off; that is why unsaved work disappears in a power cut.',
+      'The internet is a network of networks. A website lives on a server, and your browser asks it for pages using HTTP or HTTPS.',
+      'HTTPS with the padlock means the traffic is encrypted, so others on the Wi-Fi cannot read it.',
+      'Wi-Fi uses radio waves. A router connects your home network to your internet provider.',
+      'The first computer programmer is usually considered to be Ada Lovelace, who wrote an algorithm for Charles Babbage\'s design in 1843.'
+    ],
+    quiz: [
+      { q: 'What does RAM do when the power goes off?', a: 'It forgets everything' },
+      { q: 'What number system do computers use?', a: 'Binary' },
+      { q: 'Who is often called the first programmer?', a: 'Ada Lovelace' }
+    ]
+  },
+  {
+    id: 'ai', label: 'artificial intelligence', names: ['artificial intelligence', 'machine learning', 'neural network', 'algorithm', 'chatbot', 'large language model', 'llm'],
+    facts: [
+      'Artificial intelligence means computer programs that can do tasks we usually associate with human thinking, like recognising speech or translating languages.',
+      'Machine learning is a way of building AI by showing a program many examples, instead of writing every rule by hand.',
+      'A large language model learns patterns from huge amounts of text and predicts the next word, over and over.',
+      'AI, like the one you are talking to, does not understand things the way a person does; it produces useful answers from patterns.',
+      'Good AI use means checking important facts yourself, and never sharing private information with a model you do not trust.',
+      'Sophia\'s own brain is a set of rules written in JavaScript, with an optional AI model connected only if you add a key.'
+    ],
+    quiz: [
+      { q: 'What does a language model predict?', a: 'The next word (or token)' },
+      { q: 'Does Sophia need an AI key to work?', a: 'No, that is optional' }
+    ]
+  },
+  {
+    id: 'india', label: 'India', names: ['india', 'indian geography', 'states of india', 'indian states', 'indian rivers', 'ganga', 'himalayas', 'himalaya', 'indian constitution'],
+    facts: [
+      'India has 28 states and 8 union territories, and its capital is New Delhi.',
+      'The Constitution of India came into effect on 26 January 1950, and Dr B. R. Ambedkar chaired the drafting committee.',
+      'The Ganga is the longest river flowing entirely within India, about 2,525 km, and the Brahmaputra is close behind in total length.',
+      'The Himalayas were formed by the Indian plate colliding with the Eurasian plate, and they are still rising a few millimetres a year.',
+      'India is the most populous country in the world, with more than 1.4 billion people.',
+      'The Thar Desert lies in the west, and the Western Ghats run down the west coast, one of the world\'s biodiversity hotspots.',
+      'Bihar, where you are, sits on the fertile Ganges plain and its capital is Patna, one of the oldest continuously inhabited cities in the world.'
+    ],
+    quiz: [
+      { q: 'How many states does India have?', a: '28' },
+      { q: 'When did the Constitution come into effect?', a: '26 January 1950' },
+      { q: 'Who chaired the drafting committee?', a: 'Dr B. R. Ambedkar' },
+      { q: 'What is the capital of Bihar?', a: 'Patna' }
+    ]
+  },
+  {
+    id: 'history', label: 'Indian history', names: ['indian history', 'freedom struggle', 'freedom movement', 'independence', 'gandhi', 'british rule', 'mughal', 'indus valley'],
+    facts: [
+      'The Indus Valley Civilisation flourished around 2600 to 1900 BCE, with planned cities such as Harappa and Mohenjo-daro.',
+      'India became independent on 15 August 1947, and the country became a republic on 26 January 1950.',
+      'Mahatma Gandhi led the non-violent freedom movement, including the Salt March in 1930, which covered about 385 km.',
+      'The First War of Indian Independence, or Sepoy Mutiny, broke out in 1857.',
+      'The Mughal Empire was founded by Babur in 1526 after the First Battle of Panipat.',
+      'The Indian National Congress was founded in 1885.'
+    ],
+    quiz: [
+      { q: 'When did India become independent?', a: '15 August 1947' },
+      { q: 'What year was the Salt March?', a: '1930' },
+      { q: 'When did the Indus Valley Civilisation flourish?', a: 'About 2600 to 1900 BCE' }
+    ]
+  },
+  {
+    id: 'maths', label: 'mathematics', names: ['mathematics', 'maths', 'math', 'algebra', 'geometry', 'fractions', 'percentage', 'prime numbers', 'pi', 'pythagoras'],
+    facts: [
+      'A prime number has exactly two factors: 1 and itself. The first few are 2, 3, 5, 7, 11 and 13.',
+      'Pi is the ratio of a circle\'s circumference to its diameter, about 3.14159, and it goes on forever without repeating.',
+      'The area of a circle is pi times the radius squared; the circumference is 2 times pi times the radius.',
+      'Pythagoras\' theorem says that in a right-angled triangle, a squared plus b squared equals c squared, where c is the longest side.',
+      'To find a percentage of a number, divide the percentage by 100 and multiply by the number.',
+      'The sum of angles in a triangle is always 180 degrees; in a four-sided shape it is 360 degrees.',
+      'Zero was used as a number with a symbol in India, and Aryabhata worked with place value and approximations of pi around 500 CE.'
+    ],
+    quiz: [
+      { q: 'What are the first four prime numbers?', a: '2, 3, 5, 7' },
+      { q: 'What is the value of pi to two decimals?', a: '3.14' },
+      { q: 'Angles in a triangle add up to what?', a: '180 degrees' }
+    ]
+  },
+  {
+    id: 'english', label: 'English', names: ['english', 'grammar', 'verbs', 'nouns', 'parts of speech', 'tense', 'essay', 'poem'],
+    facts: [
+      'The eight parts of speech are nouns, pronouns, verbs, adjectives, adverbs, prepositions, conjunctions and interjections.',
+      'A noun names a person, place, thing or idea; a verb tells you what is happening.',
+      'An adjective describes a noun, and an adverb describes a verb, an adjective or another adverb.',
+      'The present perfect tense uses "has" or "have" plus the past participle: "I have finished my homework".',
+      'In an essay, a simple structure works best: introduction, three body paragraphs with one idea each, and a conclusion.',
+      'Reading out loud is one of the fastest ways to catch grammar mistakes in your own writing.'
+    ],
+    quiz: [
+      { q: 'What are the eight parts of speech?', a: 'Nouns, pronouns, verbs, adjectives, adverbs, prepositions, conjunctions, interjections' },
+      { q: 'Which word class describes a verb?', a: 'An adverb' }
+    ]
+  },
+  {
+    id: 'animals', label: 'animals', names: ['animals', 'animal', 'tiger', 'elephant', 'birds', 'fish', 'insects', 'dinosaur', 'dinosaurs', 'whale', 'snake'],
+    facts: [
+      'The blue whale is the largest animal that has ever lived, up to about 30 metres long and 150 tonnes.',
+      'Birds are dinosaurs: modern birds evolved from a group of feathered dinosaurs.',
+      'Tigers are the largest wild cats and each one has a unique stripe pattern, like a fingerprint.',
+      'Elephants can communicate with low rumbles that travel through the ground and are felt through their feet.',
+      'Octopuses have three hearts, blue blood, and can change colour and texture in less than a second.',
+      'Insects make up more than half of all known animal species.'
+    ],
+    quiz: [
+      { q: 'What is the largest animal ever?', a: 'The blue whale' },
+      { q: 'How many hearts does an octopus have?', a: 'Three' },
+      { q: 'Are birds dinosaurs?', a: 'Yes, they evolved from them' }
+    ]
+  },
+  {
+    id: 'earth', label: 'Earth, earthquakes and volcanoes', names: ['earthquake', 'earthquakes', 'volcano', 'volcanoes', 'tectonic plates', 'plate tectonics', 'earth', 'layers of the earth'],
+    facts: [
+      'Earth has four main layers: the inner core, outer core, mantle and crust.',
+      'Earthquakes happen when rocks along faults suddenly slip, releasing energy as seismic waves.',
+      'Volcanoes form where magma reaches the surface, often at the edges of tectonic plates.',
+      'The Richter scale measures earthquake magnitude; each whole number is about ten times more ground motion.',
+      'The Pacific Ring of Fire is where about 75% of the world\'s volcanoes and most big earthquakes happen.',
+      'The Earth\'s inner core is about as hot as the surface of the Sun, around 5,400 degrees Celsius.'
+    ],
+    quiz: [
+      { q: 'What are Earth\'s four layers?', a: 'Inner core, outer core, mantle, crust' },
+      { q: 'What causes an earthquake?', a: 'Rocks slipping along a fault' },
+      { q: 'How hot is the inner core, roughly?', a: 'About 5,400 degrees Celsius' }
+    ]
+  },
+  {
+    id: 'health', label: 'health and the body', names: ['health', 'nutrition', 'vitamins', 'balanced diet', 'exercise', 'sleep', 'hygiene', 'vaccine', 'vaccines', 'immunity'],
+    facts: [
+      'A balanced diet has carbohydrates, protein, fat, vitamins, minerals, fibre and water.',
+      'Vitamin D is made by your skin when sunlight hits it, and it helps your body absorb calcium for bones.',
+      'Children and teenagers need about 8 to 10 hours of sleep; growth and memory both depend on it.',
+      'Drinking water helps your kidneys, your skin and your concentration. Aim for about 2 litres a day, more in summer.',
+      'Washing hands with soap for 20 seconds removes most germs that cause stomach and chest infections.',
+      'Vaccines train your immune system using a harmless part or blueprint of a germ, so it can fight the real one later.'
+    ],
+    quiz: [
+      { q: 'How many hours of sleep do teenagers need?', a: 'About 8 to 10' },
+      { q: 'Which vitamin does sunlight help make?', a: 'Vitamin D' },
+      { q: 'How long should you wash your hands?', a: 'About 20 seconds' }
+    ]
+  },
+  {
+    id: 'sports', label: 'sports', names: ['cricket', 'football', 'olympics', 'sports', 'tennis', 'badminton', 'hockey', 'world cup'],
+    facts: [
+      'Cricket\'s One Day International World Cup was first held in 1975, and India has won it in 1983 and 2011.',
+      'The Olympic Games happen every four years, with Summer and Winter editions two years apart from each other.',
+      'Sachin Tendulkar holds the record for the most international centuries in cricket, with 100.',
+      'The first modern Olympic Games were held in Athens in 1896.',
+      'A football match has two halves of 45 minutes plus stoppage time.',
+      'Neeraj Chopra won India\'s first Olympic gold in athletics, in the javelin throw at Tokyo 2020.'
+    ],
+    quiz: [
+      { q: 'In which years did India win the Cricket World Cup?', a: '1983 and 2011' },
+      { q: 'How often are the Summer Olympics held?', a: 'Every four years' },
+      { q: 'Who has 100 international centuries?', a: 'Sachin Tendulkar' }
+    ]
+  },
+  {
+    id: 'inventions', label: 'inventions and discoveries', names: ['invention', 'inventions', 'who invented', 'discovery', 'telephone', 'light bulb', 'penicillin', 'printing press'],
+    facts: [
+      'Alexander Graham Bell is credited with the first practical telephone patent, in 1876.',
+      'Penicillin was discovered by Alexander Fleming in 1928, when mould contaminated a petri dish.',
+      'The printing press with movable metal type was developed by Johannes Gutenberg around 1440.',
+      'The World Wide Web was proposed by Tim Berners-Lee at CERN in 1989; the internet itself is older, from the late 1960s.',
+      'Ignaz Semmelweis showed in the 1840s that hand-washing saved lives, long before germs were understood.',
+      'The telescope was used for astronomy by Galileo in 1609, though the first telescopes were made in the Netherlands.'
+    ],
+    quiz: [
+      { q: 'Who discovered penicillin?', a: 'Alexander Fleming' },
+      { q: 'Who proposed the World Wide Web?', a: 'Tim Berners-Lee' },
+      { q: 'Who is credited with the telephone patent?', a: 'Alexander Graham Bell' }
+    ]
+  }
+];
+
+const CAPITALS = {
+  india: 'New Delhi', pakistan: 'Islamabad', nepal: 'Kathmandu', bhutan: 'Thimphu', bangladesh: 'Dhaka',
+  'sri lanka': 'Sri Jayawardenepura Kotte', myanmar: 'Naypyidaw', china: 'Beijing', japan: 'Tokyo',
+  'south korea': 'Seoul', 'north korea': 'Pyongyang', thailand: 'Bangkok', vietnam: 'Hanoi', malaysia: 'Kuala Lumpur',
+  indonesia: 'Jakarta', philippines: 'Manila', singapore: 'Singapore', afghanistan: 'Kabul', iran: 'Tehran',
+  iraq: 'Baghdad', 'saudi arabia': 'Riyadh', 'united arab emirates': 'Abu Dhabi', qatar: 'Doha', israel: 'Jerusalem',
+  turkey: 'Ankara', russia: 'Moscow', ukraine: 'Kyiv', germany: 'Berlin', france: 'Paris', italy: 'Rome',
+  spain: 'Madrid', portugal: 'Lisbon', 'united kingdom': 'London', ireland: 'Dublin', netherlands: 'Amsterdam',
+  belgium: 'Brussels', switzerland: 'Bern', austria: 'Vienna', poland: 'Warsaw', greece: 'Athens', norway: 'Oslo',
+  sweden: 'Stockholm', denmark: 'Copenhagen', finland: 'Helsinki', iceland: 'Reykjavik', canada: 'Ottawa',
+  'united states': 'Washington, D.C.', usa: 'Washington, D.C.', mexico: 'Mexico City', brazil: 'Brasilia',
+  argentina: 'Buenos Aires', chile: 'Santiago', peru: 'Lima', colombia: 'Bogota', egypt: 'Cairo',
+  nigeria: 'Abuja', kenya: 'Nairobi', 'south africa': 'Pretoria', ethiopia: 'Addis Ababa', morocco: 'Rabat',
+  australia: 'Canberra', 'new zealand': 'Wellington', fiji: 'Suva'
+};
+
+const QUICK_FACTS = [
+  'Honey never spoils. Jars of it from ancient Egyptian tombs are still edible.',
+  'Bananas are berries, but strawberries are not.',
+  'A group of flamingos is called a flamboyance.',
+  'The Eiffel Tower grows about 15 cm taller in summer because the iron expands.',
+  'Sharks existed before trees did, by about 40 million years.',
+  'Your stomach lining replaces itself roughly every few days, otherwise the acid would digest it.',
+  'Venus is the hottest planet, even though Mercury is closer to the Sun.',
+  'There is no sound in space because there is nothing for sound waves to travel through.',
+  'An octopus has three hearts and blue blood.',
+  'Water is the only common substance that exists naturally as a solid, liquid and gas on Earth.',
+  'A day on Earth was about 6 hours long when the planet first formed.',
+  'The human nose can tell apart more than a trillion different smells.',
+  'Lightning strikes somewhere on Earth about 100 times every second.',
+  'The Amazon rainforest produces roughly 20% of the oxygen created by land plants.',
+  'Your bones are stronger than steel by weight, though much lighter.',
+  'A teaspoon of neutron star would weigh about a billion tonnes.',
+  'The word "robot" comes from the Czech word robota, meaning forced labour.',
+  'The first computer bug was an actual moth, found in a relay in 1947.',
+  'Mount Everest grows by a few millimetres every year as the plates push together.',
+  'Antarctica is a desert, because it gets almost no rain or snow.',
+  'The Pacific Ocean is wider than the Moon is far from Earth, roughly five times over.',
+  'Cats have whiskers to sense the width of gaps, and they also have a special reflective layer in their eyes that helps them see in the dark.',
+  'The Great Wall of China is not visible from space with the naked eye, despite the myth.',
+  'One litre of sea water contains about 10 billion viruses.',
+  'The human heart beats about 100,000 times a day.',
+  'A snail can sleep for three years.',
+  'The Sun is about 400 times wider than the Moon, and about 400 times farther away, which is why they look the same size.',
+  'Butterflies taste with their feet.',
+  'The deepest point in the ocean, the Mariana Trench, is about 11 km down.',
+  'The number zero was used in India long before it reached Europe.',
+  'Chameleons change colour mainly to control temperature and communicate, not just to hide.',
+  'A piece of a star, in the form of iron in your blood, was forged inside a dying star.',
+  'The loudest sound ever recorded was the Krakatoa eruption in 1883, heard 4,800 km away.',
+  'Penguins propose to their mates with a pebble.',
+  'The Moon moves about 3.8 cm farther away from Earth every year.',
+  'Australia is wider than the Moon.',
+  'A "jiffy" really is a unit of time: one hundredth of a second.',
+  'Your tongue has about 10,000 taste buds.',
+  'The Statue of Liberty was a gift from France and arrived in 350 pieces.',
+  'Earth\'s magnetic field is generated by movement in the liquid outer core.'
+];
+
+const RIDDLES = [
+  { q: 'I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?', a: 'An echo', hint: 'It answers you from a wall.' },
+  { q: 'The more you take, the more you leave behind. What are they?', a: 'Footsteps', hint: 'You make them walking.' },
+  { q: 'What has keys but cannot open locks?', a: 'A piano (or a keyboard)', hint: 'It makes music.' },
+  { q: 'What gets wetter the more it dries?', a: 'A towel', hint: 'You use it after a bath.' },
+  { q: 'I have cities but no houses, forests but no trees, and water but no fish. What am I?', a: 'A map', hint: 'You use it to find places.' },
+  { q: 'What has one eye but cannot see?', a: 'A needle', hint: 'Thread goes through it.' },
+  { q: 'What can travel around the world while staying in a corner?', a: 'A stamp', hint: 'It goes on an envelope.' },
+  { q: 'What has a head, a tail, but no body?', a: 'A coin', hint: 'You flip it.' },
+  { q: 'I am not alive, but I grow; I do not have lungs, but I need air. What am I?', a: 'Fire', hint: 'It glows and can be dangerous.' },
+  { q: 'What goes up but never comes down?', a: 'Your age', hint: 'It happens every birthday.' },
+  { q: 'What is full of holes but still holds water?', a: 'A sponge', hint: 'You use it to clean.' },
+  { q: 'The more of me you take, the more you leave behind. What am I?', a: 'Footsteps', hint: 'Walking again.' }
+];
+
+const COUNTRY_ALIASES = { 'united states of america': 'united states', 'us': 'united states', 'u.s.': 'united states', 'america': 'united states', 'uk': 'united kingdom', 'u.k.': 'united kingdom', 'bharat': 'india', 'holland': 'netherlands', 'uae': 'united arab emirates' };
+
+/* ------------------------------------------------------- laptop trouble */
+const DEVICE_HELP = [
+  {
+    id: 'wifi', names: ['wifi', 'wi-fi', 'internet', 'network', 'net'],
+    label: 'Wi-Fi', settings: 'wifi',
+    steps: ['Check the Wi-Fi icon in the bottom right corner of the screen.', 'Switch Wi-Fi off and on again, then wait 20 seconds.', 'Restart the router if you can, and check the cable.', 'Try the website on your phone: if it also fails, the router or provider is the problem.']
+  },
+  {
+    id: 'slow', names: ['slow', 'hanging', 'hang', 'freezing', 'lagging', 'lag', 'stuck'],
+    label: 'slow laptop',
+    steps: ['Close the tabs and apps you are not using. Four gigabytes of RAM fills up fast.', 'Open Task Manager and see what is using CPU or memory.', 'Restart the laptop: it clears memory and fixes most slowness.', 'Check free space on drive C:. Windows needs a few gigabytes free.']
+  },
+  {
+    id: 'sound', names: ['sound', 'audio', 'speaker', 'speakers', 'volume', 'headphones'],
+    label: 'sound', settings: 'sound',
+    steps: ['Check the volume icon is not muted, and the volume is up.', 'Check the output device is the right one (speakers or headphones).', 'Unplug and re-plug headphones if you use them.', 'Restart the laptop if the sound still does not work.']
+  },
+  {
+    id: 'display', names: ['screen', 'display', 'brightness', 'flicker', 'flickering'],
+    label: 'screen', settings: 'display',
+    steps: ['Try Windows key + Ctrl + Shift + B to restart the graphics driver.', 'Unplug external monitors and plug them back in.', 'Check the brightness slider in the notification panel.', 'If the screen flickers, lower the refresh rate in display settings.']
+  },
+  {
+    id: 'storage', names: ['storage', 'disk', 'space', 'c drive', 'c:'],
+    label: 'storage', settings: 'storage',
+    steps: ['Open Settings, System, Storage to see what is using space.', 'Empty the Recycle Bin.', 'Delete old downloads you do not need.', 'Windows Storage Sense can clean temporary files for you.']
+  },
+  {
+    id: 'battery', names: ['battery', 'charging', 'charger', 'charge'],
+    label: 'battery', settings: 'battery',
+    steps: ['Check the charger is plugged in and the light is on.', 'Try another socket, and gently check the cable.', 'Turn on Battery saver in Settings.', 'If it charges only when you wiggle the plug, the cable or port may be damaged.']
+  },
+  {
+    id: 'bluetooth', names: ['bluetooth', 'earphones', 'earbuds', 'headset'],
+    label: 'Bluetooth', settings: 'bluetooth',
+    steps: ['Make sure Bluetooth is on and the device is in pairing mode.', 'Remove the device and pair it again.', 'Keep it within a couple of metres while pairing.', 'Restart Bluetooth in Settings if it is still not found.']
+  },
+  {
+    id: 'printer', names: ['printer', 'printing', 'print'],
+    label: 'the printer', settings: 'printers',
+    steps: ['Check the printer is on and has paper.', 'Check it is connected to the same Wi-Fi as the laptop.', 'Open Settings, Printers, and see if there is a stuck print job.', 'Turn the printer off and on again.']
+  },
+  {
+    id: 'update', names: ['update', 'updates', 'restarting', 'shutting down by itself'],
+    label: 'Windows Update', settings: 'update',
+    steps: ['Open Settings, Windows Update, and see if an update is waiting.', 'Plug in the charger before a big update.', 'Leave the laptop on for a while so it can finish.', 'If it restarts by itself, check the active hours in Windows Update.']
+  }
+];
+
+function deviceMatch(t) {
+  if (!/\b(?:not working|isnt working|isn'?t working|doesnt work|doesn'?t work|broken|stopped working|problem|issue|error|fix|help|band|kharab|nahi chal|slow|hanging|freezing|lag)\b/.test(t)) return null;
+  let best = null, bestLen = 0;
+  DEVICE_HELP.forEach(function (d) {
+    d.names.forEach(function (n) {
+      if (t.indexOf(n) >= 0 && n.length > bestLen) { best = d; bestLen = n.length; }
+    });
+  });
+  return best;
+}
+
+/* ------------------------------------------------------------- knowledge */
+function knowTopic(t) {
+  const clean = String(t || '').toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!clean) return null;
+  const padded = ' ' + clean + ' ';
+  let best = null, bestScore = 0, score = 0;
+  KNOWLEDGE.forEach(function (topic) {
+    topic.names.forEach(function (n) {
+      score = 0;
+      if (clean === n) {
+        score = 100 + n.length;
+      } else if (padded.indexOf(' ' + n + ' ') >= 0) {
+        // whole words only, so "science" does not match inside "conscience"
+        score = n.length;
+      }
+      if (score > bestScore) { best = topic; bestScore = score; }
+    });
+  });
+  return best;
+}
+
+function nextFact(topic, seen) {
+  const list = topic.facts;
+  const used = seen || [];
+  const fresh = list.filter(function (f) { return used.indexOf(f) < 0; });
+  const pool = fresh.length ? fresh : list;
+  return { fact: pool[Math.floor(Math.random() * pool.length) % pool.length], fresh: !!fresh.length };
+}
+
+function capitalOf(t) {
+  const m = t.match(/^(?:what(?:'s| is)? )?(?:the )?capital (?:of|city of) (.+?)\??$/) || t.match(/^(.+?) (?:ki|ka) capital (?:kya hai|kya h|hai)\??$/);
+  if (!m) return null;
+  let name = m[1].trim().replace(/^(?:the )/, '').replace(/[?.]+$/, '');
+  const alias = COUNTRY_ALIASES[name] || name;
+  const hit = CAPITALS[alias];
+  return hit ? { country: alias, capital: hit } : { country: name, capital: null };
+}
+
+function convertUnits(t) {
+  let m = t.match(/^(?:convert |how much is |how many )?(-?[\d.]+)\s*(km|kilometres?|kilometers?|miles?|mi|kg|kilograms?|pounds?|lbs?|cm|centimetres?|centimeters?|inches?|in|litres?|liters?|l|millilitres?|ml|celsius|centigrade|fahrenheit|c|f)\s*(?:to|in|into)\s*(km|kilometres?|kilometers?|miles?|mi|kg|kilograms?|pounds?|lbs?|cm|centimetres?|centimeters?|inches?|in|litres?|liters?|l|millilitres?|ml|celsius|centigrade|fahrenheit|c|f)\??$/)
+    || t.match(/^(?:convert |how much is |how many )?(-?[\d.]+)\s*(°c|°f)\s*(?:to|in|into)\s*(°c|°f)\??$/);
+  if (!m) return null;
+  const value = parseFloat(m[1]);
+  function unit(u) {
+    u = u.toLowerCase();
+    if (/^k/.test(u) && /m/.test(u)) return 'km';
+    if (/^mi/.test(u) || u === 'miles' || u === 'mile') return 'mi';
+    if (/^kg|kilogram/.test(u)) return 'kg';
+    if (/^lb|pound/.test(u)) return 'lb';
+    if (/^cm|centimet/.test(u)) return 'cm';
+    if (/^in|inch/.test(u)) return 'in';
+    if (/^ml|millilit/.test(u)) return 'ml';
+    if (/^l|lit/.test(u)) return 'l';
+    if (/°c|celsius|centigrade|^c$/.test(u)) return 'c';
+    if (/°f|fahrenheit|^f$/.test(u)) return 'f';
+    return u;
+  }
+  const from = unit(m[2]), to = unit(m[3]);
+  let out = null;
+  if (from === 'km' && to === 'mi') out = value * 0.621371;
+  else if (from === 'mi' && to === 'km') out = value * 1.60934;
+  else if (from === 'kg' && to === 'lb') out = value * 2.20462;
+  else if (from === 'lb' && to === 'kg') out = value / 2.20462;
+  else if (from === 'cm' && to === 'in') out = value / 2.54;
+  else if (from === 'in' && to === 'cm') out = value * 2.54;
+  else if (from === 'l' && to === 'ml') out = value * 1000;
+  else if (from === 'ml' && to === 'l') out = value / 1000;
+  else if (from === 'c' && to === 'f') out = value * 9 / 5 + 32;
+  else if (from === 'f' && to === 'c') out = (value - 32) * 5 / 9;
+  else if (from === to) out = value;
+  if (out === null) return null;
+  return { value: value, from: from, to: to, result: out };
+}
+
+function averageOf(t) {
+  const m = t.match(/^(?:what is |what's )?(?:the )?average(?: of)?[\s:]+((?:-?\d+(?:\.\d+)?)(?:\s*(?:,|and|\s)\s*(?:-?\d+(?:\.\d+)?))+)$/);
+  if (!m) return null;
+  const nums = (m[1].match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
+  if (nums.length < 2) return null;
+  const sum = nums.reduce(function (a, b) { return a + b; }, 0);
+  return { average: sum / nums.length, sum: sum, count: nums.length };
+}
+
+/* ------------------------------------------------------------- more topics */
+const KNOWLEDGE_MORE = [
+  {
+    id: 'worldgeo', label: 'world geography', names: ['world geography', 'continents', 'oceans', 'deserts', 'geography', 'sahara', 'everest', 'nile', 'amazon river', 'dead sea'],
+    facts: [
+      'There are seven continents: Asia, Africa, North America, South America, Antarctica, Europe and Australia.',
+      'The five oceans are the Pacific, Atlantic, Indian, Southern and Arctic. The Pacific is the largest and deepest.',
+      'The Nile and the Amazon are the two longest rivers, and scientists still argue over which is slightly longer.',
+      'Mount Everest is 8,849 metres tall, and it grows a few millimetres each year as the plates push together.',
+      'The Sahara is the largest hot desert, but Antarctica is technically the largest desert of all because it gets almost no rain.',
+      'Russia is the largest country by area, and Vatican City is the smallest.',
+      'The Dead Sea is so salty that you float without trying, about ten times saltier than the ocean.'
+    ],
+    quiz: [
+      { q: 'How many continents are there?', a: 'Seven' },
+      { q: 'Which is the largest ocean?', a: 'The Pacific' },
+      { q: 'What is the tallest mountain?', a: 'Mount Everest' },
+      { q: 'Which is the largest country by area?', a: 'Russia' }
+    ]
+  },
+  {
+    id: 'freedom', label: 'India\’s freedom fighters', names: ['freedom fighters', 'bhagat singh', 'subhas chandra bose', 'netaji', 'jawaharlal nehru', 'sardar patel', 'rani lakshmibai', 'lal bahadur shastri'],
+    facts: [
+      'Bhagat Singh was hanged on 23 March 1931 at the age of 23, along with Rajguru and Sukhdev.',
+      'Subhas Chandra Bose led the Indian National Army and gave the slogan "Give me blood and I will give you freedom".',
+      'Jawaharlal Nehru gave the "Tryst with Destiny" speech on the night of 14 August 1947 and was India’s first Prime Minister.',
+      'Sardar Vallabhbhai Patel is called the Iron Man of India for uniting more than 500 princely states.',
+      'Rani Lakshmibai of Jhansi fought the British in 1857 and became a symbol of resistance.',
+      'Lal Bahadur Shastri gave the slogan "Jai Jawan Jai Kisan" and led India during the 1965 war.',
+      'Mahatma Gandhi’s full name was Mohandas Karamchand Gandhi, and he was born on 2 October 1869 in Porbandar.'
+    ],
+    quiz: [
+      { q: 'Who gave the slogan "Give me blood and I will give you freedom"?', a: 'Subhas Chandra Bose' },
+      { q: 'Who is called the Iron Man of India?', a: 'Sardar Vallabhbhai Patel' },
+      { q: 'When is Gandhi Jayanti?', a: '2 October' },
+      { q: 'Who was the Rani of Jhansi?', a: 'Rani Lakshmibai' }
+    ]
+  },
+  {
+    id: 'body2', label: 'how the body works', names: ['nervous system', 'respiratory system', 'circulatory system', 'immune system', 'hormones', 'digestive system'],
+    facts: [
+      'Nerve signals can travel at up to about 120 metres per second in the fastest nerve fibres.',
+      'The liver does more than 500 jobs, including cleaning the blood and storing energy as glycogen.',
+      'The kidneys filter about 180 litres of blood every day and turn the waste into urine.',
+      'The digestive system is about 9 metres long from mouth to bottom.',
+      'Your immune system has memory: that is why you rarely get the same illness twice, and why vaccines work.',
+      'Insulin is a hormone made by the pancreas. It helps move sugar from the blood into your cells.'
+    ],
+    quiz: [
+      { q: 'Which organ cleans the blood and stores energy?', a: 'The liver' },
+      { q: 'What do the kidneys make?', a: 'Urine' },
+      { q: 'Which hormone controls blood sugar?', a: 'Insulin' }
+    ]
+  },
+  {
+    id: 'worldhistory', label: 'world history', names: ['world history', 'world war', 'world war 1', 'world war 2', 'ancient egypt', 'rome', 'renaissance', 'history of the world'],
+    facts: [
+      'World War I lasted from 1914 to 1918, and World War II from 1939 to 1945.',
+      'The Great Pyramid of Giza was built around 2560 BCE and was the tallest building in the world for nearly 4,000 years.',
+      'The Roman Empire at its height stretched from Britain to Egypt, and its language, Latin, shaped many modern languages.',
+      'The Renaissance began in Italy in the 14th century, reviving art and science after the Middle Ages.',
+      'The Berlin Wall fell in 1989, and Germany was reunified in 1990.',
+      'The wheel is one of the oldest inventions, used in Mesopotamia around 3500 BCE.',
+      'Paper was invented in China around 105 CE, and it reached Europe more than a thousand years later.'
+    ],
+    quiz: [
+      { q: 'When did World War II end?', a: '1945' },
+      { q: 'Where was the Renaissance born?', a: 'Italy' },
+      { q: 'When did the Berlin Wall fall?', a: '1989' }
+    ]
+  },
+  {
+    id: 'languages', label: 'languages and words', names: ['languages', 'hindi', 'sanskrit', 'word origins', 'etymology', 'alphabet', 'synonyms', 'antonyms', 'figures of speech'],
+    facts: [
+      'The most spoken language in the world by native speakers is Mandarin Chinese, with English second and Hindi third.',
+      'Sanskrit is one of the oldest written languages still in use, with the Rigveda dating back around 1500 BCE.',
+      'Hindi is written in the Devanagari script, which also writes Marathi, Nepali and Sanskrit.',
+      'A synonym means nearly the same thing, and an antonym means the opposite.',
+      'A simile compares using "like" or "as" ("brave as a lion"), while a metaphor says one thing is another ("he is a lion").',
+      'The word "shampoo" comes from the Hindi word champo, meaning to press and massage.'
+    ],
+    quiz: [
+      { q: 'What is a word with the opposite meaning called?', a: 'An antonym' },
+      { q: 'Which script is Hindi written in?', a: 'Devanagari' },
+      { q: 'Which ancient language is the Rigveda in?', a: 'Sanskrit' }
+    ]
+  },
+  {
+    id: 'matter', label: 'matter and materials', names: ['matter', 'states of matter', 'friction', 'gravity', 'newton laws', 'laws of motion'],
+    facts: [
+      'Matter exists as solids, liquids and gases, and also as plasma, which is what stars are mostly made of.',
+      'In a solid, particles are packed and vibrate in place; in a liquid they slide past each other; in a gas they fly far apart.',
+      'Newton’s three laws describe motion: a body stays at rest or in uniform motion unless a force acts; force equals mass times acceleration; every action has an equal and opposite reaction.',
+      'Gravity pulls every mass towards every other mass; on Earth it accelerates falling objects at about 9.8 metres per second squared.',
+      'Friction is a force that opposes motion when two surfaces rub together. It is why walking works and why machines need oil.',
+      'Mass stays the same wherever you go, but weight changes: on the Moon you would weigh about one sixth of your Earth weight.'
+    ],
+    quiz: [
+      { q: 'What is the fourth state of matter besides solid, liquid and gas?', a: 'Plasma' },
+      { q: 'What is the acceleration due to gravity on Earth?', a: 'About 9.8 m/s²' },
+      { q: 'What force opposes motion between surfaces?', a: 'Friction' }
+    ]
+  },
+  {
+    id: 'coding', label: 'learning to code', names: ['coding', 'python', 'javascript', 'loops', 'functions', 'variables', 'a variable'],
+    facts: [
+      'A variable is a named box that holds a value, like name = "Kartikey" in Python.',
+      'A loop repeats instructions. A "for" loop runs a set number of times; a "while" loop runs until a condition becomes false.',
+      'A function is a named block of code you can reuse, with inputs (parameters) and an output (return value).',
+      'HTML gives a page its structure, CSS gives it its look, and JavaScript makes it respond.',
+      'Python is often called the friendliest first language because the code reads almost like English.',
+      'A bug is a mistake in code. Debugging means finding and fixing it, usually by printing values to see what is really happening.'
+    ],
+    quiz: [
+      { q: 'What does a loop do?', a: 'Repeats instructions' },
+      { q: 'Which language gives a web page its structure?', a: 'HTML' },
+      { q: 'What is a bug?', a: 'A mistake in code' }
+    ]
+  },
+  {
+    id: 'environment', label: 'the environment', names: ['environment', 'climate change', 'global warming', 'pollution', 'recycling', 'plastic', 'greenhouse effect', 'ozone', 'ozone layer'],
+    facts: [
+      'The greenhouse effect keeps Earth warm: gases like carbon dioxide trap heat that would otherwise escape.',
+      'Too much carbon dioxide strengthens the greenhouse effect, which is why the planet is warming.',
+      'The ozone layer is in the stratosphere and blocks harmful ultraviolet light from the Sun.',
+      'Plastic can take hundreds of years to break down, and much of it ends up in the ocean.',
+      'Planting trees helps because trees absorb carbon dioxide and release oxygen.',
+      'The three Rs are reduce, reuse and recycle, and they work best in that order.',
+      'India aims to reach net zero emissions by 2070, and already has some of the world’s largest solar parks.'
+    ],
+    quiz: [
+      { q: 'Which gas is the main greenhouse gas from burning fuel?', a: 'Carbon dioxide' },
+      { q: 'Which layer blocks ultraviolet light?', a: 'The ozone layer' },
+      { q: 'What do the three Rs stand for?', a: 'Reduce, reuse, recycle' }
+    ]
+  },
+  {
+    id: 'money', label: 'money and the economy', names: ['money', 'economy', 'bank', 'interest', 'tax', 'gst', 'rupee', 'budget', 'savings'],
+    facts: [
+      'The rupee is the currency of India. The symbol ₹ was designed in 2010 by D. Udaya Kumar.',
+      'Interest is the price of borrowing money: you pay it on loans, and you can earn it on savings.',
+      'GST stands for Goods and Services Tax, introduced in India in 2017 to replace many separate taxes.',
+      'A budget is a plan for money: what comes in, what goes out, and what is left.',
+      'Compound interest grows money faster than simple interest because you earn interest on your interest.',
+      'Inflation means prices rising over time, so the same money buys a little less each year.'
+    ],
+    quiz: [
+      { q: 'What is the currency of India?', a: 'The rupee' },
+      { q: 'What does GST stand for?', a: 'Goods and Services Tax' },
+      { q: 'What is inflation?', a: 'Rising prices over time' }
+    ]
+  },
+  {
+    id: 'space2', label: 'space missions', names: ['isro', 'nasa', 'chandrayaan', 'mangalyaan', 'apollo 11', 'space mission', 'rocket', 'satellite'],
+    facts: [
+      'ISRO’s Chandrayaan-3 landed near the Moon’s south pole in August 2023, making India the first country to land there.',
+      'Mangalyaan, India’s Mars Orbiter Mission, reached Mars in 2014 on a famously small budget.',
+      'Apollo 11 landed the first humans on the Moon on 20 July 1969; Neil Armstrong and Buzz Aldrin walked on the surface.',
+      'A rocket works by Newton’s third law: it throws gas down, and the gas pushes it up.',
+      'Satellites in geostationary orbit travel at the same speed as Earth’s rotation, so they stay above the same spot.',
+      'The International Space Station circles Earth about 16 times a day, at around 28,000 km per hour.'
+    ],
+    quiz: [
+      { q: 'Which ISRO mission landed near the Moon’s south pole?', a: 'Chandrayaan-3' },
+      { q: 'When did Apollo 11 land on the Moon?', a: '20 July 1969' },
+      { q: 'What does a rocket push down to move up?', a: 'Gas' }
+    ]
+  }
+];
+
+KNOWLEDGE.push.apply(KNOWLEDGE, KNOWLEDGE_MORE);
+
+/* more quick facts */
+const EXTRA_FACTS = [
+  'The dot over the letter i is called a tittle.',
+  'A day on Venus is longer than a year on Venus.',
+  'The first e-mail was sent in 1971 by Ray Tomlinson.',
+  'Octopuses have nine brains: one central and one in each arm.',
+  'Wombat poop is cube shaped, which stops it rolling away.',
+  'The heart of a blue whale is about the size of a small car.',
+  'Bamboo can grow almost a metre in a single day.',
+  'Lightning is about five times hotter than the surface of the Sun.',
+  'The national animal of India is the Bengal tiger, and the national bird is the Indian peacock.',
+  'The Indian Railways is one of the largest rail networks in the world, carrying millions of passengers every day.',
+  'The first Olympic Games were held in Greece in 776 BCE.',
+  'A "moment" was once a real medieval unit of time, about 90 seconds.',
+  'The human body contains about 37 trillion cells.',
+  'Elephants are one of the few animals that can recognise themselves in a mirror.',
+  'There are more possible chess games than atoms in the observable universe.',
+  'The Sahara was green with lakes and grass about 10,000 years ago.',
+  'A bolt of lightning can reach 30,000 degrees Celsius.',
+  'The letter Q is the only letter that does not appear in any US state name.',
+  'Honey bees can recognise human faces.',
+  'The Himalayas contain the highest peaks on Earth and act as a climate barrier for India.'
+];
+QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
 
   // One command -> one "step" (what the user wants).
   function parseOne(seg, original, ctx, talkText) {
@@ -1351,6 +2604,9 @@ const SophiaBrain = (function () {
       return { intent: 'weather', place: m[1] || null, whole: m[0] === t };
     }
 
+    if (/^(?:play (?:a |the )?game|let'?s play|start (?:a )?game|game|play with me|i want to play)$/.test(t)) return { intent: 'game.menu' };
+    if ((m = t.match(/^(?:more|another fact) (?:about|on) (.+)$/))) return { intent: 'fact', topic: m[1] };
+
     const srch = parseSearch(t);
     if (srch) return srch;
 
@@ -1375,6 +2631,12 @@ const SophiaBrain = (function () {
 
     const math = tryMath(t);
     if (math) return { intent: 'math', expr: math.expr, value: math.value, error: math.error || null };
+
+    const play = parsePlay(t);
+    if (play) return play;
+
+    const human = parseHuman(talk) || (talk !== t ? parseHuman(t) : null);
+    if (human) return human;
 
     const tk = parseTalk(talk) || (talk !== t ? parseTalk(t) : null);
     if (tk) return tk;
@@ -1413,6 +2675,14 @@ const SophiaBrain = (function () {
     const talkText = t;
     const cmdText = stripPolite(t);
 
+    // games are checked before taping a memory or a shortcut
+    const playFirst = parsePlay(t);
+    if (playFirst) return { steps: [playFirst] };
+    // a feeling is only the whole message when no command is hiding in it
+    const startsWithCommand = COMMAND_VERB_RE.test(cmdText);
+    const humanFirst = parseHuman(t);
+    if (humanFirst && !startsWithCommand) return { steps: [humanFirst] };
+
     // shortcuts the user taught her
     const shortcuts = ctx.shortcuts || {};
     const sc = shortcuts[talkText] || shortcuts[cmdText];
@@ -1422,6 +2692,15 @@ const SophiaBrain = (function () {
     if (whole) return { steps: [whole] };
 
     const segs = splitCommands(cmdText);
+    // "open youtube, i am bored" is two wishes, not one
+    if (segs.length === 1) {
+      const parts = cmdText.split(/\s*,\s*|\s+and\s+(?=i am|i'm|im|i feel)\b/);
+      if (parts.length === 2 && parts[0] && parts[1] && /\b(?:i am|i'm|im|i feel|feeling)\b/.test(parts[1])) {
+        const firstSteps = parseOne(parts[0], original, ctx, parts[0]);
+        const secondStep = parseHuman(parts[1]);
+        if (firstSteps && secondStep && firstSteps.intent !== 'unknown') return { steps: [firstSteps, secondStep] };
+      }
+    }
     const steps = segs.map(function (seg) { return parseOne(seg, original, ctx, segs.length === 1 ? talkText : null); });
 
     // "open youtube and search for cats" -> search YouTube for cats
@@ -1477,10 +2756,19 @@ const SophiaBrain = (function () {
         v: 1,
         name: typeof m.name === 'string' && m.name ? m.name : null,
         facts: Array.isArray(m.facts) ? m.facts.filter(function (f) { return f && typeof f.text === 'string'; }) : [],
-        shortcuts: m.shortcuts && typeof m.shortcuts === 'object' && !Array.isArray(m.shortcuts) ? m.shortcuts : {}
+        shortcuts: m.shortcuts && typeof m.shortcuts === 'object' && !Array.isArray(m.shortcuts) ? m.shortcuts : {},
+        moods: Array.isArray(m.moods) ? m.moods.filter(function (x) { return x && typeof x.f === 'string'; }) : [],
+        seen: m.seen && typeof m.seen === 'object' ? m.seen : {},
+        quiz: { score: 0, asked: 0, streak: 0, best: 0 }
       };
     }
     function saveMemory() { try { if (env.store && env.store.save) env.store.save(mem); } catch (e) { /* storage full or blocked */ } }
+    function rememberMood(family, intensity) {
+      if (!family) return;
+      mem.moods.push({ f: family, i: intensity || 1, at: now().getTime() });
+      while (mem.moods.length > 80) mem.moods.shift();
+      saveMemory();
+    }
     function pick(list) { return list[Math.floor(rnd() * list.length) % list.length]; }
     function mode() { return env.mode ? env.mode() : 'browser'; }
     function uname() { return mem.name || env.defaultName || ''; }
@@ -1984,28 +3272,52 @@ const SophiaBrain = (function () {
       if (it === 'talk.age') { out.say('I was made only recently, so I am very young. But I learn a little every time you teach me something.'); return; }
       if (it === 'talk.where') { out.say('I live right here on your laptop, inside your browser.'); return; }
       if (it === 'talk.chat') { out.say(withName('Sure, {name}. I am listening. What is on your mind?')); return; }
-      if (it === 'talk.feeling') {
-        const mood = step.mood;
-        if (mood === 'hungry') {
-          out.say('Sounds like food time! Should I open your RailPure food app?');
-          state.pending = { yes: function (o) { return doOpen({ targets: [Object.assign({}, DELIVERY)] }, o); }, noText: 'Okay. Tell me if you change your mind.' };
-          return;
-        }
-        const replies = {
-          sad: 'I am sorry you are feeling sad, {name}. Do you want to tell me what happened? Saying it out loud can help. And if it feels too heavy, talking to someone you trust, like a parent, a friend or a teacher, really helps.',
-          lonely: 'I am here with you, {name}. We can talk for a while if you like. Calling or messaging a friend or someone in your family can help too. A real voice is good company.',
-          bored: 'Let us fix that! I can open YouTube, find you a new song, tell you a joke, or share a space fact. What sounds good?',
-          tired: 'You sound tired. A short break, some water or an early night might help. I can lower the volume or dim the screen if you like.',
-          stressed: 'That sounds stressful. Take one slow, deep breath first. Then tell me what is worrying you most, and we can break it into small steps.',
-          scared: 'It is okay to feel scared. You can tell me about it. If something is really wrong, please talk to an adult you trust right away.',
-          angry: 'That sounds frustrating. Do you want to tell me what happened? Getting it out can help you cool down.',
-          happy: 'That is wonderful to hear, {name}! What made your day so good?',
-          fine: 'Good to hear! What would you like to do?',
-          sick: 'I am sorry you are not feeling well. Rest, drink some water, and tell a parent or another adult at home how you feel. I am an AI, so I cannot give medical advice.',
-          confused: 'That is okay. Tell me what is confusing you, and we will untangle it one step at a time.',
-          exam: 'You have got this, {name}. Study in short blocks, take small breaks, and sleep well before the exam. I can open YouTube or Google if you want to revise a topic.'
-        };
-        out.say(withName(replies[mood] || replies.fine));
+      if (it === 'talk.feeling') return doFeeling(step, out);
+      if (it === 'talk.safety') { out.say(withName(SAFETY_TEXT)); return; }
+      if (it === 'talk.mood') return doMood(out);
+    }
+
+    /* how have I been lately, from the mood history she keeps */
+    function doMood(out) {
+      const s = moodSummary(mem.moods, now().getTime());
+      if (!s) { out.say('I have not noticed much yet. Tell me how you are feeling, and I will remember it gently.'); return; }
+      const line = s.total === 1 ? 'Since we started talking, I have noticed you feeling ' + s.parts[0] + '.'
+        : 'This week I have noticed you feeling ' + joinNatural(s.parts) + '.';
+      out.say(line);
+      if (s.negative > s.positive && s.negative >= 2) {
+        out.say('That is a lot of heavy days, {name}. You do not have to carry that alone. Is there one person you could talk to this week?');
+      } else if (s.positive >= 2) {
+        out.say('Mostly up, which is lovely to see. What has been helping?');
+      } else {
+        out.say('I keep this only on this laptop, and only to be kinder next time. Say "forget my feelings" any time to clear it.');
+      }
+    }
+
+    /* the heart of her emotional side: listen, then help, then ask one thing */
+    function doFeeling(step, out) {
+      const mood = step.mood || 'sadness';
+      const level = step.intensity >= 3 ? 'high' : step.intensity === 2 ? 'med' : 'low';
+      rememberMood(mood, step.intensity);
+
+      if (mood === 'hopeless') {
+        out.say(withName("I'm really sorry, {name}. Feeling like nothing matters is a heavy, frightening place to be, and I do not want you to sit there alone. You are not a burden. Please tell a parent, a teacher or another adult you trust today."));
+        out.say('If it ever feels like too much, Tele-MANAS is on 14416 and Childline is on 1098. Both are free and open all the time. Would you like to tell me what has been happening?');
+        return;
+      }
+      if (mood === 'hunger') {
+        out.say(withName(pick(EMO_REPLIES.hunger[level] || EMO_REPLIES.hunger.med)));
+        state.pending = { yes: function (o) { return doOpen({ targets: [Object.assign({}, DELIVERY)] }, o); }, noText: 'Okay. Eat something soon anyway!' };
+        return;
+      }
+      const bank = EMO_REPLIES[mood] || (mood === 'happy' ? EMO_REPLIES.joy : null);
+      if (!bank) { out.say(withName("I am here, {name}. Tell me more about how you are feeling.")); return; }
+      let reply = withName(pick(bank[level] || bank.med || bank.low));
+      if (step.why && WHY_ADDONS[mood]) reply += ' ' + WHY_ADDONS[mood];
+      out.say(reply);
+      const extra = EMO_STEPS[mood];
+      if (extra && level === 'med' && !state.tips['feel:' + mood]) {
+        state.tips['feel:' + mood] = true;
+        out.say(pick(extra), { silent: true });
       }
     }
 
@@ -2087,6 +3399,242 @@ const SophiaBrain = (function () {
       offerSearch(out, String(step.raw || meta.text).replace(/[?!.]+$/, ''), 'I cannot answer that by myself yet.');
     }
 
+    /* ------------------------------- knowledge, facts, quizzes and games ---- */
+    function teachLine(topic, fact) {
+      return fact + '\nAsk me "quiz me on ' + topic.label + '" when you want to test yourself.';
+    }
+    function nextSeen(topic) {
+      const key = 'k:' + topic.id;
+      const list = mem.seen[key] || [];
+      const f = nextFact(topic, list);
+      const out = list.concat([f.fact]).slice(-40);
+      mem.seen[key] = out;
+      saveMemory();
+      return f.fact;
+    }
+    function doFact(step, out) {
+      if (step.topic) {
+        const topic = knowTopic(step.topic);
+        if (topic) {
+          out.say(nextSeen(topic));
+          out.say('That came from my built-in notes. For more depth I can look it up on Wikipedia.', { silent: true });
+          return;
+        }
+        out.say("I do not have a fact pack on that yet, but I can search for it. Here is something fun meanwhile:");
+      }
+      const key = 'quick';
+      const list = mem.seen[key] || [];
+      const fresh = QUICK_FACTS.filter(function (f) { return list.indexOf(f) < 0; });
+      const pool = fresh.length ? fresh : QUICK_FACTS;
+      const fact = pool[Math.floor(rnd() * pool.length) % pool.length];
+      mem.seen[key] = list.concat([fact]).slice(-60);
+      saveMemory();
+      out.say(fact);
+    }
+    function doRiddle(out) {
+      const r = RIDDLES[Math.floor(rnd() * RIDDLES.length) % RIDDLES.length];
+      state.riddle = r;
+      out.say(r.q);
+      out.say('Say "hint" if you want one, or "the answer is ..." to check.', { silent: true });
+    }
+    function sameAnswer(a, b) {
+      const clean = function (s) { return String(s || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\b(?:a|an|the|it is|its|is)\b/g, ' ').replace(/\s+/g, ' ').trim(); };
+      const x = clean(a), y = clean(b);
+      if (!x || !y) return false;
+      return x === y || x.indexOf(y) >= 0 || y.indexOf(x) >= 0;
+    }
+    function doRiddleAnswer(step, out) {
+      if (!state.riddle) { out.say('There is no riddle open right now. Say "tell me a riddle" and I will start one.'); return; }
+      if (sameAnswer(step.answer, state.riddle.a)) {
+        out.say('Yes! The answer is ' + state.riddle.a + '. Well done.');
+        state.riddle = null;
+        return;
+      }
+      state.riddle.tries = (state.riddle.tries || 0) + 1;
+      if (state.riddle.tries >= 2) {
+        out.say('Close! The answer is ' + state.riddle.a + '. Want another one?');
+        state.riddle = null;
+      } else {
+        out.say('Not quite. Have another go, or say "hint".');
+      }
+    }
+    function doCapitals(step, out) {
+      const c = capitalOf(hinglish('capital of ' + step.ask));
+      if (!c) { out.say('Which country do you mean?'); return; }
+      if (!c.capital) {
+        out.say('I do not have the capital of ' + capFirst(c.country) + ' in my notes. Should I search Google for it?');
+        state.pending = { yes: function (o) { return doSearch({ site: 'google', query: 'capital of ' + c.country }, o); }, noText: 'Okay.' };
+        return;
+      }
+      state.lastQuestion = { q: 'What is the capital of ' + capFirst(c.country) + '?', a: c.capital, said: false };
+      out.say('The capital of ' + capFirst(c.country) + ' is ' + c.capital + '.');
+      out.say('Want to be quizzed on capitals? Say "quiz me on capitals".', { silent: true });
+    }
+    function fmtUnit(u) {
+      return { km: 'km', mi: 'miles', kg: 'kg', lb: 'pounds', cm: 'cm', in: 'inches', l: 'litres', ml: 'ml', c: 'degrees Celsius', f: 'degrees Fahrenheit' }[u] || u;
+    }
+    function doConvert(step, out) {
+      const c = step.conv;
+      out.say(c.value + ' ' + fmtUnit(c.from) + ' is ' + fmtNumber(Math.round(c.result * 1000) / 1000) + ' ' + fmtUnit(c.to) + '.');
+    }
+    function doDevice(step, out) {
+      const d = step.device;
+      out.say('Let us try to fix ' + d.label + '. Here is a simple checklist:');
+      out.say(d.steps.map(function (s, i) { return (i + 1) + '. ' + s; }).join('\n'), { silent: true });
+      const page = d.settings ? SETTING_INDEX.get(d.settings) : null;
+      if (page) {
+        out.say('Should I open ' + page.label + ' settings for you?');
+        state.pending = { yes: function (o) { return doOpen({ targets: [settingTarget(page)] }, o); }, noText: 'Okay, tell me if it works after the checklist.' };
+      }
+    }
+
+    /* ---- quiz: five questions, kind scoring, no pressure ---- */
+    function startQuiz(topicName, out) {
+      let pool = [];
+      if (topicName) {
+        const topic = knowTopic(topicName);
+        if (!topic) {
+          out.say('I have quiz packs on: ' + KNOWLEDGE.slice(0, 12).map(function (k) { return k.label.replace(/^the /, ''); }).join(', ') + '. Which one would you like?');
+          return;
+        }
+        pool = topic.quiz.map(function (q) { return { q: q.q, a: q.a, topic: topic.label }; });
+      } else {
+        KNOWLEDGE.forEach(function (t) { t.quiz.forEach(function (q) { pool.push({ q: q.q, a: q.a, topic: t.label }); }); });
+      }
+      const picked = [];
+      const copy = pool.slice();
+      const wanted = Math.min(5, copy.length);
+      while (picked.length < wanted) {
+        picked.push(copy.splice(Math.floor(rnd() * copy.length) % copy.length, 1)[0]);
+      }
+      state.quiz = { list: picked, at: 0, right: 0, answered: false };
+      if (topicName) {
+        const t2 = knowTopic(topicName);
+        out.say('Quiz time! ' + picked.length + ' questions on ' + (t2 ? t2.label : topicName) + '. No pressure, it is just for fun.');
+      } else {
+        out.say('Quiz time! ' + picked.length + ' questions from everything I know. No pressure, it is just for fun.');
+      }
+      askQuizQuestion(out);
+    }
+    function askQuizQuestion(out) {
+      const q = state.quiz;
+      const item = q.list[q.at];
+      q.answered = false;
+      out.say('Question ' + (q.at + 1) + ' of ' + q.list.length + ': ' + item.q);
+      if (q.at === 0) out.say('Answer with "the answer is ...", or say "I do not know" and I will tell you. Say "hint" any time.', { silent: true });
+    }
+    function doQuizAnswer(step, out) {
+      const q = state.quiz;
+      if (!q || q.answered) { out.say('There is no quiz question open. Say "quiz me" to start one.'); return; }
+      const item = q.list[q.at];
+      q.answered = true;
+      q.asked = (q.asked || 0) + 1;
+      if (sameAnswer(step.answer, item.a)) {
+        q.right++;
+        q.streak = (q.streak || 0) + 1;
+        mem.quiz = mem.quiz || { score: 0, asked: 0, streak: 0, best: 0 };
+        mem.quiz.score++; mem.quiz.asked++; mem.quiz.streak++;
+        mem.quiz.best = Math.max(mem.quiz.best || 0, mem.quiz.streak);
+        saveMemory();
+        out.say(pick(['Correct!', 'Yes, exactly!', 'That is right!', 'Perfect!']) + ' (' + item.a + ')');
+      } else {
+        q.streak = 0;
+        if (mem.quiz) { mem.quiz.asked++; mem.quiz.streak = 0; saveMemory(); }
+        out.say('Not quite. The answer is ' + item.a + '. No problem, now you know it.');
+      }
+      nextQuiz(out);
+    }
+    function doQuizDontKnow(out) {
+      const q = state.quiz;
+      if (!q || q.answered) { out.say('There is no question open right now. Say "quiz me" to start.'); return; }
+      q.answered = true;
+      if (mem.quiz) { mem.quiz.asked++; mem.quiz.streak = 0; saveMemory(); }
+      out.say('That is fine. The answer is ' + q.list[q.at].a + '.');
+      nextQuiz(out);
+    }
+    function nextQuiz(out) {
+      const q = state.quiz;
+      q.at++;
+      if (q.at >= q.list.length) {
+        const score = q.right;
+        const total = q.list.length;
+        const best = mem.quiz.best || 0;
+        out.say(score === total ? 'All ' + total + ' correct! Brilliant.' : 'You got ' + score + ' out of ' + total + '. ' + (score >= total - 1 ? 'Very good!' : score >= total / 2 ? 'Nice work, keep going.' : 'That is okay, every wrong answer teaches you something.'));
+        if (best) out.say('Your best streak so far is ' + best + ' in a row.', { silent: true });
+        state.quiz = null;
+        return;
+      }
+      askQuizQuestion(out);
+    }
+
+    /* ---- two small games that need nothing but words ---- */
+    function doGame(step, out) {
+      if (step.intent === 'game.stop') {
+        state.game = null;
+        state.riddle = null;
+        out.say('Game stopped. Say "play a game" whenever you like.');
+        return;
+      }
+      state.game = null;
+      out.say('Choose a game:\n1. Guess the number: I pick a number from 1 to 100 and you guess.\n2. Word chain: I say a word, you say one that starts with its last letter.\n3. Riddles.\nSay "1", "2" or "3".');
+      state.pending = {
+        kind: 'game-choose',
+        yes: function () {},
+        noText: 'Okay.'
+      };
+    }
+    function startGuessGame(out) {
+      state.game = { kind: 'guess', target: 1 + Math.floor(rnd() * 100), tries: 0 };
+      out.say('I am thinking of a number between 1 and 100. Guess!');
+    }
+    function startWordChain(out) {
+      state.game = { kind: 'word', used: [], last: 'apple' };
+      out.say('Word chain! My word is "apple". Your word must start with "e". Say it!');
+    }
+    function doGuess(step, out) {
+      const g = state.game;
+      const n = step.guess;
+      g.tries++;
+      if (n === g.target) {
+        out.say('Yes! It was ' + g.target + '. You got it in ' + g.tries + (g.tries === 1 ? ' try!' : ' tries!'));
+        state.game = null;
+        return;
+      }
+      if (g.tries >= 8) {
+        out.say('So close! The number was ' + g.target + '. Want another round?');
+        state.game = null;
+        return;
+      }
+      out.say(n > g.target ? (n - g.target > 20 ? 'Much lower!' : 'A bit lower.') : (g.target - n > 20 ? 'Much higher!' : 'A bit higher.'));
+    }
+    function doWord(step, out) {
+      const g = state.game;
+      const word = step.word;
+      const need = g.last.slice(-1);
+      if (word.charAt(0) !== need) {
+        out.say('That does not start with "' + need + '". Try another word.');
+        return;
+      }
+      if (g.used.indexOf(word) >= 0) { out.say('You used that one already! Try a new word.'); return; }
+      g.used.push(word);
+      const last = word.slice(-1);
+      const bank = ['elephant', 'tiger', 'rocket', 'table', 'grape', 'orange', 'egg', 'goat', 'train', 'nest', 'star', 'river', 'mango', 'owl', 'lion', 'nose', 'engine', 'kite', 'eleven', 'ice'];
+      const answer = bank.find(function (w) { return w.charAt(0) === last && g.used.indexOf(w) < 0; }) || 'zebra';
+      g.used.push(answer);
+      g.last = answer;
+      out.say('My word: ' + answer + '. Now give me one starting with "' + answer.slice(-1) + '".');
+    }
+
+    /* ---- a whole knowledge topic ---- */
+    function doKnowledge(topic, out) {
+      const t = knowTopic(topic);
+      if (!t) return false;
+      out.say('Here is one thing I know about ' + t.label + ':');
+      out.say(nextSeen(t));
+      out.say('Say "more about ' + t.label.replace(/^the /, '') + '" for another fact, or "quiz me on ' + t.label.replace(/^the /, '') + '".', { silent: true });
+      return true;
+    }
+
     /* ----- one step ----- */
     async function runStep(step, out, meta) {
       const it = step.intent;
@@ -2147,7 +3695,37 @@ const SophiaBrain = (function () {
         out.say(WISDOM[step.topic]);
         return;
       }
-      if (it === 'question') return doQuestion(step, out, meta);
+      if (it === 'question') {
+        if (step.topic && step.qtype !== 'open' && doKnowledge(step.topic, out)) return;
+        return doQuestion(step, out, meta);
+      }
+      if (it === 'fact') return doFact(step, out);
+      if (it === 'riddle') return doRiddle(out);
+      if (it === 'hint') {
+        if (state.riddle) { out.say('Hint: ' + state.riddle.hint); return; }
+        if (state.quiz) { out.say('No hints in the quiz, but I will always tell you the right answer.'); return; }
+        out.say('There is nothing to hint at right now. Try "tell me a riddle".');
+        return;
+      }
+      if (it === 'quiz.start') return startQuiz(step.topic, out);
+      if (it === 'quiz.answer') { if (state.riddle && !state.quiz) return doRiddleAnswer(step, out); return doQuizAnswer(step, out); }
+      if (it === 'quiz.dontknow') return doQuizDontKnow(out);
+      if (it === 'game.menu') return doGame(step, out);
+      if (it === 'game.stop') return doGame(step, out);
+      if (it === 'capital') return doCapitals(step, out);
+      if (it === 'convert') return doConvert(step, out);
+      if (it === 'average') {
+        out.say('The average of those numbers is ' + fmtNumber(Math.round(step.avg.average * 1000) / 1000) + '.');
+        return;
+      }
+      if (it === 'device') return doDevice(step, out);
+      if (it === 'mood.clear') {
+        if (mem.moods) mem.moods.length = 0;
+        if (mem.seen) mem.seen.length = 0;
+        saveMemory();
+        out.say('Done. I have forgotten how your week felt. I still remember the things you asked me to remember.');
+        return;
+      }
       // unknown
       if (meta.source !== 'ai' && await askAI(meta.text, out)) return;
       offerSearch(out, String(step.text || meta.text).replace(/[?!.]+$/, ''), 'I am not sure what you mean by "' + String(step.text || meta.text) + '".');
@@ -2215,7 +3793,9 @@ const SophiaBrain = (function () {
     splitCommands: splitCommands,
     fmtTime: fmtTime,
     fmtDate: fmtDate,
-    catalog: { SITES: SITES, APPS: APPS, SETTINGS: SETTINGS, FOLDERS: FOLDERS, DELIVERY: DELIVERY }
+    catalog: { SITES: SITES, APPS: APPS, SETTINGS: SETTINGS, FOLDERS: FOLDERS, DELIVERY: DELIVERY, KNOWLEDGE: KNOWLEDGE, QUICK_FACTS: QUICK_FACTS },
+    analyzeEmotion: analyzeEmotion,
+    moodSummary: moodSummary
   };
 })();
 if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
@@ -2724,6 +4304,8 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
         addMessage('I am not sure what to do with that yet. Type "help" to see what I can do.', 'meta', target);
       }
       if (reply.speak) speak(reply.speak);
+      paintMoodStrip();
+      paintMoodBars();
     } catch (err) {
       if (thinking) thinking.remove();
       addMessage('Something went wrong inside me: ' + escapeHtml(err && err.message ? err.message : String(err)) + '. Please try again.', 'error', target);
@@ -2741,6 +4323,107 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
     input.value = '';
     ask(text);
   });
+
+
+  /* ---------------------------------------------- feelings, shelf, mood UI */
+  const MOOD_PHRASES = {
+    happy: 'I am feeling happy',
+    okay: 'I am fine',
+    sad: 'I am feeling sad',
+    anxious: 'I am feeling worried',
+    angry: 'I am feeling angry',
+    tired: 'I am feeling tired',
+    lonely: 'I am feeling lonely',
+    bored: 'I am feeling bored',
+    hungry: 'I am hungry'
+  };
+  function askFeeling(mood) {
+    if (mood === 'hungry') { ask('i am hungry'); return; }
+    ask(MOOD_PHRASES[mood] || 'I am feeling sad');
+  }
+  document.querySelectorAll('[data-mood]').forEach(function (btn) {
+    btn.addEventListener('click', function () { askFeeling(btn.dataset.mood); });
+  });
+
+  function paintMoodStrip() {
+    const strip = document.getElementById('weekStrip');
+    if (!strip || !brainApi) return;
+    const moods = brainApi.memory().moods || [];
+    const week = moods.slice(-14);
+    strip.innerHTML = '';
+    if (!week.length) { strip.style.display = 'none'; return; }
+    strip.style.display = 'flex';
+    const height = { joy: 100, hope: 85, fine: 60, hunger: 50, boredom: 45, tiredness: 40, confusion: 40, illness: 35, sleep: 35, sadness: 30, loneliness: 25, anxiety: 25, anger: 25, shame: 20, grief: 20, family: 20 };
+    week.forEach(function (m) {
+      const bar = document.createElement('span');
+      bar.style.height = Math.max(12, height[m.f] || 40) + '%';
+      bar.style.background = (m.f === 'joy' || m.f === 'hope' || m.f === 'fine')
+        ? 'linear-gradient(180deg, #34d399, #14b8a6)'
+        : 'linear-gradient(180deg, rgba(167,139,250,.95), rgba(56,189,248,.75))';
+      bar.title = new Date(m.at).toLocaleDateString();
+      strip.appendChild(bar);
+    });
+  }
+
+  /* the knowledge shelf is built from the same catalogue the brain uses */
+  function buildShelf() {
+    const box = document.getElementById('shelf');
+    if (!box || typeof SophiaBrain === 'undefined' || !SophiaBrain.catalog || !SophiaBrain.catalog.KNOWLEDGE) return;
+    SophiaBrain.catalog.KNOWLEDGE.forEach(function (topic) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      const label = topic.label.replace(/^the /, '');
+      b.textContent = label.charAt(0).toUpperCase() + label.slice(1);
+      b.addEventListener('click', function () { ask('tell me about ' + topic.label); });
+      box.appendChild(b);
+    });
+    [['\u2728 Quiz me', 'quiz me'], ['\u{1F3B2} Play a game', 'play a game'], ['\u{1F9E9} A riddle', 'tell me a riddle'], ['\u{1F4A1} Surprise fact', 'tell me a fact']].forEach(function (pair) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = pair[0];
+      b.addEventListener('click', function () { ask(pair[1]); });
+      box.appendChild(b);
+    });
+  }
+
+  /* mood history bars in the settings drawer */
+  function paintMoodBars() {
+    const box = document.getElementById('moodBars');
+    if (!box || !brainApi) return;
+    const moods = brainApi.memory().moods || [];
+    const labels = { sadness: 'sad', loneliness: 'lonely', anxiety: 'worried or anxious', anger: 'angry', tiredness: 'tired', boredom: 'bored', confusion: 'confused', shame: 'hard on yourself', grief: 'grieving', illness: 'unwell', hunger: 'hungry', sleep: 'sleepless', joy: 'happy', hope: 'hopeful', fine: 'fine', family: 'upset at home', safety: 'unsafe', crisis: 'really hurting' };
+    const counts = {};
+    moods.forEach(function (m) { counts[m.f] = (counts[m.f] || 0) + 1; });
+    const keys = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
+    box.innerHTML = '';
+    const hint = document.getElementById('moodHint');
+    if (!keys.length) {
+      if (hint) hint.textContent = 'Nothing noticed yet. When you tell Sophia how you feel, she keeps a gentle note here.';
+      return;
+    }
+    if (hint) hint.textContent = 'Last updated ' + new Date(moods[moods.length - 1].at).toLocaleString() + '. Only on this laptop.';
+    const max = counts[keys[0]] || 1;
+    keys.forEach(function (k) {
+      const row = document.createElement('div');
+      row.className = 'mood-bar';
+      const name = document.createElement('span');
+      name.textContent = labels[k] || k;
+      const track = document.createElement('span');
+      track.className = 'track';
+      const fill = document.createElement('span');
+      fill.className = 'fill';
+      fill.style.display = 'block';
+      fill.style.width = Math.max(8, Math.round(counts[k] / max * 100)) + '%';
+      track.appendChild(fill);
+      const num = document.createElement('span');
+      num.className = 'num';
+      num.textContent = counts[k];
+      row.appendChild(name);
+      row.appendChild(track);
+      row.appendChild(num);
+      box.appendChild(row);
+    });
+  }
 
   /* ------------------------------------------------------------ launcher */
   function runCommand(cmd) {
@@ -2888,6 +4571,9 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
     });
   });
   hubOverlay.addEventListener('click', function (e) { if (e.target === hubOverlay) closeHub(); });
+  hubOverlay.querySelectorAll('[data-hub-mood]').forEach(function (btn) {
+    btn.addEventListener('click', function () { ask(MOOD_PHRASES[btn.dataset.hubMood] || 'I am feeling sad', { hub: true }); });
+  });
 
   /* ---------------------------------------------------------- settings UI */
   function setOverlay(open) {
@@ -3072,7 +4758,14 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
       box.appendChild(row);
     });
   }
-  document.getElementById('refreshMemory').addEventListener('click', refreshMemoryList);
+  document.getElementById('refreshMemory').addEventListener('click', function () { refreshMemoryList(); paintMoodBars(); paintMoodStrip(); });
+  document.getElementById('refreshMood').addEventListener('click', function () { paintMoodBars(); paintMoodStrip(); });
+  document.getElementById('clearMood').addEventListener('click', function () {
+    ask('forget my feelings', { silent: true });
+    paintMoodBars();
+    paintMoodStrip();
+    toast('Mood history cleared.');
+  });
   document.getElementById('forgetAll').addEventListener('click', function () {
     ask('forget everything');
     refreshMemoryList();
@@ -3109,6 +4802,8 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
     updateListenUi();
     syncSettingsUi();
     refreshMemoryList();
+    buildShelf();
+    paintMoodStrip();
     const state = await api.probe();
     notice(state);
     updatePrivacyTag();

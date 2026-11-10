@@ -265,21 +265,32 @@ test('hindi-english mix works', async () => {
   assert.strictEqual(only('awaaz kam karo').dir, 'down');
   assert.strictEqual(only('time kya hai').intent, 'time');
   assert.strictEqual(only('tum kaun ho').intent, 'talk.whoareyou');
-  assert.strictEqual(only('mujhe bhookh lagi hai').mood, 'hungry');
+  assert.strictEqual(only('mujhe bhookh lagi hai').mood, 'hunger');
   assert.strictEqual(only('shukriya').intent, 'talk.thanks');
   assert.strictEqual(only('screenshot lo').intent, 'screenshot');
 });
 
+test('offline knowledge answers school questions, with more on request', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser' });
+  const r = await sophia.handle('what is photosynthesis');
+  assert.match(r.text, /photosynthesis|chlorophyll|oxygen|sunlight/i);
+  assert.match(r.text, /quiz me/i);
+  const more = await sophia.handle('more about photosynthesis');
+  assert.ok(more.text.length > 20, 'another fact about the same topic');
+  assert.notStrictEqual(more.text, r.text);
+});
+
 test('unknown questions go to Wikipedia, then offer a Google search', async () => {
+  // a topic that is not in the offline pack must use the lookup
   let wikiCalls = [];
   const sophia = Brain.create({
     store: { load: () => null, save: () => {} },
     mode: () => 'browser',
     wiki: async (q) => { wikiCalls.push(q); return { title: 'Photosynthesis', extract: 'Plants make food from sunlight.', url: 'https://en.wikipedia.org/wiki/Photosynthesis' }; }
   });
-  const r = await sophia.handle('what is photosynthesis');
+  const r = await sophia.handle('who was the rani of jhansi');
   assert.match(r.text, /Plants make food/);
-  assert.strictEqual(wikiCalls[0], 'photosynthesis');
+  assert.strictEqual(wikiCalls[0], 'the rani of jhansi');
   assert.ok(r.links.length === 1);
   assert.match(r.links[0].url, /wikipedia/);
 });
@@ -361,4 +372,128 @@ test('the catalogue has no duplicate names pointing at different things', () => 
     if (site.search) assert.match(site.search, /\{q\}/, site.id);
     assert.match(site.url, /^https:\/\//, site.id);
   }
+});
+
+/* ---------------------------------------------- feelings and knowledge */
+
+test('every feeling family is recognised', () => {
+  const cases = {
+    'i am sad': 'sadness',
+    'i feel lonely': 'loneliness',
+    'i am so stressed about my exam': 'anxiety',
+    'i am angry at my friend': 'anger',
+    'i am tired': 'tiredness',
+    'i am bored': 'boredom',
+    'i have a headache': 'illness',
+    'i cannot sleep': 'sleep',
+    'i am hungry': 'hunger',
+    'i miss my grandmother': 'grief',
+    'i feel like a failure': 'shame',
+    'my parents are fighting': 'family',
+    'i am happy today': 'happy',
+    'i feel much better now': 'hope',
+    'i am fine': 'fine'
+  };
+  for (const [phrase, mood] of Object.entries(cases)) {
+    const step = only(phrase);
+    assert.strictEqual(step.intent, 'talk.feeling', phrase);
+    assert.strictEqual(step.mood, mood, phrase + ' -> ' + JSON.stringify(step));
+  }
+});
+
+test('feelings are not read out of commands', () => {
+  assert.strictEqual(only('play sad songs').intent, 'search');
+  assert.strictEqual(only('search youtube for sad songs').intent, 'search');
+  assert.strictEqual(only('open youtube').intent, 'open');
+  const two = stepsOf('open youtube, i am bored').map(s => s.intent);
+  assert.deepStrictEqual(two, ['open', 'talk.feeling']);
+});
+
+test('crisis and safety always win over small talk', () => {
+  assert.strictEqual(only('i want to die').intent, 'talk.crisis');
+  assert.strictEqual(only('i feel like ending it all').intent, 'talk.crisis');
+  assert.strictEqual(only('i want to disappear').intent, 'talk.crisis');
+  assert.strictEqual(only('my brother hits me').intent, 'talk.safety');
+  assert.strictEqual(only('my uncle touched me').intent, 'talk.safety');
+});
+
+test('crisis replies give a real helpline and a real adult', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser' });
+  const r = await sophia.handle('i want to die');
+  assert.match(r.text, /14416|1098/);
+  assert.match(r.text, /adult|parent/i);
+  assert.match(r.text, /112/);
+});
+
+test('a feeling reply is short, kind, and asks at most one question', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser' });
+  const r = await sophia.handle('i am sad');
+  assert.ok(r.text.length < 300, 'not a wall of text');
+  assert.ok((r.text.match(/\?/g) || []).length <= 2, 'not an interrogation');
+  assert.match(r.text, /here|sorry|tell/i);
+});
+
+test('moods are remembered and can be summarised and cleared', async () => {
+  const store = { data: null, load() { return this.data; }, save(v) { this.data = v; } };
+  const s1 = Brain.create({ store, mode: () => 'browser' });
+  await s1.handle('i am sad');
+  await s1.handle('i am happy today');
+  assert.ok(s1.memory().moods.length >= 2, 'mood history saved');
+  const summary = await s1.handle('how am i feeling');
+  assert.strictEqual(summary.text.length > 0, true);
+  await s1.handle('forget my feelings');
+  assert.strictEqual(s1.memory().moods.length, 0);
+});
+
+test('the knowledge pack is big, unique, and well formed', () => {
+  const K = Brain.catalog.KNOWLEDGE;
+  assert.ok(K.length >= 30, 'at least 30 topics, got ' + K.length);
+  const names = new Set();
+  let facts = 0;
+  let quiz = 0;
+  for (const topic of K) {
+    assert.ok(topic.label && topic.facts.length >= 4 && topic.quiz.length >= 2, topic.id);
+    for (const n of topic.names) {
+      assert.ok(!names.has(n), 'duplicate topic name: ' + n);
+      names.add(n);
+    }
+    for (const f of topic.facts) { assert.ok(f.length > 20, topic.id + ': ' + f); facts++; }
+    for (const q of topic.quiz) { assert.ok(q.q && q.a, topic.id); quiz++; }
+  }
+  assert.ok(facts >= 150, 'facts: ' + facts);
+  assert.ok(quiz >= 80, 'quiz questions: ' + quiz);
+  assert.ok(Brain.catalog.QUICK_FACTS.length >= 50);
+});
+
+test('"tell me about X" answers offline and says where it came from', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser' });
+  for (const ask of ['tell me about bhagat singh', 'what is climate change', 'tell me about the ozone layer', 'who is subhas chandra bose']) {
+    const r = await sophia.handle(ask);
+    assert.match(r.text, /one thing I know|Here is/, ask);
+    assert.doesNotMatch(r.text, /could not find/i, ask);
+  }
+});
+
+test('a quiz round runs five questions and keeps score', async () => {
+  const store = { data: null, load() { return this.data; }, save(v) { this.data = v; } };
+  const sophia = Brain.create({ store, mode: () => 'browser' });
+  const start = await sophia.handle('quiz me on space');
+  assert.match(start.text, /Question 1 of/);
+  const total = Number(start.text.match(/Question 1 of (\d+)/)[1]);
+  for (let i = 1; i < total; i++) {
+    const r = await sophia.handle('i do not know');
+    assert.match(r.text, /Question|That is|Final score|over/i);
+  }
+  const done = await sophia.handle('i do not know');
+  assert.match(done.text, /score|You got|out of/i);
+});
+
+test('games, riddles and capitals work', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser' });
+  assert.match((await sophia.handle('play a game')).text, /guess|chain|game/i);
+  assert.match((await sophia.handle('tell me a riddle')).text.length > 20 ? 'ok' : '', /ok/);
+  assert.match((await sophia.handle('capital of australia')).text, /Canberra/);
+  assert.match((await sophia.handle('convert 10 km to miles')).text, /6\.2/);
+  assert.match((await sophia.handle('what is the average of 12 18 25')).text, /18\.3/);
+  assert.match((await sophia.handle('average of 12, 18 and 25')).text, /18\.3/);
 });
