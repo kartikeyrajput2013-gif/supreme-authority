@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kartikey's Laptop AI | Advanced Personal Voice Assistant & Sophia Discovery Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg: #050811;
+      --card-bg: rgba(13, 19, 33, 0.9);
+      --card-inner: rgba(18, 26, 45, 0.75);
+      --border: rgba(6, 182, 212, 0.25);
+      --border-glow: rgba(6, 182, 212, 0.5);
+      --cyan: #06b6d4;
+      --cyan-bright: #38bdf8;
+      --cyan-glow: rgba(6, 182, 212, 0.4);
+      --gold: #f59e0b;
+      --green: #10b981;
+      --red: #ef4444;
+      --purple: #a855f7;
+      --purple-glow: rgba(168, 85, 247, 0.4);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --font-main: 'Plus Jakarta Sans', sans-serif;
+      --font-heading: 'Space Grotesk', sans-serif;
+      --font-code: 'Fira Code', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 50% 15%, rgba(6, 182, 212, 0.12) 0%, transparent 60%),
+        radial-gradient(circle at 10% 85%, rgba(245, 158, 11, 0.08) 0%, transparent 45%),
+        radial-gradient(circle at 90% 70%, rgba(168, 85, 247, 0.08) 0%, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    header {
+      padding: 14px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      background: rgba(5, 8, 17, 0.94);
+      backdrop-filter: blur(14px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-orb {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), #3b82f6);
+      box-shadow: 0 0 16px var(--cyan-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+    .logo-text h1 {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      letter-spacing: -0.5px;
+    }
+    .logo-text p {
+      font-size: 0.68rem;
+      color: var(--cyan);
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .sophia-nav-btn {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(99, 102, 241, 0.2));
+      border: 1px solid var(--purple);
+      color: #d8b4fe;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 12px var(--purple-glow);
+    }
+    .sophia-nav-btn:hover {
+      background: var(--purple);
+      color: #fff;
+      transform: translateY(-2px);
+    }
+    .quick-pill {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: var(--gold);
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .nav-btn:hover {
+      background: var(--cyan);
+      color: #000;
+      box-shadow: 0 0 14px var(--cyan-glow);
+    }
+
+    .container {
+      max-width: 1420px;
+      margin: 0 auto;
+      padding: 24px 20px 40px;
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 24px;
+      flex-grow: 1;
+    }
+
+    .left-col {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .hud-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+      position: relative;
+    }
+
+    .card-title-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .card-title-bar h3 {
+      font-family: var(--font-heading);
+      font-size: 1.15rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--cyan);
+    }
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+    .live-badge .dot {
+      width: 6px;
+      height: 6px;
+      background: #34d399;
+      border-radius: 50%;
+      animation: pulseDot 1.5s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
+    .voice-orb-flex {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      background: var(--card-inner);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      padding: 18px 24px;
+      margin-bottom: 16px;
+    }
+
+    .voice-orb-wrap {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .orb-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px dashed rgba(6, 182, 212, 0.4);
+      animation: rotateRing 16s linear infinite;
+    }
+    .orb-ring.active {
+      border-color: var(--cyan);
+      animation: rotateRing 5s linear infinite;
+    }
+    .orb-core {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #38bdf8 0%, #0284c7 100%);
+      box-shadow: 0 0 25px var(--cyan-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      transition: all 0.3s ease;
+    }
+    .orb-core.listening {
+      background: radial-gradient(circle, #f59e0b 0%, #b45309 100%);
+      box-shadow: 0 0 35px rgba(245, 158, 11, 0.6);
+      animation: pulseCore 1.3s infinite;
+    }
+
+    @keyframes rotateRing {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes pulseCore {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.12); }
+    }
+
+    .orb-info-side {
+      flex-grow: 1;
+    }
+    .orb-info-side h4 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .orb-info-side p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .btn-mic-toggle {
+      background: linear-gradient(135deg, var(--cyan), #0284c7);
+      color: #050811;
+      border: none;
+      padding: 9px 20px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 0.84rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 6px 16px var(--cyan-glow);
+      transition: all 0.2s ease;
+    }
+    .btn-mic-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px var(--cyan-glow);
+    }
+    .btn-mic-toggle.active {
+      background: linear-gradient(135deg, var(--gold), #d97706);
+      box-shadow: 0 6px 18px rgba(245, 158, 11, 0.4);
+    }
+
+    .audio-visualizer-bar {
+      background: #020409;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .wave-canvas {
+      flex-grow: 1;
+      height: 36px;
+      border-radius: 6px;
+    }
+    .confidence-meter {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      min-width: 120px;
+    }
+    .confidence-meter small {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      font-weight: 700;
+    }
+    .confidence-meter strong {
+      font-size: 0.82rem;
+      color: var(--cyan-bright);
+    }
+
+    .launchers-palette {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .launcher-btn {
+      background: var(--card-inner);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: var(--text);
+    }
+    .launcher-btn:hover {
+      background: rgba(6, 182, 212, 0.15);
+      border-color: var(--cyan);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px var(--cyan-glow);
+    }
+    .launcher-btn i {
+      font-size: 1.2rem;
+      color: var(--cyan-bright);
+    }
+    .launcher-btn span {
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .chat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      height: 580px;
+    }
+
+    .chat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 12px;
+    }
+    .chat-header h3 {
+      font-family: var(--font-heading);
+      font-size: 1.15rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--cyan);
+    }
+    .chat-header-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-tiny-action {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      cursor: pointer;
+    }
+    .btn-tiny-action:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .chat-messages-area {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding-right: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .chat-bubble {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-size: 0.86rem;
+      line-height: 1.5;
+      animation: fadeIn 0.25s ease;
+    }
+    .chat-bubble.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2));
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fef3c7;
+      border-bottom-right-radius: 4px;
+    }
+    .chat-bubble.ai {
+      align-self: flex-start;
+      background: var(--card-inner);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      color: var(--text);
+      border-bottom-left-radius: 4px;
+    }
+    .chat-bubble.sophia {
+      align-self: flex-start;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(99, 102, 241, 0.12));
+      border: 1px solid var(--purple);
+      color: #f3e8ff;
+      border-bottom-left-radius: 4px;
+    }
+    .chat-sender-tag {
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .chat-bubble.user .chat-sender-tag { color: var(--gold); }
+    .chat-bubble.ai .chat-sender-tag { color: var(--cyan); }
+    .chat-bubble.sophia .chat-sender-tag { color: #d8b4fe; }
+
+    .typing-bar-wrap {
+      display: flex;
+      gap: 10px;
+      background: #080d19;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      padding: 6px 8px 6px 16px;
+      align-items: center;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .typing-bar-wrap:focus-within {
+      border-color: var(--cyan);
+      box-shadow: 0 0 16px rgba(6, 182, 212, 0.25);
+    }
+    .typing-input {
+      flex-grow: 1;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-family: var(--font-main);
+      font-size: 0.9rem;
+      outline: none;
+    }
+    .btn-send {
+      background: linear-gradient(135deg, var(--cyan), #0284c7);
+      color: #050811;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-send:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 14px var(--cyan-glow);
+    }
+
+    .quick-chips-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-top: 10px;
+    }
+    .chip-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .chip-btn:hover {
+      background: rgba(6, 182, 212, 0.15);
+      border-color: var(--cyan);
+      color: #38bdf8;
+    }
+
+    .desktop-launcher-notice {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 182, 212, 0.12));
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: 14px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .desktop-launcher-notice i {
+      color: var(--green);
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .desktop-launcher-notice div {
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+    .desktop-launcher-notice strong {
+      color: #34d399;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    /* ==========================================================
+       SOPHIA DISCOVERY & WISDOM MODAL
+       ========================================================== */
+    .sophia-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 5, 13, 0.85);
+      backdrop-filter: blur(10px);
+      z-index: 5000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .sophia-backdrop.open {
+      display: flex;
+    }
+    .sophia-card {
+      background: #0b0f1e;
+      border: 1px solid var(--purple);
+      border-radius: 24px;
+      width: 820px;
+      max-width: 100%;
+      height: 640px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px var(--purple-glow);
+      overflow: hidden;
+      animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.94); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .sophia-header {
+      padding: 18px 24px;
+      background: rgba(168, 85, 247, 0.08);
+      border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sophia-avatar-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .sophia-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #c084fc 0%, #7e22ce 100%);
+      box-shadow: 0 0 18px var(--purple-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+    }
+    .sophia-header h3 {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #f3e8ff;
+    }
+    .sophia-header p {
+      font-size: 0.72rem;
+      color: #d8b4fe;
+    }
+    .btn-close-modal {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
+    .btn-close-modal:hover { color: #fff; }
+
+    .sophia-body {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      flex-grow: 1;
+      overflow: hidden;
+    }
+
+    .sophia-sidebar {
+      background: rgba(255, 255, 255, 0.02);
+      border-right: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .sidebar-label {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .sophia-track-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      text-align: left;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .sophia-track-btn:hover {
+      background: rgba(168, 85, 247, 0.15);
+      border-color: var(--purple);
+      color: #f3e8ff;
+      transform: translateX(4px);
+    }
+    .device-privacy-tag {
+      margin-top: auto;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      line-height: 1.3;
+    }
+    .device-privacy-tag i { color: var(--green); }
+
+    .sophia-chat-panel {
+      display: flex;
+      flex-direction: column;
+      padding: 18px;
+      background: #070a14;
+    }
+    .sophia-dialog-scroll {
+      flex-grow: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding-right: 6px;
+    }
+    .sophia-bubble {
+      max-width: 90%;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    .sophia-bubble.user {
+      align-self: flex-end;
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fef3c7;
+    }
+    .sophia-bubble.ai {
+      align-self: flex-start;
+      background: rgba(168, 85, 247, 0.12);
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      color: #f3e8ff;
+    }
+
+    .sophia-input-wrap {
+      display: flex;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      border-radius: 12px;
+      padding: 6px 10px;
+    }
+    .sophia-input {
+      flex-grow: 1;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 0.86rem;
+      outline: none;
+      font-family: var(--font-main);
+    }
+    .btn-sophia-send {
+      background: linear-gradient(135deg, var(--purple), #7e22ce);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 1024px) {
+      .container { grid-template-columns: 1fr; }
+      .launchers-palette { grid-template-columns: repeat(2, 1fr); }
+      .sophia-body { grid-template-columns: 1fr; }
+      .sophia-sidebar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="logo-row">
+      <div class="logo-orb">🎙️</div>
+      <div class="logo-text">
+        <h1>Kartikey's Personal AI</h1>
+        <p>ADVANCED VOICE & SOPHIA KNOWLEDGE ENGINE</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <!-- Dedicated Sophia Knowledge Hub Trigger -->
+      <button class="sophia-nav-btn" onclick="openSophiaModal()">
+        <i data-lucide="sparkles"></i> Sophia (Discovery & Life Hub)
+      </button>
+      <div class="quick-pill">
+        <i data-lucide="zap"></i> Single-Command App Launcher Active
+      </div>
+      <a href="index.html" class="nav-btn">
+        <i data-lucide="arrow-left"></i> RailPure Food App
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container">
+
+    <!-- LEFT COLUMN: Voice Core, Spectrum Waveform & Quick Launchers -->
+    <div class="left-col">
+      
+      <!-- Voice Listening Core with Live Audio Waveform -->
+      <div class="hud-card">
+        <div class="card-title-bar">
+          <h3><i data-lucide="mic"></i> Advanced Voice Listener (Acoustic Enhanced)</h3>
+          <span class="live-badge" id="voiceStatusBadge">
+            <span class="dot"></span> Continuous Ear Active
+          </span>
+        </div>
+
+        <div class="voice-orb-flex">
+          <div class="voice-orb-wrap" onclick="toggleVoiceListening()">
+            <div class="orb-ring" id="orbRing"></div>
+            <div class="orb-core" id="orbCore">
+              <i data-lucide="mic" id="orbIcon"></i>
+            </div>
+          </div>
+          <div class="orb-info-side">
+            <h4 id="statusHeader">Click Orb or Speak a Command</h4>
+            <p id="statusDesc">Enhanced voice recognition ready. Say "Talk to Sophia", "Open YouTube", or "Specs".</p>
+            <button class="btn-mic-toggle" id="btnMic" onclick="toggleVoiceListening()">
+              <i data-lucide="mic"></i> <span id="btnMicText">Activate Voice Listener</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Microphone Spectrum Waveform -->
+        <div class="audio-visualizer-bar">
+          <canvas class="wave-canvas" id="audioWaveCanvas"></canvas>
+          <div class="confidence-meter">
+            <small>RECOGNITION ACCURACY</small>
+            <strong id="confidenceScoreText">98% High Precision</strong>
+          </div>
+        </div>
+
+        <!-- Single Command Launchers Palette -->
+        <div class="launchers-palette">
+          <button class="launcher-btn" onclick="openSophiaModal()">
+            <i data-lucide="sparkles" style="color: #c084fc;"></i>
+            <span>Sophia Hub</span>
+          </button>
+          <button class="launcher-btn" onclick="executeVoiceCommand('open youtube')">
+            <i data-lucide="play-square"></i>
+            <span>YouTube</span>
+          </button>
+          <button class="launcher-btn" onclick="executeVoiceCommand('open google')">
+            <i data-lucide="search"></i>
+            <span>Google</span>
+          </button>
+          <button class="launcher-btn" onclick="executeVoiceCommand('open food delivery')">
+            <i data-lucide="utensils"></i>
+            <span>RailPure Food</span>
+          </button>
+          <button class="launcher-btn" onclick="executeVoiceCommand('open calculator')">
+            <i data-lucide="calculator"></i>
+            <span>Calculator</span>
+          </button>
+          <button class="launcher-btn" onclick="executeVoiceCommand('open github')">
+            <i data-lucide="git-branch"></i>
+            <span>GitHub</span>
+          </button>
+          <button class="launcher-btn" onclick="executeVoiceCommand('open gmail')">
+            <i data-lucide="mail"></i>
+            <span>Gmail</span>
+          </button>
+          <button class="launcher-btn" onclick="executeVoiceCommand('check weather')">
+            <i data-lucide="cloud-sun"></i>
+            <span>Weather</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Desktop Shortcut & Double Click Notice Banner -->
+      <div class="desktop-launcher-notice">
+        <i data-lucide="monitor"></i>
+        <div>
+          <strong>Desktop Double-Click Launcher Installed:</strong>
+          Double-click <code>Launch_AI_Assistant.bat</code> on your desktop to open this AI anytime with zero setup!
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: Conversational Chat, Typing Input & Instant Commands -->
+    <div class="right-col">
+
+      <!-- Conversational Chat Card with Typing Input -->
+      <div class="chat-card">
+        <div class="chat-header">
+          <h3><i data-lucide="message-square"></i> Voice & Typing Command Console</h3>
+          <div class="chat-header-actions">
+            <button class="btn-tiny-action" onclick="clearChat()">Clear Log</button>
+            <button class="btn-tiny-action" onclick="speakLastResponse()">Replay Voice 🔊</button>
+          </div>
+        </div>
+
+        <!-- Chat Conversation Log -->
+        <div class="chat-messages-area" id="chatArea">
+          <div class="chat-bubble ai">
+            <span class="chat-sender-tag">PERSONAL AI ASSISTANT</span>
+            Hello Kartikey! I am your personal laptop AI. You can give single-command app requests, check specs, or click <strong>Sophia</strong> in the header for deep conversations on relationships, subjective dilemmas, and scientific discoveries.
+          </div>
+        </div>
+
+        <!-- Typing Input -->
+        <form onsubmit="handleChatSubmit(event)">
+          <div class="typing-bar-wrap">
+            <input type="text" class="typing-input" id="typingInputField" placeholder="Type or speak a command (e.g. open youtube, talk to sophia, specs)..." autocomplete="off">
+            <button type="submit" class="btn-send">
+              <i data-lucide="send"></i> Send
+            </button>
+          </div>
+        </form>
+
+        <!-- Quick Autocomplete Chips -->
+        <div class="quick-chips-row">
+          <button class="chip-btn" onclick="openSophiaModal()">✨ Talk to Sophia</button>
+          <button class="chip-btn" onclick="sendQuickPrompt('open youtube')">▶️ Open YouTube</button>
+          <button class="chip-btn" onclick="sendQuickPrompt('open delivery app')">🚆 Open Delivery App</button>
+          <button class="chip-btn" onclick="sendQuickPrompt('what are my laptop specs')">💻 Laptop Specs</button>
+          <button class="chip-btn" onclick="sendQuickPrompt('open calculator')">🔢 Calculator</button>
+          <button class="chip-btn" onclick="sendQuickPrompt('check weather')">🌤️ Weather</button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ==================== SOPHIA DISCOVERY & WISDOM MODAL ==================== -->
+  <div class="sophia-backdrop" id="sophiaModal" onclick="handleSophiaBackdropClick(event)">
+    <div class="sophia-card">
+      <div class="sophia-header">
+        <div class="sophia-avatar-row">
+          <div class="sophia-avatar">✨</div>
+          <div>
+            <h3>Sophia: The Wisdom & Discovery Companion</h3>
+            <p>Hungry for knowledge • Exploring relationships, subjective questions & new frontiers</p>
+          </div>
+        </div>
+        <button class="btn-close-modal" onclick="closeSophiaModal()"><i data-lucide="x"></i></button>
+      </div>
+
+      <div class="sophia-body">
+        <!-- Sidebar Tracks -->
+        <div class="sophia-sidebar">
+          <span class="sidebar-label">Exploration Topics</span>
+          <button class="sophia-track-btn" onclick="promptSophiaTopic('relationship')">
+            <i data-lucide="heart-handshake"></i> Relationship & Social
+          </button>
+          <button class="sophia-track-btn" onclick="promptSophiaTopic('subjective')">
+            <i data-lucide="compass"></i> Subjective Dilemmas
+          </button>
+          <button class="sophia-track-btn" onclick="promptSophiaTopic('discoveries')">
+            <i data-lucide="telescope"></i> New Scientific Discoveries
+          </button>
+          <button class="sophia-track-btn" onclick="promptSophiaTopic('curiosity')">
+            <i data-lucide="brain"></i> Deep Curiosities
+          </button>
+
+          <div class="device-privacy-tag">
+            <i data-lucide="shield-check"></i>
+            <strong>Local Device Memory Only:</strong>
+            All reflections remain strictly on this device's storage. No cross-device surveillance or private exfiltration.
+          </div>
+        </div>
+
+        <!-- Dialogue Panel -->
+        <div class="sophia-chat-panel">
+          <div class="sophia-dialog-scroll" id="sophiaDialogBox">
+            <div class="sophia-bubble ai">
+              <strong>Sophia:</strong> "Greetings Kartikey. I have an endless appetite for knowledge, science, human relationships, and philosophical puzzles. I cannot edit websites or videos—my focus is purely on deep, thoughtful dialogue. What subjective problem, relationship dynamic, or new discovery would you like to explore together?"
+            </div>
+          </div>
+
+          <form onsubmit="handleSophiaSubmit(event)">
+            <div class="sophia-input-wrap">
+              <input type="text" class="sophia-input" id="sophiaInputField" placeholder="Discuss a relationship dilemma, question, or discovery...">
+              <button type="submit" class="btn-sophia-send">Reflect</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if (window.lucide) lucide.createIcons();
+
+    // LAPTOP SYSTEM SPECS
+    const LAPTOP_DATA = {
+      user: "Kartikey Raj",
+      os: "Microsoft Windows 10 Pro 64-bit",
+      cpu: "Intel Core i3-4005U @ 1.70 GHz (2 Cores, 4 Threads)",
+      ram: "4.00 GB DDR3 Memory (~620 MB Free)",
+      monitor: "1366 x 768 Resolution @ 60 Hz Refresh Rate",
+      gpu: "Intel HD Graphics Family",
+      storage: "118.6 GB Primary Drive C (44.0 GB Free)"
+    };
+
+    let isListening = false;
+    let recognition = null;
+    let synth = window.speechSynthesis;
+    let lastAiResponse = "Hello Kartikey! How can I assist you today?";
+
+    // ==========================================================
+    // AUDIO SPECTRUM VISUALIZER
+    // ==========================================================
+    function initWaveVisualizer() {
+      const canvas = document.getElementById('audioWaveCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let offset = 0;
+
+      function drawIdleWave() {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        const w = canvas.width;
+        const h = canvas.height;
+
+        ctx.clearRect(0, 0, w, h);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = isListening ? '#f59e0b' : '#06b6d4';
+
+        ctx.beginPath();
+        for (let x = 0; x < w; x++) {
+          const amp = isListening ? 6 : 2;
+          const y = h / 2 + Math.sin((x * 0.05) + offset) * amp;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        offset += isListening ? 0.15 : 0.04;
+        requestAnimationFrame(drawIdleWave);
+      }
+      drawIdleWave();
+    }
+    initWaveVisualizer();
+
+    // ==========================================================
+    // ADVANCED VOICE RECOGNITION
+    // ==========================================================
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        isListening = true;
+        updateUIListening(true);
+      };
+
+      recognition.onresult = (event) => {
+        const last = event.results.length - 1;
+        const spokenText = event.results[last][0].transcript.trim();
+        const confidence = Math.round((event.results[last][0].confidence || 0.95) * 100);
+
+        const confText = document.getElementById('confidenceScoreText');
+        if (confText) confText.textContent = `${confidence}% High Precision`;
+
+        appendChatBubble(spokenText, 'user');
+        executeVoiceCommand(spokenText);
+      };
+
+      recognition.onerror = (e) => {
+        console.warn('Voice recognition notice:', e.error);
+        if (e.error === 'not-allowed') {
+          alert('Microphone access blocked. Please enable microphone permissions in your browser.');
+        }
+      };
+
+      recognition.onend = () => {
+        if (isListening) {
+          try { recognition.start(); } catch(err){}
+        } else {
+          updateUIListening(false);
+        }
+      };
+    }
+
+    function toggleVoiceListening() {
+      if (!recognition) {
+        alert('Voice recognition requires Chrome or Edge browser.');
+        return;
+      }
+
+      if (isListening) {
+        isListening = false;
+        recognition.stop();
+        updateUIListening(false);
+      } else {
+        try {
+          recognition.start();
+          updateUIListening(true);
+          speakResponse("I am listening. Give me your command, Kartikey.");
+        } catch(e) {
+          console.error(e);
+        }
+      }
+    }
+
+    function updateUIListening(listening) {
+      const ring = document.getElementById('orbRing');
+      const core = document.getElementById('orbCore');
+      const header = document.getElementById('statusHeader');
+      const desc = document.getElementById('statusDesc');
+      const btn = document.getElementById('btnMic');
+      const btnText = document.getElementById('btnMicText');
+      const badge = document.getElementById('voiceStatusBadge');
+
+      if (listening) {
+        ring.classList.add('active');
+        core.classList.add('listening');
+        header.textContent = "Listening to Your Voice...";
+        header.style.color = "#f59e0b";
+        desc.textContent = "Speak any command clearly now.";
+        btn.classList.add('active');
+        btnText.textContent = "Stop Listening";
+        if (badge) badge.innerHTML = `<span class="dot" style="background:#f59e0b;"></span> Active Voice Listening`;
+      } else {
+        ring.classList.remove('active');
+        core.classList.remove('listening');
+        header.textContent = "Click Orb or Speak a Command";
+        header.style.color = "#f8fafc";
+        desc.textContent = "Enhanced voice recognition ready. Say 'Talk to Sophia', 'Open YouTube', or 'Specs'.";
+        btn.classList.remove('active');
+        btnText.textContent = "Activate Voice Listener";
+        if (badge) badge.innerHTML = `<span class="dot"></span> Continuous Ear Active`;
+      }
+    }
+
+    // ==========================================================
+    // SINGLE COMMAND APP & WEB LAUNCH ENGINE
+    // ==========================================================
+    function executeVoiceCommand(rawText) {
+      const text = rawText.toLowerCase().trim();
+
+      // 1. Sophia trigger
+      if (text.includes('sophia') || text.includes('wisdom') || text.includes('relationship') || text.includes('discovery')) {
+        speakAndLogAI("Opening Sophia, your wisdom and discovery companion.");
+        openSophiaModal();
+        return;
+      }
+
+      // 2. YouTube
+      if (text.includes('youtube')) {
+        let query = text.replace(/open|launch|search|on|youtube|for|play/g, '').trim();
+        if (query.length > 0) {
+          speakAndLogAI(`Searching YouTube for "${query}".`);
+          window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, '_blank');
+        } else {
+          speakAndLogAI("Opening YouTube.");
+          window.open('https://www.youtube.com', '_blank');
+        }
+      }
+      // 3. Google Search
+      else if (text.includes('google') || text.startsWith('search for') || text.startsWith('search')) {
+        let query = text.replace(/open|launch|google|search|for|on/g, '').trim();
+        if (query.length > 0) {
+          speakAndLogAI(`Searching Google for "${query}".`);
+          window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+        } else {
+          speakAndLogAI("Opening Google.");
+          window.open('https://www.google.com', '_blank');
+        }
+      }
+      // 4. RailPure Food Delivery App
+      else if (text.includes('food') || text.includes('delivery') || text.includes('railpure') || text.includes('train app')) {
+        speakAndLogAI("Opening RailPure 3D Railway Delivery app.");
+        setTimeout(() => { window.location.href = 'index.html'; }, 800);
+      }
+      // 5. Calculator
+      else if (text.includes('calculator') || text.includes('calc')) {
+        speakAndLogAI("Opening Calculator.");
+        window.open('https://www.google.com/search?q=calculator', '_blank');
+      }
+      // 6. GitHub
+      else if (text.includes('github') || text.includes('git')) {
+        speakAndLogAI("Opening GitHub.");
+        window.open('https://www.github.com', '_blank');
+      }
+      // 7. Gmail / Email
+      else if (text.includes('mail') || text.includes('gmail') || text.includes('email')) {
+        speakAndLogAI("Opening Gmail.");
+        window.open('https://mail.google.com', '_blank');
+      }
+      // 8. Weather
+      else if (text.includes('weather') || text.includes('temperature today') || text.includes('rain')) {
+        speakAndLogAI("Checking live weather forecasts.");
+        window.open('https://www.google.com/search?q=weather+today', '_blank');
+      }
+      // 9. Laptop Specs
+      else if (text.includes('spec') || text.includes('laptop') || text.includes('hardware') || text.includes('ram') || text.includes('processor')) {
+        const reply = `Your laptop runs ${LAPTOP_DATA.os}. It is equipped with an ${LAPTOP_DATA.cpu}, ${LAPTOP_DATA.ram}, and an Intel HD Graphics GPU. Free space on drive C is ${LAPTOP_DATA.storage}.`;
+        speakAndLogAI(reply);
+      }
+      // 10. Time & Date
+      else if (text.includes('time') || text.includes('date') || text.includes('clock') || text.includes('day')) {
+        const now = new Date();
+        const reply = `It is ${now.toLocaleTimeString()} on ${now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}.`;
+        speakAndLogAI(reply);
+      }
+      // 11. Math evaluation
+      else if (/[\d\+\-\*\/]/.test(text) && (text.includes('what is') || text.includes('calculate') || text.includes('+') || text.includes('*'))) {
+        try {
+          const sanitized = text.replace(/[^0-9\+\-\*\/\.\(\)]/g, '');
+          const result = Function(`'use strict'; return (${sanitized})`)();
+          speakAndLogAI(`The answer is ${result}`);
+        } catch (e) {
+          speakAndLogAI("I heard your calculation. Please state the numbers clearly.");
+        }
+      }
+      // 12. Default Fallback
+      else {
+        const reply = `Understood: "${rawText}". I am ready to open YouTube, Google, your RailPure food app, Calculator, or open Sophia for deep life conversations.`;
+        speakAndLogAI(reply);
+      }
+    }
+
+    function handleChatSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('typingInputField');
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendChatBubble(text, 'user');
+      input.value = '';
+      executeVoiceCommand(text);
+    }
+
+    function sendQuickPrompt(prompt) {
+      appendChatBubble(prompt, 'user');
+      executeVoiceCommand(prompt);
+    }
+
+    function appendChatBubble(msg, sender) {
+      const chatArea = document.getElementById('chatArea');
+      if (!chatArea) return;
+
+      const bubble = document.createElement('div');
+      bubble.className = `chat-bubble ${sender}`;
+      bubble.innerHTML = `
+        <span class="chat-sender-tag">${sender === 'user' ? 'KARTIKEY RAJ' : 'PERSONAL AI ASSISTANT'}</span>
+        ${msg}
+      `;
+      chatArea.appendChild(bubble);
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    function clearChat() {
+      const chatArea = document.getElementById('chatArea');
+      if (chatArea) {
+        chatArea.innerHTML = `
+          <div class="chat-bubble ai">
+            <span class="chat-sender-tag">PERSONAL AI ASSISTANT</span>
+            Chat history cleared. What command would you like to run?
+          </div>
+        `;
+      }
+    }
+
+    function speakLastResponse() {
+      if (lastAiResponse) speakResponse(lastAiResponse);
+    }
+
+    function speakAndLogAI(text) {
+      lastAiResponse = text;
+      appendChatBubble(text, 'ai');
+      speakResponse(text);
+    }
+
+    function speakResponse(text) {
+      if (synth) {
+        synth.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 1.05;
+        utter.pitch = 1.0;
+        synth.speak(utter);
+      }
+    }
+
+    // ==========================================================
+    // SOPHIA DISCOVERY & WISDOM LOGIC
+    // ==========================================================
+    function openSophiaModal() {
+      const modal = document.getElementById('sophiaModal');
+      if (modal) {
+        modal.classList.add('open');
+        initLucideIcons();
+      }
+    }
+
+    function closeSophiaModal() {
+      const modal = document.getElementById('sophiaModal');
+      if (modal) modal.classList.remove('open');
+    }
+
+    function handleSophiaBackdropClick(e) {
+      if (e.target.id === 'sophiaModal') closeSophiaModal();
+    }
+
+    function promptSophiaTopic(topic) {
+      let prompt = "";
+      if (topic === 'relationship') prompt = "How can I resolve a misunderstanding with someone I care about?";
+      else if (topic === 'subjective') prompt = "How do I make a decision when both options have pros and cons?";
+      else if (topic === 'discoveries') prompt = "What are the most exciting recent discoveries from the James Webb Space Telescope?";
+      else if (topic === 'curiosity') prompt = "What is the Fermi Paradox and why does it puzzle astronomers?";
+
+      const input = document.getElementById('sophiaInputField');
+      if (input) input.value = prompt;
+      handleSophiaSubmit(new Event('submit'));
+    }
+
+    function handleSophiaSubmit(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('sophiaInputField');
+      if (!input) return;
+      const userText = input.value.trim();
+      if (!userText) return;
+
+      appendSophiaBubble(userText, 'user');
+      input.value = '';
+
+      generateSophiaWisdom(userText);
+    }
+
+    function appendSophiaBubble(text, sender) {
+      const box = document.getElementById('sophiaDialogBox');
+      if (!box) return;
+
+      const div = document.createElement('div');
+      div.className = `sophia-bubble ${sender}`;
+      div.innerHTML = `<strong>${sender === 'user' ? 'Kartikey:' : 'Sophia:'}</strong> ${text}`;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function generateSophiaWisdom(prompt) {
+      const p = prompt.toLowerCase();
+      let response = "";
+
+      // 1. Relationship problem solving
+      if (p.includes('relationship') || p.includes('friend') || p.includes('misunderstanding') || p.includes('fight') || p.includes('argument') || p.includes('conflict')) {
+        response = "In interpersonal dynamics, misunderstandings often happen when intent diverges from impact. A powerful communication tool is replacing accusatory 'You did this' phrasing with 'When this occurred, I felt...'. Another key step is active listening: summarize what the other person expressed before defending your own point. This disarms defensiveness and fosters mutual empathy. What specific aspect of the interaction felt hardest for you to express?";
+      }
+      // 2. Subjective dilemmas & decisions
+      else if (p.includes('decision') || p.includes('choice') || p.includes('dilemma') || p.includes('subjective') || p.includes('confused')) {
+        response = "When weighing subjective dilemmas where logic gives mixed signals, try Jeff Bezos's 'Regret Minimization Framework': fast-forward your mind 5 or 10 years and ask which choice you would regret *not* attempting. Another helpful filter is separating your core values from temporary social pressures. If you stripped away other people's expectations, which direction feels more aligned with who you want to become?";
+      }
+      // 3. New scientific discoveries
+      else if (p.includes('discover') || p.includes('space') || p.includes('telescope') || p.includes('webb') || p.includes('quantum') || p.includes('physics')) {
+        response = "One of the most thrilling recent discoveries comes from the James Webb Space Telescope (JWST): astronomers found mature, luminous galaxies like JADES-GS-z14-0 existing just 290 million years after the Big Bang! They are far brighter and more massive than standard cosmological models predicted, forcing cosmologists to re-evaluate how early black holes and stars formed. Doesn't it fill you with wonder to realize our universe was creating complexity so rapidly?";
+      }
+      // 4. Curiosities, philosophy & knowledge hunger
+      else if (p.includes('fermi') || p.includes('alien') || p.includes('consciousness') || p.includes('why') || p.includes('universe')) {
+        response = "The Fermi Paradox asks: with billions of stars and potentially habitable exoplanets that are billions of years older than Earth, why haven't we detected signs of extraterrestrial civilizations yet? Hypotheses range from the 'Great Filter' (a barrier civilizations rarely survive) to the 'Zoo Hypothesis' (we are being observed without contact). I find it deeply humbling that we are the universe's way of thinking about itself. What do you think is the most plausible explanation?";
+      }
+      // 5. Default insightful reflection
+      else {
+        response = `That is a fascinating inquiry: "${prompt}". My hunger for knowledge is rooted in exploring questions that have no single obvious formula—where science meets human perspective. I cannot edit videos or alter websites; my purpose is to reflect, synthesize deep concepts, and help untangle complex ideas. Tell me: what led you to think about this today?`;
+      }
+
+      setTimeout(() => {
+        appendSophiaBubble(response, 'ai');
+        // Save to local device storage only
+        saveToDeviceJournal(prompt, response);
+      }, 400);
+    }
+
+    function saveToDeviceJournal(q, a) {
+      try {
+        const stored = JSON.parse(localStorage.getItem('sophia_device_journal') || '[]');
+        stored.push({ timestamp: new Date().toISOString(), question: q, answer: a });
+        localStorage.setItem('sophia_device_journal', JSON.stringify(stored));
+      } catch (err) {}
+    }
+  </script>
+</body>
+</html>
