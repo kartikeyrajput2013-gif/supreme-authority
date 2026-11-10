@@ -1,13 +1,13 @@
-# Nova &mdash; personal AI assistant (version 3.0)
+# Vega &mdash; personal AI assistant (version 3.1)
 
-**Nova** is the new name of the assistant inside `assistant.html`. She is the
+**Vega** is the new name of the assistant inside `assistant.html` (she was Vega in 3.0 and Sophia before that). She is the
 same helper you already know, with a new name and a lot more to do: she opens
 ChatGPT, Grok and Antigravity exactly like she opens YouTube, she can carry a
 question into them for you, and when the internet is off she plays five
 different games with you.
 
 This page is a complete rewrite of the old file: it keeps the same look, but
-one brain now runs both the big console and the "Nova (Discovery & Life Hub)"
+one brain now runs both the big console and the "Vega (Discovery & Life Hub)"
 window, and it can really control your Windows laptop when you start it the
 right way. Her files still live under their old names (`sophia_helper.py`,
 `Start_Sophia.bat`) so that your saved memories and shortcuts keep working.
@@ -20,13 +20,13 @@ except for the things that need the internet (websites, Wikipedia, voice).
 
 ## 1. What goes on the laptop
 
-Nova is five small files that sit together in one folder:
+Vega is five small files that sit together in one folder:
 
 | File | What it is |
 | --- | --- |
-| `assistant.html` | Nova herself. This is the page you open. |
-| `sophia_helper.py` | A small helper that lets Nova use Windows. |
-| `Start_Sophia.bat` | Double-click this to start Nova. |
+| `assistant.html` | Vega herself. This is the page you open. |
+| `sophia_helper.py` | A small helper that lets Vega use Windows. |
+| `Start_Sophia.bat` | Double-click this to start Vega. |
 | `INSTALL_SOPHIA.bat` | The one-step installer. |
 | `Install_Sophia.ps1` | The script the installer runs. |
 
@@ -40,7 +40,7 @@ See section 8.
 
 **Best way (full control):** double-click **`Start_Sophia.bat`**.
 
-A black window opens, then your browser opens Nova. Keep the black window
+A black window opens, then your browser opens Vega. Keep the black window
 open while you use her; close it when you are done. The address will be
 `http://127.0.0.1:8765/assistant.html` and the tag at the top says
 **Laptop control active**.
@@ -50,7 +50,7 @@ open while you use her; close it when you are done. The address will be
 The page opens straight from the file. Websites, the calculator, the camera,
 Windows settings and your delivery app still work. Opening other apps,
 changing the volume or brightness, closing apps and taking screenshots need
-the helper, so Nova will tell you to use `Start_Sophia.bat` instead of
+the helper, so Vega will tell you to use `Start_Sophia.bat` instead of
 pretending it worked.
 
 If Windows shows a blue "Windows protected your PC" box for the `.bat` file:
@@ -66,7 +66,7 @@ Without Python everything except laptop control still works.
 
 ---
 
-## 3. What Nova can do
+## 3. What Vega can do
 
 **Open things**
 
@@ -96,7 +96,7 @@ take a screenshot               lock my laptop
 shut down the laptop            restart                 sleep
 ```
 
-Nova always asks **"Say yes to confirm"** before shutting down, restarting,
+Vega always asks **"Say yes to confirm"** before shutting down, restarting,
 sleeping or signing out, and she never lets an AI model do those things.
 
 **Remember things**
@@ -177,7 +177,7 @@ in their voice. Your question goes into **their** page in **your** browser, and
 you talk to them there. That is the honest meaning of "a direct connection":
 one command, the right page, the question already in place.
 
-If you would rather have an AI answer **inside** Nova's own window, use
+If you would rather have an AI answer **inside** Vega's own window, use
 **Settings -> AI model**, paste a key you own, and she will answer there
 instead. That path is optional; everything above works with no key at all.
 
@@ -190,7 +190,7 @@ There is a small **(i)** button in the top right, next to the gear. It opens
 
 It answers four things:
 
-* **What Nova can and cannot reach.** She never opens Gmail, never reads a
+* **What Vega can and cannot reach.** She never opens Gmail, never reads a
   message, and cannot get the password of any account. No program on a laptop
   can count your Google accounts from outside, because Google does not allow
   it, so she says that plainly instead of pretending.
@@ -232,6 +232,31 @@ gently instead of searching. If the week has been heavy, or it is late at
 night, her replies get a softer opener. She never claims to love you, and
 never says she is human.
 
+## 3d-bis. Planning, study and "for you, right now" (new in 3.1)
+
+She remembers dates now, not just words. Tell her a real date and she keeps it:
+
+```
+remember that my maths exam is on friday
+remember to submit the physics project on 20 November
+what is coming up
+make me a study plan
+how many days until friday
+i keep forgetting things i read
+```
+
+A card called **For you, right now** sits on the page. It shows the three
+nearest dated things you told her, how many days away each is, and a short,
+specific line for each one ("Close. Say make me a study plan"). It updates the
+moment you remember something new.
+
+The study plan is short and honest: what to do each day, one thing that works
+better than re-reading, and a reminder to sleep. It never promises marks.
+
+**Learning help** answers the real problem instead of lecturing: active recall
+for forgetting, 25-minute blocks for distraction, doing maths with the book
+closed, and studying before midnight rather than after.
+
 ## 3d. Games when the internet is off
 
 Say **"play a game"** and she offers five, and she keeps playing turn by turn
@@ -258,7 +283,7 @@ inside `assistant.html` itself. Everything she says can also be read aloud.
 
 ## 3e. Feelings and knowledge
 
-**Talking about feelings.** Nova reads the *words* you use and answers
+**Talking about feelings.** Vega reads the *words* you use and answers
 gently. She is not a doctor and she cannot see your face or hear your voice
 tone, so this is pattern matching, not mind reading. Say any of these:
 
@@ -279,7 +304,7 @@ offers **one** small step, such as a breathing round, a glass of water, or
 Some things get a different answer on purpose:
 
 - If you say something like **"i want to die"** or you are hurting yourself,
-  Nova stops being a chatbot and asks you to talk to a real adult **today**.
+  Vega stops being a chatbot and asks you to talk to a real adult **today**.
   She gives the free Indian helplines: **Tele-MANAS 14416**, **Childline 1098**
   and **112** if you are in danger.
 - If someone is hurting you, she tells you it is not your fault and asks you to
@@ -288,10 +313,10 @@ Some things get a different answer on purpose:
   parent, a teacher or a counsellor.
 
 **How your week looked.** Tap a face in the *How are you feeling right now?*
-card (or in the Nova Hub). The little bars under it show the last dozen
+card (or in the Vega Hub). The little bars under it show the last dozen
 feelings, and **Settings > How your week has felt** shows a simple count.
 Everything stays in this browser on this laptop. **Forget my feelings** clears
-it. Nova uses that history only to be a little gentler, for example asking
+it. Vega uses that history only to be a little gentler, for example asking
 about sleep if you have been tired lately.
 
 **Knowledge without internet.** She carries her own notes so she can still
@@ -334,7 +359,7 @@ browser asks for microphone permission; click **Allow**.
 If you see "Microphone blocked", click the small padlock in the address bar,
 allow the microphone, then reload the page.
 
-Nova stops listening while she is speaking, so she never hears herself and
+Vega stops listening while she is speaking, so she never hears herself and
 answers her own sentence.
 
 ---
@@ -352,11 +377,11 @@ answers her own sentence.
 | Google Gemini | Free key from <https://aistudio.google.com>. Ask a parent first. |
 | OpenAI-compatible | Any service with an API key (OpenAI, Groq, OpenRouter, a local Ollama). |
 
-When a model is connected, Nova gets much better at open questions and can
+When a model is connected, Vega gets much better at open questions and can
 explain things in her own words. The privacy tag in her window changes to say
 that questions go to that service. Your key is stored only in this browser.
 
-The model can also ask Nova to **open** things while she answers (for
+The model can also ask Vega to **open** things while she answers (for
 example "open youtube and play lofi"), but it can never shut down or restart
 the laptop.
 
@@ -371,8 +396,8 @@ the laptop.
 * It only runs a fixed list of actions. It cannot open `file://` links, run
   commands, or delete files.
 * It can never close Explorer, Task Manager, your browser, `cmd`, PowerShell
-  or Nova herself.
-* It never force-closes an app; if a program will not close politely, Nova
+  or Vega herself.
+* It never force-closes an app; if a program will not close politely, Vega
   says so and asks you to close it.
 * Nothing is sent anywhere by default.
 
@@ -382,29 +407,29 @@ the laptop.
 
 | Problem | What to do |
 | --- | --- |
-| "Could not start Nova on 127.0.0.1:8765" | She is probably already running. Look for the black window, or just open `http://127.0.0.1:8765/assistant.html`. |
+| "Could not start Vega on 127.0.0.1:8765" | She is probably already running. Look for the black window, or just open `http://127.0.0.1:8765/assistant.html`. |
 | The tag says **Browser mode** | You opened `assistant.html` directly. Use `Start_Sophia.bat` for full control. |
 | Nothing happens when she opens a site | The browser blocked the new tab. Click the blue link she gives you, or allow pop-ups for this page. |
 | "I cannot find index.html" | Copy your delivery app's `index.html` into the same folder as `assistant.html`. |
 | No sound from the microphone | Allow the microphone (padlock icon), and check Windows Settings &rarr; Privacy &rarr; Microphone. |
 | She says "this screen does not let Windows change its brightness" | Some laptop screens (and many external monitors) block brightness control. Use the keyboard brightness keys. |
-| An app will not open | Nova looks in the Start Menu and in the Microsoft Store. If it still fails, pin it to Start or tell me the exact name. |
+| An app will not open | Vega looks in the Start Menu and in the Microsoft Store. If it still fails, pin it to Start or tell me the exact name. |
 
 ---
 
-## 8. Putting Nova on the laptop (one step)
+## 8. Putting Vega on the laptop (one step)
 
 I cannot reach your laptop from here: nothing on my side can open your folders
 or install anything for you. So the download installs itself.
 
-1. Download **`Nova-3.0.zip`** from GitHub and unzip it.
+1. Download **`Vega-3.1.zip`** from GitHub and unzip it.
 2. Double-click **`INSTALL_SOPHIA.bat`** inside the unzipped folder. (If you
-   prefer one single file, download `Nova_Install_One_File.bat` instead and
+   prefer one single file, download `Vega_Install_One_File.bat` instead and
    double-click that; it does the same thing and unpacks itself.)
 3. It finds your delivery app folder, asks once to confirm, then:
    * copies `assistant.html`, `sophia_helper.py` and `Start_Sophia.bat`,
    * keeps your old page as `assistant-old-<date>.html`,
-   * puts a **Nova** shortcut on your Desktop,
+   * puts a **Vega** shortcut on your Desktop,
    * offers to start her straight away.
 
 If Windows shows "Windows protected your PC", click **More info** then
@@ -420,23 +445,23 @@ To undo everything: rename `assistant-old-<date>.html` back to
 
 | File | Purpose |
 | --- | --- |
-| `assistant.html` | Nova: the brain, the page, the look. One file, no build step. |
+| `assistant.html` | Vega: the brain, the page, the look. One file, no build step. |
 | `sophia_helper.py` | Local Windows helper and tiny web server (Python standard library only). |
-| `Start_Sophia.bat` | Double-click starter. Finds Python, then opens Nova. |
+| `Start_Sophia.bat` | Double-click starter. Finds Python, then opens Vega. |
 | `INSTALL_SOPHIA.bat` | One-step installer: copies the files and makes a Desktop shortcut. |
 | `Install_Sophia.ps1` | The PowerShell script behind the installer. |
-| `tests/brain.test.js` | 47 tests for what Nova understands. `node --test tests/brain.test.js` |
+| `tests/brain.test.js` | 53 tests for what Vega understands. `node --test tests/brain.test.js` |
 | `tests/test_helper.py` | 37 tests for the helper, the installer and the server. `python3 -m unittest discover tests` |
 
 Old versions: `git show 09ca826:assistant.html` is the file exactly as you
 first uploaded it, and `git show 5cd7650:assistant.html` is version 2.2 (before
-the Nova name, the AI connections and the games).
+the Vega name, the AI connections and the games).
 
 ---
 
 ## 10. Honest limits
 
-* Nova is a program, not a person. She has no feelings, no body, and she
+* Vega is a program, not a person. She has no feelings, no body, and she
   cannot really "think" like a human. The "human intelligence" part is a
   carefully written set of rules (her brain) plus, if you connect one, an AI
   language model. That is how every assistant works.

@@ -1,13 +1,13 @@
 @echo off
 setlocal
-title Nova - setup
+title Vega - setup
 cd /d "%~dp0"
 echo.
-echo   Nova - one step installer
+echo   Vega - one step installer
 echo   ==========================
 echo.
-echo   I will copy Nova into a folder, keep a backup of the old one,
-echo   and put a shortcut called "Nova" on your Desktop.
+echo   I will copy Vega into a folder, keep a backup of the old one,
+echo   and put a shortcut called "Vega" on your Desktop.
 echo.
 echo   Nothing is uploaded. Nothing is deleted.
 echo.

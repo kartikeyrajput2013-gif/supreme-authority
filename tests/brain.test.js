@@ -565,13 +565,15 @@ test('the new games keep playing when you just type your turn', async () => {
   assert.match(stopped.text, /stopped/i);
 });
 
-test('she calls herself Nova, and still answers to Sophia', async () => {
-  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser' });
-  const who = await sophia.handle('who are you');
-  assert.match(who.text, /Nova/);
+test('she calls herself Vega, and still answers to her old names', async () => {
+  const vega = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser' });
+  const who = await vega.handle('who are you');
+  assert.match(who.text, /Vega/);
   assert.ok(!/\bSophia\b/.test(who.text), who.text);
-  const old = await sophia.handle('hey sophia');
-  assert.ok(old.text.length > 0);
+  assert.ok(!/\bNova\b/.test(who.text), who.text);
+  // people remember the old names, so both still wake her
+  assert.ok((await vega.handle('hey nova')).text.length > 0);
+  assert.ok((await vega.handle('hey sophia')).text.length > 0);
 });
 
 /* ------------------------------------------------ caring, security, privacy */
@@ -649,4 +651,75 @@ test('the helper only reports counts, never passwords', () => {
   assert.ok(!/password_value/i.test(fn));
   assert.ok(!/cookies/i.test(fn));
   assert.match(fn, /os\.remove\(tmp\)/);
+});
+
+/* ------------------------------------------------- planning and study help */
+
+test('she understands dates the way people actually write them', () => {
+  const now = new Date('2026-11-10T10:00:00'); // a Tuesday
+  assert.strictEqual(Brain.daysUntil(Brain.readDayPhrase('today', now), now), 0);
+  assert.strictEqual(Brain.daysUntil(Brain.readDayPhrase('tomorrow', now), now), 1);
+  assert.strictEqual(Brain.daysUntil(Brain.readDayPhrase('friday', now), now), 3);
+  assert.strictEqual(Brain.daysUntil(Brain.readDayPhrase('next monday', now), now), 6);
+  assert.strictEqual(Brain.daysUntil(Brain.readDayPhrase('20 november', now), now), 10);
+  assert.strictEqual(Brain.daysUntil(Brain.readDayPhrase('12/12', now), now), 32);
+  assert.strictEqual(Brain.dayPhrase(Brain.readDayPhrase('tomorrow', now), now), 'tomorrow');
+  assert.strictEqual(Brain.readDayPhrase('banana', now), null);
+});
+
+test('a remembered exam becomes a plan, not a Google search', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser', now: () => new Date('2026-11-10T10:00:00'), random: () => 0.2 });
+  await sophia.handle('remember that my maths exam is on friday');
+  const plan = await sophia.handle('make me a study plan');
+  assert.match(plan.text, /maths/i);
+  assert.match(plan.text, /Day 1/);
+  assert.match(plan.text, /Friday/);
+  assert.ok(!/search Google/i.test(plan.text));
+  assert.ok(!/Days 1-1|Day 3 to 2/.test(plan.text), plan.text);
+
+  const list = await sophia.handle('what is coming up');
+  assert.match(list.text, /maths exam/i);
+  assert.match(list.text, /3 days/);
+});
+
+test('with no saved dates she says so instead of inventing one', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser', now: () => new Date('2026-11-10T10:00:00') });
+  const plan = await sophia.handle('make me a study plan');
+  assert.match(plan.text, /do not have a dated thing|remember that my maths exam/i);
+  const up = await sophia.handle('what is coming up');
+  assert.match(up.text, /Nothing dated/i);
+});
+
+test('learning help is real technique, and the countdown is right', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser', now: () => new Date('2026-11-10T10:00:00') });
+  const forget = await sophia.handle('i keep forgetting things i read');
+  assert.match(forget.text, /active recall|test(?:ing)? yourself/i);
+  const focus = await sophia.handle('i cannot focus');
+  assert.match(focus.text, /25-minute|another room|phone/i);
+  const days = await sophia.handle('how many days until friday');
+  assert.match(days.text, /3 days/);
+  const today = await sophia.handle('how many days until today');
+  assert.match(today.text, /today/i);
+});
+
+test('the page card only shows real dated things, and caps at three', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser', now: () => new Date('2026-11-10T10:00:00') });
+  await sophia.handle('remember that my bag is in the cupboard');
+  assert.deepStrictEqual(sophia.focus(), []);
+  await sophia.handle('remember that my maths exam is on friday');
+  await sophia.handle('remember to submit the physics project on 20 november');
+  await sophia.handle('remember that my english test is on 1 december');
+  const card = sophia.focus();
+  assert.strictEqual(card.length, 3);
+  assert.strictEqual(card[0].days, 3);
+  assert.match(card[0].text, /maths/i);
+  assert.ok(card.every((x) => typeof x.text === 'string' && x.days >= 0));
+});
+
+test('a long question is never mistaken for a game choice', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser', now: () => new Date('2026-11-10T10:00:00') });
+  await sophia.handle('play a game');
+  const r = await sophia.handle('what is 25 times 4');
+  assert.match(r.text, /100/);
+  assert.ok(!/story|scramble|guess the number/i.test(r.text));
 });

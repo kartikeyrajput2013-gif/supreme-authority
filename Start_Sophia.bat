@@ -1,11 +1,11 @@
 @echo off
 setlocal
-title Nova - Personal AI Assistant
+title Vega - Personal AI Assistant
 cd /d "%~dp0"
 echo.
-echo   Starting Nova, your personal AI assistant...
+echo   Starting Vega, your personal AI assistant...
 echo.
-echo   Keep this black window open while you use Nova.
+echo   Keep this black window open while you use Vega.
 echo   Press Ctrl + C in this window to stop her.
 echo.
 
@@ -38,19 +38,19 @@ if not defined PY (
 )
 if not defined PY goto NOPYTHON
 
-rem --- open Nova herself once the helper is up, a few seconds from now ---
+rem --- open Vega herself once the helper is up, a few seconds from now ---
 start "" /min cmd /c "timeout /t 6 /nobreak >nul & start """" "http://127.0.0.1:8765/assistant.html""
 
 %PY% "%~dp0sophia_helper.py" --host 127.0.0.1 --port 8765 %*
 goto END
 
 :NOPYTHON
-echo   Nova needs Python for full laptop control, but Python was not found here.
+echo   Vega needs Python for full laptop control, but Python was not found here.
 echo.
 echo   Two choices:
 echo     1. Install Python from https://www.python.org/downloads/  (tick "Add python.exe to PATH")
 echo        then double-click Start_Sophia.bat again. This is the full version.
-echo     2. Keep using browser mode: Nova still opens websites, settings,
+echo     2. Keep using browser mode: Vega still opens websites, settings,
 echo        the calculator and her own built-in apps, but not other programs.
 echo.
 echo   Opening browser mode now...

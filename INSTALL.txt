@@ -1,4 +1,4 @@
-NOVA 3.0 - PUT IT ON YOUR LAPTOP IN ONE STEP
+VEGA 3.1 - PUT IT ON YOUR LAPTOP IN ONE STEP
 ============================================
 
 I cannot reach your laptop from here. No program on my side can open your
@@ -9,26 +9,26 @@ into place.
 WHAT YOU DO (about one minute)
 ------------------------------
 
-1. Download Nova-3.0.zip from GitHub. (Or the single file
-   Nova_Install_One_File.bat, which does the same thing by itself.)
+1. Download Vega-3.1.zip from GitHub. (Or the single file
+   Vega_Install_One_File.bat, which does the same thing by itself.)
    Open it, and click "Extract All" (or right-click > Extract All).
 
 2. Inside the extracted folder, double-click:
 
         INSTALL_SOPHIA.bat
 
-3. A black window opens and asks you where Nova should live.
+3. A black window opens and asks you where Vega should live.
    It looks for your delivery app folder by itself and offers it to you.
    Press 1 to accept, or 2 to pick another folder.
 
 4. It then:
      - copies assistant.html, sophia_helper.py and Start_Sophia.bat
      - keeps a backup of your old assistant.html
-     - puts a shortcut called "Nova" on your Desktop
+     - puts a shortcut called "Vega" on your Desktop
 
-5. It asks "Start Nova now? [Y/n]". Press Enter.
+5. It asks "Start Vega now? [Y/n]". Press Enter.
 
-That is it. From now on, just double-click Nova on the Desktop.
+That is it. From now on, just double-click Vega on the Desktop.
 
 If Windows shows a blue "Windows protected your PC" box
 --------------------------------------------------------
@@ -39,7 +39,7 @@ can instead right-click Install_Sophia.ps1 and choose "Run with PowerShell".
 WHAT NEEDS PYTHON
 -----------------
 Full laptop control (volume, brightness, closing apps, the app list) needs
-Python. If Python is not on the laptop, Nova still starts in browser mode:
+Python. If Python is not on the laptop, Vega still starts in browser mode:
 websites, maths, memory, feelings, knowledge, quiz and games all work, and
 Windows will still open apps from her buttons. To get the full version,
 install Python from python.org and tick "Add python.exe to PATH", then run
@@ -51,17 +51,17 @@ Your old page is kept as assistant-old-<date>.html in the same folder.
 Rename it back to assistant.html and you are exactly where you were before.
 The installer never deletes your delivery app, your photos or anything else.
 
-WHAT IS NEW IN THIS VERSION (3.0)
+WHAT IS NEW IN THIS VERSION (3.1)
 ---------------------------------
 - A small (i) button in the top corner opens "Security and privacy". It tells
-  you plainly what Nova can and cannot reach, and it can check this laptop:
+  you plainly what Vega can and cannot reach, and it can check this laptop:
   firewall, virus protection, updates, disk encryption, sign-in accounts and
   a COUNT of saved browser sign-ins. It never reads a password and never
   opens your mail. She cannot list your Gmail accounts, and she says so.
 - Feeling and caring: "why do I feel like this", "do you care about me",
   "i can't sleep" and heavy sentences like "nothing matters" now get a kind,
   honest answer instead of a Google search.
-- She has a name now: Nova. Say "hey Nova"; "hey Sophia" still wakes her.
+- She has a name now: Vega. She was Nova in 3.0. Say "hey Vega"; "hey Nova" and "hey Sophia" still wake her.
 - ChatGPT, Gemini, Grok, Claude and Antigravity are on her list like any
   other site. Say "ask grok why is the sky blue" and she opens Grok with
   the question already in the box. Gemini and Antigravity get it on the
@@ -73,6 +73,12 @@ WHAT IS NEW IN THIS VERSION (3.0)
   with a search box. One click opens it.
 - Open buttons no longer do nothing. Every open either works, opens a tab,
   or tells you in words why it could not and what to press instead.
+- A "For you, right now" card: the three nearest dated things you told her,
+  with days left and what to do about each.
+- Study planning: "remember that my maths exam is on Friday", then
+  "make me a study plan". "What is coming up" and "how many days until
+  Friday" work too, and "i keep forgetting things i read" gets a real
+  method instead of a lecture.
 - The launcher buttons and the "Open" links now work in browser mode too.
 - Feelings: 16 kinds, with gentle answers and real helpline numbers.
 - Knowledge: 30 topics, about 190 notes, 96 quiz questions, 60 quick facts,

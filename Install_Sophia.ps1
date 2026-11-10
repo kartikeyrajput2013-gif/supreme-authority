@@ -1,6 +1,6 @@
 ﻿# ============================================================================
-#  Nova one-step installer for Windows
-#  Double-click THIS file. It copies Nova next to your delivery app,
+#  Vega one-step installer for Windows
+#  Double-click THIS file. It copies Vega next to your delivery app,
 #  keeps a backup of the old assistant.html, and makes a Desktop shortcut.
 #  Nothing is uploaded and nothing is deleted.
 # ============================================================================
@@ -9,7 +9,7 @@ $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 Write-Host ""
 Write-Host "  ============================================" -ForegroundColor Cyan
-Write-Host "    Nova - one step installer" -ForegroundColor Cyan
+Write-Host "    Vega - one step installer" -ForegroundColor Cyan
 Write-Host "  ============================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -48,7 +48,7 @@ function Pick-Folder($title) {
 }
 
 # ---------------------------------------------------------------- 1. the folder
-Write-Host "  Where should Nova live?" -ForegroundColor Cyan
+Write-Host "  Where should Vega live?" -ForegroundColor Cyan
 Write-Host "  The best place is the same folder as your delivery app (index.html)." -ForegroundColor Gray
 $desktop = [Environment]::GetFolderPath('Desktop')
 $docs = [Environment]::GetFolderPath('MyDocuments')
@@ -95,10 +95,10 @@ if ($delivery) {
     Write-Host ""
     Write-Host "  Delivery app found:" -ForegroundColor Green
     Write-Host "    $delivery" -ForegroundColor White
-    $ans = Ask-Yes "Should Nova live in that folder (next to index.html)?"
+    $ans = Ask-Yes "Should Vega live in that folder (next to index.html)?"
     if ($ans -eq 'here') { $targets += $delivery }
     elseif ($ans -eq 'else') {
-        $p = Pick-Folder 'Choose the folder for Nova (next to index.html)'
+        $p = Pick-Folder 'Choose the folder for Vega (next to index.html)'
         if ($p) { $targets += $p }
     }
 } else {
@@ -109,13 +109,13 @@ if ($delivery) {
         $p = Pick-Folder 'Choose the folder where your delivery app lives'
         if ($p) { $targets += $p }
     } elseif ($ans -eq 'else') {
-        $p = Pick-Folder 'Choose any folder for Nova'
+        $p = Pick-Folder 'Choose any folder for Vega'
         if ($p) { $targets += $p }
     }
 }
 
 if ($targets.Count -eq 0) {
-    $fallback = Join-Path $env:USERPROFILE 'Nova'
+    $fallback = Join-Path $env:USERPROFILE 'Vega'
     Write-Host ""
     Write-Host "  No folder chosen, so I will use: $fallback" -ForegroundColor Yellow
     $targets += $fallback
@@ -142,17 +142,17 @@ foreach ($dest in $targets) {
 # ---------------------------------------------------------- 3. desktop link
 $desk = [Environment]::GetFolderPath('Desktop')
 $first = $targets[0]
-$lnkPath = Join-Path $desk 'Nova.lnk'
+$lnkPath = Join-Path $desk 'Vega.lnk'
 try {
     $shell = New-Object -ComObject WScript.Shell
     $lnk = $shell.CreateShortcut($lnkPath)
     $lnk.TargetPath = (Join-Path $first 'Start_Sophia.bat')
     $lnk.WorkingDirectory = $first
-    $lnk.Description = 'Start Nova, your personal AI assistant'
+    $lnk.Description = 'Start Vega, your personal AI assistant'
     $lnk.IconLocation = 'shell32.dll,21'
     $lnk.Save()
     Write-Host ""
-    Write-Host "  A shortcut called Nova is now on your Desktop." -ForegroundColor Green
+    Write-Host "  A shortcut called Vega is now on your Desktop." -ForegroundColor Green
 } catch {
     Write-Host ""
     Write-Host "  I could not make the Desktop shortcut, but the files are installed." -ForegroundColor Yellow
@@ -160,20 +160,20 @@ try {
 
 Write-Host ""
 Write-Host "  ============================================" -ForegroundColor Cyan
-Write-Host "    Done. Nova is on this laptop." -ForegroundColor Cyan
+Write-Host "    Done. Vega is on this laptop." -ForegroundColor Cyan
 Write-Host "  ============================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  Next time: double-click Nova on the Desktop." -ForegroundColor White
+Write-Host "  Next time: double-click Vega on the Desktop." -ForegroundColor White
 Write-Host "  Or double-click Start_Sophia.bat in that folder." -ForegroundColor White
 Write-Host ""
 Write-Host "  What is new: the big list of every app on this laptop, and every" -ForegroundColor Gray
 Write-Host "  Open button now always opens something or tells you why not." -ForegroundColor Gray
 Write-Host ""
-Write-Host "  If Windows shows a small warning about Python, Nova still opens" -ForegroundColor Gray
+Write-Host "  If Windows shows a small warning about Python, Vega still opens" -ForegroundColor Gray
 Write-Host "  in browser mode; she just cannot change volume or play with apps." -ForegroundColor Gray
 Write-Host ""
 
-$go = Read-Host "  Start Nova now? [Y/n]"
+$go = Read-Host "  Start Vega now? [Y/n]"
 if ($go -notmatch '^[nN]') {
     Start-Process -FilePath (Join-Path $first 'Start_Sophia.bat') -WorkingDirectory $first
 }
