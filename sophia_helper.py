@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Sophia's laptop helper.
+Nova's laptop helper. (Her files keep the old name so nothing breaks.)
 
 What it does
 ------------
@@ -46,7 +46,7 @@ ALLOWED_SCHEMES = (
     "zoommtg:", "msteams:",
 )
 
-# Programs Sophia must never close: Windows itself, and anything that would
+# Programs Nova must never close: Windows itself, and anything that would
 # kill this helper or the browser the user is talking through.
 PROTECTED_PROCESSES = {
     "explorer.exe", "csrss.exe", "wininit.exe", "winlogon.exe", "services.exe",
@@ -238,7 +238,7 @@ def find_start_app(name):
 
 
 def protected_this_time(host_browser=None):
-    """Sophia runs inside a browser, so no browser may ever be closed by her."""
+    """Nova runs inside a browser, so no browser may ever be closed by her."""
     procs = set(PROTECTED_PROCESSES)
     procs.update({"chrome.exe", "msedge.exe", "firefox.exe", "opera.exe",
                   "brave.exe", "vivaldi.exe", "iexplore.exe"})
@@ -406,7 +406,7 @@ def action_screenshot(params):
         os.makedirs(out_dir, exist_ok=True)
     except OSError:
         out_dir = os.path.expanduser("~")
-    path = os.path.join(out_dir, time.strftime("Sophia_%Y-%m-%d_%H-%M-%S.png"))
+    path = os.path.join(out_dir, time.strftime("Nova_%Y-%m-%d_%H-%M-%S.png"))
     script = (
         "Add-Type -AssemblyName System.Windows.Forms, System.Drawing;"
         "$b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds;"
@@ -621,7 +621,7 @@ def action_list_apps(params):
 
 
 def action_open_self(params):
-    """Bring Sophia's own page to the front (opens the default browser on her)."""
+    """Bring Nova's own page to the front (opens the default browser on her)."""
     if not IS_WINDOWS:
         return fail("unsupported_os")
     page = os.path.join(os.path.dirname(os.path.abspath(__file__)), PAGE_NAME)
@@ -703,10 +703,10 @@ MISSING_PAGE = """<!DOCTYPE html>
 <style>body{font-family:Segoe UI,Arial,sans-serif;background:#071021;color:#e8f0fe;padding:40px;line-height:1.6}
 a{color:#38bdf8}code{background:#0d1930;padding:2px 6px;border-radius:6px}</style></head>
 <body><h1>Your delivery app page is not in this folder yet</h1>
-<p>Sophia is running, but there is no <code>index.html</code> next to her.</p>
+<p>Nova is running, but there is no <code>index.html</code> next to her.</p>
 <p>Copy your RailPure <code>index.html</code> (and its images and other files) into this same
 folder, then open <a href="/index.html">/index.html</a> again.</p>
-<p><a href="/assistant.html">Back to Sophia</a></p></body></html>"""
+<p><a href="/assistant.html">Back to Nova</a></p></body></html>"""
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -885,7 +885,7 @@ class SophiaServer(ThreadingHTTPServer):
     def sophia_state(self):
         return {
             "ok": True,
-            "name": "Sophia helper",
+            "name": "Nova helper",
             "version": VERSION,
             "token": self.token if self.token_required else "",
             "preview": self.preview,

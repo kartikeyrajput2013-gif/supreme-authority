@@ -329,7 +329,9 @@ class InstallerTests(unittest.TestCase):
 
     def test_installer_makes_a_desktop_shortcut(self):
         self.assertIn("WScript.Shell", self.ps1)
-        self.assertIn("'Sophia.lnk'", self.ps1)
+        # the assistant is called Nova now; the shortcut carries the new name
+        self.assertIn("'Nova.lnk'", self.ps1)
+        self.assertNotIn("'Sophia.lnk'", self.ps1)
 
     def test_bat_calls_the_script_and_pauses(self):
         self.assertIn("Install_Sophia.ps1", self.bat)

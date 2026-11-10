@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kartikey's Personal AI &middot; Sophia</title>
-<meta name="description" content="Sophia: a personal AI assistant for this laptop. Open apps and websites, control Windows, remember things and talk.">
+<title>Kartikey's Personal AI &middot; Nova</title>
+<meta name="description" content="Nova: a personal AI assistant for this laptop. Open apps and websites, control Windows, remember things and talk.">
 <style>
   :root {
     --bg: #050a14;
@@ -420,21 +420,21 @@
       <div class="brand-mark" aria-hidden="true"></div>
       <div>
         <h1>Kartikey's Personal AI</h1>
-        <p>Advanced Voice &amp; Sophia Knowledge Engine</p>
+        <p>Advanced Voice &amp; Nova Knowledge Engine</p>
       </div>
     </div>
     <div class="top-actions">
       <button class="pill sophia" id="openHub" type="button">
         <span class="dot" style="background:#a78bfa;box-shadow:0 0 10px #a78bfa"></span>
-        Sophia (Discovery &amp; Life Hub)
+        Nova (Discovery &amp; Life Hub)
       </button>
-      <span class="pill" id="modePill" title="How Sophia is running">
+      <span class="pill" id="modePill" title="How Nova is running">
         <span class="dot"></span><span id="modeText">Checking connection&hellip;</span>
       </span>
       <a class="pill" href="index.html" title="Open your RailPure delivery app">
         <span data-icon="external-link" class="sm"></span> RailPure Food App
       </a>
-      <button class="icon-btn" id="openSettings" type="button" aria-label="Sophia settings" title="Settings">
+      <button class="icon-btn" id="openSettings" type="button" aria-label="Nova settings" title="Settings">
         <span data-icon="settings"></span>
       </button>
     </div>
@@ -446,7 +446,7 @@
         <div class="card-head">
           <div>
             <h2 id="listenTitle">Advanced Voice Listener <span class="accent nowrap">(Acoustic Enhanced)</span></h2>
-            <p class="sub">Speak or type. Sophia understands commands and questions.</p>
+            <p class="sub">Speak or type. Nova understands commands and questions.</p>
           </div>
           <div class="spacer"></div>
           <span class="listen-status" id="listenStatus"><span class="dot"></span><span id="listenText">Not listening</span></span>
@@ -485,11 +485,11 @@
         <div class="card-head">
           <div>
             <h2 id="launchTitle">Single-Command Launchers</h2>
-            <p class="sub">One click runs a real Sophia command.</p>
+            <p class="sub">One click runs a real Nova command.</p>
           </div>
         </div>
         <div class="launchers">
-          <button class="launch" type="button" data-cmd="open sophia"><span data-icon="sparkles" class="sm"></span><span>Sophia Hub</span></button>
+          <button class="launch" type="button" data-cmd="open nova"><span data-icon="sparkles" class="sm"></span><span>Nova Hub</span></button>
           <button class="launch" type="button" data-cmd="open youtube"><span data-icon="play-square" class="sm"></span><span>YouTube</span></button>
           <button class="launch" type="button" data-cmd="open google"><span data-icon="search" class="sm"></span><span>Google</span></button>
           <button class="launch" type="button" data-cmd="open delivery app"><span data-icon="utensils" class="sm"></span><span title="RailPure Food">RailPure</span></button>
@@ -512,14 +512,14 @@
           <div class="app-search"><input id="appSearch" type="search" placeholder="Find an app, then click it once" autocomplete="off" aria-label="Find an app"></div>
         </div>
         <div class="app-grid" id="appGrid"></div>
-        <p class="app-note" id="appsNote">One click opens it straight away. Say or type "open word" and Sophia finds it too.</p>
+        <p class="app-note" id="appsNote">One click opens it straight away. Say or type "open word" and Nova finds it too.</p>
       </section>
 
       <section class="card" aria-labelledby="moodTitle">
         <div class="card-head">
           <div>
             <h2 id="moodTitle">How are you feeling <span class="accent">right now?</span></h2>
-            <p class="sub">Pick one and Sophia will listen, then help. Nothing leaves this laptop.</p>
+            <p class="sub">Pick one and Nova will listen, then help. Nothing leaves this laptop.</p>
           </div>
         </div>
         <div class="mood-row" id="moodRow">
@@ -532,7 +532,7 @@
           <button class="mood" type="button" data-mood="lonely"><span class="emoji" aria-hidden="true">😔</span> Lonely</button>
           <button class="mood" type="button" data-mood="bored"><span class="emoji" aria-hidden="true">😴</span> Bored</button>
         </div>
-        <p class="mood-note" id="moodNote">Sophia keeps a gentle note of how your week has gone, only on this laptop. You can clear it any time in Settings.</p>
+        <p class="mood-note" id="moodNote">Nova keeps a gentle note of how your week has gone, only on this laptop. You can clear it any time in Settings.</p>
         <div class="week-strip" id="weekStrip" aria-hidden="true"></div>
       </section>
 
@@ -551,7 +551,7 @@
           <div class="row">
             <span data-icon="laptop" class="lg"></span>
             <div id="noticeText">
-              Checking how Sophia was started&hellip;
+              Checking how Nova was started&hellip;
             </div>
           </div>
         </div>
@@ -572,12 +572,12 @@
           </div>
         </div>
 
-        <div class="log" id="log" role="log" aria-live="polite" aria-label="Conversation with Sophia"></div>
+        <div class="log" id="log" role="log" aria-live="polite" aria-label="Conversation with Nova"></div>
 
         <form class="composer" id="composer" autocomplete="off">
-          <label class="sr-only" for="input">Type a command or question for Sophia</label>
+          <label class="sr-only" for="input">Type a command or question for Nova</label>
           <input id="input" type="text" placeholder="Type or speak a command (e.g. open youtube, volume up, what time is it)..." maxlength="500" />
-          <button class="icon-btn mic" id="micBtn" type="button" aria-label="Speak to Sophia" title="Speak to Sophia">
+          <button class="icon-btn mic" id="micBtn" type="button" aria-label="Speak to Nova" title="Speak to Nova">
             <span data-icon="mic"></span>
           </button>
           <button class="btn send" type="submit">Send</button>
@@ -596,15 +596,15 @@
   </div>
 </div>
 
-<!-- Sophia hub -->
+<!-- Nova hub -->
 <div class="overlay" id="hubOverlay" role="dialog" aria-modal="true" aria-labelledby="hubTitle">
   <div class="modal">
     <div class="modal-head">
       <div style="flex:1 1 auto">
-        <h2 id="hubTitle">Sophia &middot; Discovery &amp; Life Hub</h2>
+        <h2 id="hubTitle">Nova &middot; Discovery &amp; Life Hub</h2>
         <p>Talk things through, or ask for help with school, feelings and big questions.</p>
       </div>
-      <button class="icon-btn" id="closeHub" type="button" aria-label="Close Sophia hub"><span data-icon="x"></span></button>
+      <button class="icon-btn" id="closeHub" type="button" aria-label="Close Nova hub"><span data-icon="x"></span></button>
     </div>
 
     <div class="topics">
@@ -636,11 +636,11 @@
 
     <div class="privacy" id="hubPrivacy"><span data-icon="shield-check" class="sm"></span> <span id="hubPrivacyText">Private: nothing leaves this laptop.</span></div>
 
-    <div class="modal-log" id="hubLog" role="log" aria-live="polite" aria-label="Conversation with Sophia"></div>
+    <div class="modal-log" id="hubLog" role="log" aria-live="polite" aria-label="Conversation with Nova"></div>
 
     <form class="composer" id="hubForm" autocomplete="off" style="margin-top:12px">
-      <label class="sr-only" for="hubInput">Type a message for Sophia</label>
-      <input id="hubInput" type="text" placeholder="Type here... Sophia can also open apps from this chat." maxlength="500" />
+      <label class="sr-only" for="hubInput">Type a message for Nova</label>
+      <input id="hubInput" type="text" placeholder="Type here... Nova can also open apps from this chat." maxlength="500" />
       <button class="btn send" type="submit">Send</button>
     </form>
   </div>
@@ -650,14 +650,14 @@
 <div class="overlay" id="settingsOverlay" aria-hidden="true"></div>
 <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true">
   <div class="drawer-head">
-    <h2 id="drawerTitle">Sophia settings</h2>
+    <h2 id="drawerTitle">Nova settings</h2>
     <button class="icon-btn" id="closeDrawer" type="button" aria-label="Close settings"><span data-icon="x"></span></button>
   </div>
   <div class="drawer-body">
     <div class="field">
-      <label for="setName">What should Sophia call you?</label>
+      <label for="setName">What should Nova call you?</label>
       <input id="setName" type="text" maxlength="40" placeholder="Your name" />
-      <div class="hint">Sophia remembers this on this laptop only.</div>
+      <div class="hint">Nova remembers this on this laptop only.</div>
     </div>
 
     <div class="divider"></div>
@@ -718,7 +718,7 @@
     <div class="field">
       <label>How your week has felt</label>
       <div class="mood-bars" id="moodBars"></div>
-      <div class="hint" id="moodHint">Sophia only notices this to be kinder next time. It stays on this laptop.</div>
+      <div class="hint" id="moodHint">Nova only notices this to be kinder next time. It stays on this laptop.</div>
       <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px">
         <button class="btn ghost sm" id="refreshMood" type="button">Refresh</button>
         <button class="btn danger sm" id="clearMood" type="button">Forget my feelings</button>
@@ -728,7 +728,7 @@
     <div class="divider"></div>
 
     <div class="field">
-      <label>Sophia's memory</label>
+      <label>Nova's memory</label>
       <div class="memory-list" id="memoryList"></div>
       <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px">
         <button class="btn ghost sm" id="refreshMemory" type="button">Refresh</button>
@@ -741,7 +741,7 @@
 
     <div class="field">
       <label>About</label>
-      <div class="hint" id="aboutText">Sophia is a local HTML page. She is an AI program, not a human. Nothing is sent anywhere unless you connect an AI model or she looks something up on Wikipedia.</div>
+      <div class="hint" id="aboutText">Nova is a local HTML page. She is an AI program, not a human. Nothing is sent anywhere unless you connect an AI model or she looks something up on Wikipedia.</div>
     </div>
   </div>
 </aside>
@@ -751,14 +751,14 @@
 <!-- ===== the brain, kept in one script so it can be tested on its own ===== -->
 <script id="sophia-brain">
 /* ==========================================================================
-   SOPHIA'S BRAIN
+   NOVA'S BRAIN
    Understands what you type or say, decides what to do, and writes the reply.
    There is no page (DOM) code in this block, so it can be tested on its own.
    ========================================================================== */
 const SophiaBrain = (function () {
   'use strict';
 
-  const VERSION = '2.0.0';
+  const VERSION = '3.0.0';
 
   /* ---------------------------------------------------------------- helpers */
   function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
@@ -821,7 +821,7 @@ const SophiaBrain = (function () {
     return String(Object.is(r, -0) ? 0 : r);
   }
 
-  /* ------------------------------------------------- things Sophia can open */
+  /* ------------------------------------------------- things Nova can open */
   function S(id, label, names, url, search, extra) {
     return Object.assign({ kind: 'site', id: id, label: label, names: names, url: url, search: search || null }, extra || {});
   }
@@ -872,9 +872,11 @@ const SophiaBrain = (function () {
     S('hotstar', 'JioHotstar', ['hotstar', 'jiohotstar', 'jio hotstar', 'disney hotstar', 'disney plus hotstar'], 'https://www.hotstar.com'),
     S('primevideo', 'Prime Video', ['prime video', 'amazon prime', 'primevideo', 'amazon prime video'], 'https://www.primevideo.com'),
     S('spotify', 'Spotify', ['spotify'], 'https://open.spotify.com', 'https://open.spotify.com/search/{q}', { helper: 'Spotify', appUri: 'spotify:', procs: ['Spotify.exe'] }),
-    S('chatgpt', 'ChatGPT', ['chatgpt', 'chat gpt', 'openai'], 'https://chatgpt.com'),
-    S('gemini', 'Gemini', ['gemini', 'google gemini', 'bard'], 'https://gemini.google.com'),
-    S('claude', 'Claude', ['claude', 'claude ai'], 'https://claude.ai'),
+    S('chatgpt', 'ChatGPT', ['chatgpt', 'chat gpt', 'openai', 'gpt'], 'https://chatgpt.com', 'https://chatgpt.com/?q={q}'),
+    S('gemini', 'Gemini', ['gemini', 'google gemini', 'bard'], 'https://gemini.google.com/app'),
+    S('grok', 'Grok', ['grok', 'xai', 'x ai', 'grok ai'], 'https://grok.com', 'https://grok.com/?q={q}'),
+    S('antigravity', 'Antigravity', ['antigravity', 'anti gravity', 'google antigravity', 'antigravity ai'], 'https://antigravity.google.com'),
+    S('claude', 'Claude', ['claude', 'claude ai'], 'https://claude.ai', 'https://claude.ai/new?q={q}'),
     S('copilot', 'Copilot', ['copilot', 'microsoft copilot', 'bing chat'], 'https://copilot.microsoft.com'),
     S('stackoverflow', 'Stack Overflow', ['stack overflow', 'stackoverflow'], 'https://stackoverflow.com', 'https://stackoverflow.com/search?q={q}'),
     S('w3schools', 'W3Schools', ['w3schools', 'w3 schools'], 'https://www.w3schools.com'),
@@ -1492,7 +1494,7 @@ function moodSummary(moods, nowMs) {
   }
 
   /* -------------------------------------------- Hindi-English mix (Hinglish) */
-  // Each rule turns a common Hinglish sentence into the English command Sophia knows.
+  // Each rule turns a common Hinglish sentence into the English command Nova knows.
   const HINGLISH = [
     [/^mera naam kya (?:hai|h)$/, 'what is my name'],
     [/^mera naam (.+?) (?:hai|h)$/, 'my name is $1'],
@@ -1540,8 +1542,8 @@ function moodSummary(moods, nowMs) {
   }
 
   /* ------------------------------------------------------- sentence cleanup */
-  const NAME_ONLY = /^(?:(?:hey|hi|hello|ok|okay|yo)\s+)?(?:sophia|sofia|sophie|sofiya)$/;
-  const VOCATIVE = /^(?:(?:hey|hi|hello|ok|okay|yo|dear)\s+)?(?:sophia|sofia|sophie|sofiya)\b[\s,:!.-]*/;
+  const NAME_ONLY = /^(?:(?:hey|hi|hello|ok|okay|yo)\s+)?(?:nova|sophia|sofia|sophie|sofiya)$/;
+  const VOCATIVE = /^(?:(?:hey|hi|hello|ok|okay|yo|dear)\s+)?(?:nova|sophia|sofia|sophie|sofiya)\b[\s,:!.-]*/;
   const POLITE_PRE = /^(?:(?:please|pls|plz|kindly|zara|jara|ok|okay|so|now|well|um|uh|just)\s+)+/;
   const ASK_PRE = /^(?:can you|could you|would you|will you|can u|could u|would u|will u|i want you to|i need you to|i would like you to|i'd like you to|i want to|i wanna|i need to|i would like to|i'd like to|let's|lets|let us|go ahead and|you should)\s+(?:please\s+|kindly\s+|just\s+)?/;
   const POLITE_POST = /\s+(?:please|pls|plz|for me|yaar|ji)$/;
@@ -1554,8 +1556,8 @@ function moodSummary(moods, nowMs) {
   const YES_RE = /^(?:yes|yeah|yep|yup|ya|yes please|yes do it|ok|okay|okay do it|ok do it|sure|sure thing|of course|do it|go ahead|please do|confirm|confirmed|absolutely|definitely|alright|all right|y)$/;
   const NO_RE = /^(?:no|nope|nah|no thanks|no thank you|cancel|cancel it|cancel that|don't|dont|do not|never ?mind|leave it|not now|n)$/;
   const CRISIS_RE = /\b(?:kill myself|killing myself|want to die|wanna die|wish i was dead|wish i were dead|suicide|suicidal|end my life|ending it all|end it all|hurt myself|hurting myself|harm myself|self[- ]?harm|cut myself|don'?t want to live|do not want to live|no reason to live|no point (?:in )?living|want to disappear|nothing left to live for|marna chahta|marna chahti|mar jana chahta|mar jana chahti|jeena nahi chahta|jeena nahi chahti)\b/;
-  const HUB_OPEN_RE = /^(?:(?:open|launch|start|show|go to)\s+)?(?:the\s+)?(?:sophia|sofia|wisdom|discovery|life|knowledge)(?:'s)?\s+(?:hub|room|space|chat|modal|window|companion)$|^(?:talk|speak|chat) (?:to|with) (?:sophia|sofia)$|^(?:open|launch|show) (?:sophia|sofia)$/;
-  const HUB_CLOSE_RE = /^(?:close|exit|leave|hide|quit)\s+(?:the\s+)?(?:(?:sophia|sofia|wisdom|discovery|life)(?:'s)?(?:\s+(?:hub|room|space|chat|modal|window))?|hub|popup|pop-up|modal|this window|this popup)$/;
+  const HUB_OPEN_RE = /^(?:(?:open|launch|start|show|go to)\s+)?(?:the\s+)?(?:nova|sofia|wisdom|discovery|life|knowledge)(?:'s)?\s+(?:hub|room|space|chat|modal|window|companion)$|^(?:talk|speak|chat) (?:to|with) (?:nova|sofia)$|^(?:open|launch|show) (?:nova|sofia)$/;
+  const HUB_CLOSE_RE = /^(?:close|exit|leave|hide|quit)\s+(?:the\s+)?(?:(?:nova|sofia|wisdom|discovery|life)(?:'s)?(?:\s+(?:hub|room|space|chat|modal|window))?|hub|popup|pop-up|modal|this window|this popup)$/;
 
   const STRONG_START = /^(?:open|launch|start|run|go to|goto|visit|close|quit|exit|kill|play|watch|listen to|search|google|find|look up|lookup|volume|mute|unmute|louder|quieter|brightness|brighter|dim|increase|decrease|raise|lower|reduce|turn (?:on|off|up|down)|switch (?:on|off)|set (?:the |my )?(?:volume|brightness|sound)|take (?:a |the )?(?:screenshot|screen shot|snapshot)|capture|screenshot|lock|shut ?down|restart|reboot|sign out|log off|log out|pause|resume|next|previous|stop|show|check|talk to|remember|note|i am|i'm|im|i feel|i think|i want|i need|feeling)\b/;
   const WEAK_START = /^(?:what|what's|whats|who|who's|whos|when|where|why|how|tell me|is|are|do|does|did|can|could|calculate|define|explain|describe|give me|say)\b/;
@@ -1708,7 +1710,7 @@ function moodSummary(moods, nowMs) {
     if (/^(?:hi+|hello+|hey+|hola|yo|greetings|hey there|hello there|hi there|good (?:morning|afternoon|evening|day))(?: there| again)?$/.test(t)) return { intent: 'talk.greet' };
     if (/^good ?night$|^gn$|^sweet dreams$/.test(t)) return { intent: 'talk.bye', night: true };
     if (/^(?:how are you|how r u|how are u|how're you|how do you do|how is it going|how's it going|hows it going|how have you been|what's up|whats up|wassup|sup|how are things|how are you doing|how are you today|you good|are you ok|are you okay)$/.test(t)) return { intent: 'talk.howareyou' };
-    if (/^(?:who are you|what are you|what is your name|what's your name|whats your name|your name|tell me about yourself|introduce yourself|who is sophia|who's sophia|who is sofia)$/.test(t)) return { intent: 'talk.whoareyou' };
+    if (/^(?:who are you|what are you|what is your name|what's your name|whats your name|your name|tell me about yourself|introduce yourself|who is nova|who's nova|who is sofia)$/.test(t)) return { intent: 'talk.whoareyou' };
     if (/\bwho (?:made|created|built|developed|designed|programmed|invented) you\b|\bwho is your (?:creator|maker|developer|owner|boss|master|father|mother)\b|\bwho do you (?:belong to|work for)\b/.test(t)) return { intent: 'talk.creator' };
     if (/^(?:help|help me|can you help(?: me)?|i need help|what can you do|what do you do|what all can you do|what can i (?:ask|say)(?: you)?|what are your (?:features|abilities|skills|powers|commands)|how can you help(?: me)?|commands|list commands|show commands|what should i say|how do i use you|how to use you|menu|options|features)$/.test(t)) return { intent: 'talk.help' };
     if (/^(?:thanks|thank you|thankyou|thank u|thx|ty|thanks a lot|thank you so much|thank you very much|many thanks|appreciate it|great job|good job|well done|nice work|nice|awesome|perfect|great|cool|wow|superb|excellent|amazing)$/.test(t)) return { intent: 'talk.thanks' };
@@ -1767,8 +1769,17 @@ function moodSummary(moods, nowMs) {
     if (/^(?:(?:i )?(?:do not|don'?t) know|no idea|dunno|pata nahi)$/.test(t)) return { intent: 'quiz.dontknow' };
     if (/^(?:give me a hint|hint|clue|hint please)$/.test(t)) return { intent: 'hint' };
     if (/^(?:play (?:a |the )?game|let'?s play|start (?:a )?game|game|play with me|i want to play)$/.test(t)) return { intent: 'game.menu' };
-    if (/^(?:stop the game|end the game|i do not want to play|i don'?t want to play|quit the game)$/.test(t)) return { intent: 'game.stop' };
-    if ((m = t.match(/^(?:capital of|what(?:'s| is)? the capital of)\s+(.+)$/)) || (m = t.match(/^(.+?) (?:ki|ka) capital (?:kya hai|kya h)$/))) {
+    if (/^(?:(?:stop|end|quit|close|finish)(?: the)?(?: game| story)?|i do not want to play|i don'?t want to play|that is enough|no more game)$/.test(t)) return { intent: 'game.stop' };
+    if ((m = t.match(/^(?:ask|tell|show|send)(?: it to)? (chatgpt|chat gpt|gpt|gemini|grok|claude|copilot|antigravity|chatbot|the ai|ai)\s+(how|why|what|who|when|where|if|whether|to|for|about)\s+(.+)$/))) {
+      // keep the question word: "ask chatgpt how do rockets work"
+      const lead = m[2] === 'about' ? '' : m[2] + ' ';
+      const body = (lead + m[3]).trim().replace(/^to\s+/i, '');
+      return { intent: 'ask.ai', which: m[1], question: body };
+    }
+    if ((m = t.match(/^(?:ask|tell|show|send)(?: it to)? (chatgpt|chat gpt|gpt|gemini|grok|claude|copilot|antigravity|chatbot|the ai|ai)\s*[:,]?\s*(.+)$/))) {
+      return { intent: 'ask.ai', which: m[1], question: m[2].trim() };
+    }
+    if ((m = t.match(/^(?:capital of|what(?:'s| is)? the capital of)\s*(.+)$/)) || (m = t.match(/^(.+?) (?:ki|ka) capital (?:kya hai|kya h)$/))) {
       return { intent: 'capital', ask: m[1].trim() };
     }
     const conv = convertUnits(t);
@@ -1795,7 +1806,7 @@ function moodSummary(moods, nowMs) {
 
 
 /* ==========================================================================
-   WHAT SOPHIA KNOWS
+   WHAT NOVA KNOWS
    An offline pack of school-level facts, quick facts, riddles, quizzes,
    country capitals, unit conversions, and a checklist for common laptop
    problems. It is deliberately small and honest: real depth comes from the
@@ -1979,11 +1990,11 @@ const KNOWLEDGE = [
       'A large language model learns patterns from huge amounts of text and predicts the next word, over and over.',
       'AI, like the one you are talking to, does not understand things the way a person does; it produces useful answers from patterns.',
       'Good AI use means checking important facts yourself, and never sharing private information with a model you do not trust.',
-      'Sophia\'s own brain is a set of rules written in JavaScript, with an optional AI model connected only if you add a key.'
+      'Nova\'s own brain is a set of rules written in JavaScript, with an optional AI model connected only if you add a key.'
     ],
     quiz: [
       { q: 'What does a language model predict?', a: 'The next word (or token)' },
-      { q: 'Does Sophia need an AI key to work?', a: 'No, that is optional' }
+      { q: 'Does Nova need an AI key to work?', a: 'No, that is optional' }
     ]
   },
   {
@@ -2706,7 +2717,7 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
     if (HUB_OPEN_RE.test(t)) return { steps: [{ intent: 'hub.open' }] };
     if (HUB_CLOSE_RE.test(t)) return { steps: [{ intent: 'hub.close' }] };
 
-    t = t.replace(VOCATIVE, '').replace(/[\s,]+(?:sophia|sofia|sophie)$/, '').trim();
+    t = t.replace(VOCATIVE, '').replace(/[\s,]+(?:nova|sophia|sofia|sophie)$/, '').trim();
     if (!t) return { steps: [{ intent: 'talk.greet', nameOnly: true }] };
     t = hinglish(t);
     const talkText = t;
@@ -2775,8 +2786,7 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
   // What an AI model is allowed to trigger with a "DO:" line.
   const AI_SAFE = { open: 1, search: 1, weather: 1, close: 1, volume: 1, brightness: 1, media: 1, screenshot: 1, lock: 1, toggle: 1, 'hub.open': 1, time: 1, date: 1, battery: 1 };
   const REPEATABLE = { open: 1, search: 1, weather: 1, volume: 1, brightness: 1, media: 1, screenshot: 1, close: 1, toggle: 1 };
-
-  /* --------------------------------------------------------------- Sophia */
+  /* --------------------------------------------------------------- Nova */
   function create(env) {
     env = env || {};
     const rnd = env.random || Math.random;
@@ -2818,6 +2828,11 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       return {
         say: function (text, opts) { if (text) lines.push({ text: String(text), speak: !(opts && opts.silent) }); },
         link: function (label, url) { if (!links.some(function (l) { return l.url === url; })) links.push({ label: label, url: url }); },
+        copy: function (text) {
+          if (!text) return;
+          if (env.copy) { try { env.copy(text); } catch (e) { /* clipboard may be blocked by the browser */ } }
+          state.lastCopy = String(text);
+        },
         lines: lines, links: links
       };
     }
@@ -2964,7 +2979,7 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
         }
         return { state: md === 'preview' ? 'preview' : 'need', label: 'the ' + tg.label + ' folder' };
       }
-      // a name Sophia does not know yet
+      // a name Nova does not know yet
       if (md === 'laptop' || md === 'preview') {
         const r = await helper('open_app', { name: tg.name });
         if (r.ok && !r.preview) return { state: 'ok', label: r.opened || tg.name };
@@ -3308,6 +3323,8 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
     }
 
     /* ----- talking ----- */
+
+    /* ----- talking ----- */
     function helpText() {
       const md = mode();
       const lines = [
@@ -3338,7 +3355,7 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
         return;
       }
       if (it === 'talk.howareyou') { out.say(pick(['I am doing great, thanks for asking! How are you?', 'All good here and ready to help. How about you?'])); return; }
-      if (it === 'talk.whoareyou') { out.say('I am Sophia, your personal AI assistant. I can open apps and websites, help you control this laptop, remember things for you, answer questions and talk things through with you.'); return; }
+      if (it === 'talk.whoareyou') { out.say('I am Nova, your personal AI assistant. I can open apps and websites, help you control this laptop, remember things for you, answer questions and talk things through with you.'); return; }
       if (it === 'talk.creator') { out.say(uname() ? 'You did, ' + uname() + '! You built me, and you keep making me better.' : 'My owner built me, with some help from AI tools.'); return; }
       if (it === 'talk.help') { out.say(helpText(), { silent: true }); out.say('Tip: you can type any of these, or say them out loud.'); return; }
       if (it === 'talk.thanks') { out.say(withName(pick(['You are welcome!', 'Happy to help!', 'Anytime, {name}!']))); return; }
@@ -3422,7 +3439,7 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       if (uname()) facts.push('The user is called ' + uname() + '.');
       mem.facts.slice(-20).forEach(function (f) { facts.push(capFirst(factSentence(f)) + '.'); });
       const system = [
-        'You are Sophia, a friendly personal AI assistant that lives on the user\'s laptop. Today is ' + fmtDate(d) + ', ' + fmtTime(d) + '.',
+        'You are Nova, a friendly personal AI assistant that lives on the user\'s laptop. Today is ' + fmtDate(d) + ', ' + fmtTime(d) + '.',
         'Style: warm, clear and curious. Keep answers short (1 to 4 sentences) unless the user asks for detail. Plain text only, no markdown.',
         'The user may be a school student. Keep everything age-appropriate, kind and honest. If asked, say you are an AI. For serious personal, health or safety problems, encourage talking to a parent or another trusted adult.',
         facts.length ? 'What you remember about the user: ' + facts.join(' ') : '',
@@ -3538,6 +3555,38 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
         out.say('Not quite. Have another go, or say "hint".');
       }
     }
+    /* "ask chatgpt ..." hands the question straight to that AI, in its own tab */
+    const AI_SITES = {
+      chatgpt: 'chatgpt', 'chat gpt': 'chatgpt', gpt: 'chatgpt', openai: 'chatgpt',
+      gemini: 'gemini', bard: 'gemini',
+      grok: 'grok', xai: 'grok', 'x ai': 'grok', 'grok ai': 'grok',
+      claude: 'claude', copilot: 'copilot',
+      antigravity: 'antigravity', 'anti gravity': 'antigravity', 'google antigravity': 'antigravity', 'antigravity ai': 'antigravity'
+    };
+    async function doAskAi(step, out) {
+      const id = AI_SITES[String(step.which || '').toLowerCase()];
+      const site = id ? INDEX_BY_ID[id] : null;
+      if (!site) { out.say('I could not find that AI. I know ChatGPT, Gemini, Grok, Claude, Copilot and Antigravity.'); return; }
+      const q = String(step.question || '').trim();
+      // Gemini has no "ask" address, so the question is copied and she says so
+      if (!site.search) {
+        out.say('Opening ' + site.label + ' with your question on the clipboard. Press Ctrl + V in the box, then Enter.');
+        out.copy(q);
+        const ok = await openUrl(site.url, site.label, out);
+        if (!ok) out.say(blockedLine([site.label]));
+        return;
+      }
+      const url = site.search.replace('{q}', encodeURIComponent(q));
+      const ok = await openUrl(url, site.label + ' with your question', out);
+      out.say(ok
+        ? 'Handed that to ' + site.label + ': "' + q + '". It opens in a new tab.'
+        : blockedLine([site.label + ' with your question']));
+      if (!state.tips.askAi) {
+        state.tips.askAi = true;
+        out.say('I can also do it the other way: say "connect chatgpt", add a key in Settings, and then I answer with that AI without leaving this page.', { silent: true });
+      }
+    }
+
     function doCapitals(step, out) {
       const c = capitalOf(hinglish('capital of ' + step.ask));
       if (!c) { out.say('Which country do you mean?'); return; }
@@ -3650,19 +3699,121 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
     /* ---- two small games that need nothing but words ---- */
     function doGame(step, out) {
       if (step.intent === 'game.stop') {
+        const was = state.game;
+        if (was && was.kind === 'story' && was.lines && was.lines.length) { endStory(out); return; }
         state.game = null;
         state.riddle = null;
         out.say('Game stopped. Say "play a game" whenever you like.');
         return;
       }
       state.game = null;
-      out.say('Choose a game:\n1. Guess the number: I pick a number from 1 to 100 and you guess.\n2. Word chain: I say a word, you say one that starts with its last letter.\n3. Riddles.\nSay "1", "2" or "3".');
+      out.say('Let us play. Pick one, and I will keep the score:\n1. Guess the number - I pick 1 to 100 and you guess.\n2. Word chain - you say a word starting with the last letter of mine.\n3. Riddles - I give a clue, you guess the thing.\n4. Story game - we write a story together, one sentence each.\n5. Word scramble - I mix up a word, you put it back.\nSay "1", "2", "3", "4" or "5".');
       state.pending = {
         kind: 'game-choose',
         yes: function () {},
         noText: 'Okay.'
       };
     }
+    async function chooseGame(text, out) {
+      const t = String(text || '').toLowerCase().replace(/[.,!]/g, ' ').trim();
+      const words = { one: 1, won: 1, two: 2, to: 2, too: 2, three: 3, four: 4, for: 4, five: 5 };
+      const m = t.match(/\b(?:game )?([1-5])\b/);
+      const n = m ? Number(m[1]) : (words[t.split(/\s+/)[0]] || 0);
+      if (/^\s*(?:stop|end|quit|close|finish)/.test(t)) { out.say('Okay, no game. Say "play a game" when you want one.'); return; }
+      if (n === 1 || /number|guess(?!.*word)/.test(t)) { startGuessGame(out); return; }
+      if (n === 2 || /word chain|chain/.test(t)) { startWordChain(out); return; }
+      if (n === 3 || /riddle|puzzle me/.test(t)) { doRiddle(out); return; }
+      if (n === 4 || /story/.test(t)) { startStory(out); return; }
+      if (n === 5 || /scramble|mixed up/.test(t)) { startScramble(out); return; }
+      out.say('I did not catch which one. Say a number: 1 guess the number, 2 word chain, 3 riddles, 4 story game, 5 word scramble.');
+    }
+
+    /* ---- the story game: we build a story together, one line each ---- */
+    function startStory(out) {
+      state.game = { kind: 'story', lines: [], lastUser: '', turn: 0 };
+      out.say('Let us build a story together. I start, then you add one sentence, then me.\n"It was raining hard when the lights of the whole street went out, except one lamp at the end of the road."');
+      out.say('Your turn: add one sentence. Say "end story" when you want to see what we made.', { silent: true });
+    }
+    const STORY_NEXT = [
+      'A small dog ran past me, stopped, and looked back like it wanted me to follow.',
+      'The lamp flickered twice, and then a voice said my name from behind it.',
+      'I found a key in my pocket that I had never put there.',
+      'Somewhere far away a train whistle blew, even though there is no railway near us.',
+      'The rain turned warm for a second, like someone had opened a door into summer.',
+      "On the wall, written in chalk, was tomorrow's date."
+    ];
+    function doStoryLine(step, out) {
+      const g = state.game;
+      const line = String(step.text || '').replace(/\s+/g, ' ').trim();
+      if (!line) { out.say('Add a sentence! Even a short one works.'); return; }
+      if (g.lastUser === line.toLowerCase()) { out.say('You already said that one. Add a new sentence.'); return; }
+      g.lastUser = line.toLowerCase();
+      g.lines.push('You: ' + line);
+      g.turn++;
+      if (g.turn >= 6) {
+        out.say('That is six turns, which is a good place to stop. Say "end story" and I will read what we made.');
+        state.game = { kind: 'story', lines: g.lines, lastUser: '', turn: 6, closing: true };
+        return;
+      }
+      const fresh = STORY_NEXT.filter(function (l) { return (g.usedLines || []).indexOf(l) < 0; });
+      const next = fresh.length ? pick(fresh) : pick(STORY_NEXT);
+      g.usedLines = (g.usedLines || []).concat([next]);
+      g.lines.push('Me: ' + next);
+      out.say(next + '\nYour turn.');
+    }
+    function endStory(out) {
+      const g = state.game;
+      if (!g.lines.length) { out.say('We have not started a story yet. Say "story game".'); return; }
+      out.say('Here is our story:\n' + g.lines.join('\n'));
+      out.say('That was fun. Say "story game" to start a new one.', { silent: true });
+      state.game = null;
+    }
+
+    /* ---- word scramble: I scramble a word, you put it back together ---- */
+    const SCRAMBLE_WORDS = ['planet', 'rocket', 'garden', 'friend', 'school', 'summer', 'winter', 'monkey', 'pencil', 'bridge', 'orange', 'silver', 'dragon', 'circle', 'market', 'island', 'temple', 'forest', 'purple', 'window'];
+    function scrambleWord(word, rndFn) {
+      const letters = word.split('');
+      for (let i = letters.length - 1; i > 0; i--) {
+        const j = Math.floor(rndFn() * (i + 1));
+        const tmp = letters[i]; letters[i] = letters[j]; letters[j] = tmp;
+      }
+      const out = letters.join('');
+      return out === word ? scrambleWord(word, rndFn) : out;
+    }
+    function startScramble(out) {
+      const word = pick(SCRAMBLE_WORDS);
+      const mixed = scrambleWord(word, rnd);
+      state.game = { kind: 'scramble', word: word, mixed: mixed, tries: 0, score: 0 };
+      out.say('Word scramble! Unscramble this:  ' + mixed.toUpperCase() + '\nType the word, or say "hint".');
+    }
+    function doScramble(step, out) {
+      const g = state.game;
+      if (step.hint) {
+        out.say('Hint: it starts with "' + g.word.charAt(0).toUpperCase() + '" and has ' + g.word.length + ' letters. Mixed up it reads ' + g.mixed.toUpperCase() + '.');
+        return;
+      }
+      const guess = String(step.text || '').toLowerCase().replace(/[^a-z]/g, '');
+      if (!guess) { out.say('Type the word you think it is.'); return; }
+      g.tries++;
+      if (guess === g.word) {
+        g.score++;
+        const pool = SCRAMBLE_WORDS.filter(function (w) { return w !== g.word; });
+        const next = pick(pool);
+        const mixed = scrambleWord(next, rnd);
+        state.game = { kind: 'scramble', word: next, mixed: mixed, tries: 0, score: g.score };
+        out.say('Correct! It was "' + g.word + '". Score: ' + g.score + '. Next word:  ' + mixed.toUpperCase());
+        return;
+      }
+      if (g.tries >= 3) {
+        const next = pick(SCRAMBLE_WORDS);
+        const mixed = scrambleWord(next, rnd);
+        state.game = { kind: 'scramble', word: next, mixed: mixed, tries: 0, score: g.score };
+        out.say('The word was "' + g.word + '". New word:  ' + mixed.toUpperCase());
+        return;
+      }
+      out.say('Not quite. Try again, or say "hint".');
+    }
+
     function startGuessGame(out) {
       state.game = { kind: 'guess', target: 1 + Math.floor(rnd() * 100), tries: 0 };
       out.say('I am thinking of a number between 1 and 100. Guess!');
@@ -3740,7 +3891,7 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       if (it === 'hub.open') {
         if (mode() === 'laptop') await helper('open_self', {});
         if (ui.openHub) ui.openHub();
-        out.say('Opening Sophia, your wisdom and discovery companion.');
+        out.say('Opening Nova, your wisdom and discovery companion.');
         return;
       }
       if (it === 'hub.close') { if (ui.closeHub) ui.closeHub(); out.say('Closed.', { silent: true }); return; }
@@ -3788,6 +3939,7 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       if (it === 'riddle') return doRiddle(out);
       if (it === 'hint') {
         if (state.riddle) { out.say('Hint: ' + state.riddle.hint); return; }
+        if (state.game && state.game.kind === 'scramble') return doScramble({ hint: true, text: '' }, out);
         if (state.quiz) { out.say('No hints in the quiz, but I will always tell you the right answer.'); return; }
         out.say('There is nothing to hint at right now. Try "tell me a riddle".');
         return;
@@ -3795,8 +3947,20 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       if (it === 'quiz.start') return startQuiz(step.topic, out);
       if (it === 'quiz.answer') { if (state.riddle && !state.quiz) return doRiddleAnswer(step, out); return doQuizAnswer(step, out); }
       if (it === 'quiz.dontknow') return doQuizDontKnow(out);
+      if (it === 'game.play') {
+        const g = state.game || {};
+        if (g.kind === 'story') return doStoryLine({ text: step.text, intent: 'game.play' }, out);
+        if (g.kind === 'scramble') return doScramble({ text: step.text, hint: step.hint }, out);
+        if (g.kind === 'guess') return doGuess({ guess: step.number }, out);
+        if (g.kind === 'word') return doWord({ word: step.word }, out);
+        if (state.riddle) return doRiddleAnswer(step, out);
+        state.game = null;
+        out.say('There is no game running. Say "play a game" and I will set one up.');
+        return;
+      }
       if (it === 'game.menu') return doGame(step, out);
       if (it === 'game.stop') return doGame(step, out);
+      if (it === 'ask.ai') return doAskAi(step, out);
       if (it === 'capital') return doCapitals(step, out);
       if (it === 'convert') return doConvert(step, out);
       if (it === 'average') {
@@ -3817,6 +3981,42 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
     }
 
     // The one function the page calls: text in, reply out.
+    /* Is this sentence an answer to the game we are playing? */
+    function catchForGame(text, steps) {
+      const g = state.game;
+      const first = steps[0] ? steps[0].intent : 'empty';
+      const t = String(text || '').trim();
+      const low = t.toLowerCase();
+      if (first === 'game.stop' || first === 'game.menu' || first === 'stop.speaking' || first === 'hint') return null;
+      // "no" is an answer to my own question only when I actually asked one
+      if (state.pending && (first === 'yes' || first === 'no')) return null;
+      if (g.kind === 'guess') {
+        const m = t.match(/(\d{1,3})/);
+        if (m) return { intent: 'game.play', number: Number(m[1]), text: t };
+        return null;
+      }
+      if (g.kind === 'word') {
+        const m = low.replace(/[^a-z ]/g, '').trim();
+        if (/^[a-z]+$/.test(m)) return { intent: 'game.play', word: m, text: t };
+        return null;
+      }
+      if (g.kind === 'scramble') {
+        if (/^(?:give me a )?hint|^clue$/.test(low)) return { intent: 'game.play', hint: true, text: '' };
+        const m = low.replace(/[^a-z]/g, '');
+        if (m && m.length <= 12 && first !== 'question') return { intent: 'game.play', text: m };
+        return null;
+      }
+      if (g.kind === 'story') {
+        if (!t || first === 'question' || first === 'unknown') {
+          if (/^(?:what|who|when|where|why|how|is|are|do|does|can|could|should|would)\b/.test(low) && /\?$/.test(low)) return null;
+          if (t.length < 2) return null;
+          return { intent: 'game.play', text: t };
+        }
+        return null;
+      }
+      return null;
+    }
+
     async function handle(raw) {
       const text = String(raw || '').trim();
       const out = makeOut();
@@ -3827,6 +4027,15 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       let steps = parsed.steps;
       const intents = steps.map(function (s) { return s.intent; });
       const first = steps[0] ? steps[0].intent : 'empty';
+
+      // While a game is running, a plain answer belongs to the game, not to a web search.
+      if (!state.pending && state.game && state.game.kind) {
+        const caught = catchForGame(text, steps);
+        if (caught) {
+          await runStep(caught, out, { text: text, depth: 0, source: 'user' });
+          return finish(out, ['game.play']);
+        }
+      }
 
       if (state.pending) {
         const p = state.pending;
@@ -3844,6 +4053,11 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
           state.pending = null;
           await doSearch({ site: p.site, query: text.replace(/[?!.]+$/, '') }, out);
           steps = [];
+        } else if (p.kind === 'game-choose') {
+          state.pending = null;
+          if (first === 'game.stop') { out.say('Okay, no game. Say "play a game" when you want one.'); steps = []; }
+          else if (first === 'game.menu') { await doGame({ intent: 'game.menu' }, out); steps = []; }
+          else { await chooseGame(text, out); steps = []; }
         } else {
           state.pending = null;
         }
@@ -3983,7 +4197,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
       try {
         const ctrl = new AbortController();
         const timer = setTimeout(function () { ctrl.abort(); }, 2500);
-        const res = await fetch('api/status', { cache: 'no-store', signal: ctrl.signal, headers: { 'X-Sophia-Probe': '1' } });
+        const res = await fetch('api/status', { cache: 'no-store', signal: ctrl.signal, headers: { 'X-Nova-Probe': '1' } });
         clearTimeout(timer);
         if (res.ok) data = await res.json();
       } catch (e) { data = null; }
@@ -4002,7 +4216,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
         const res = await fetch('api/action', {
           method: 'POST',
           cache: 'no-store',
-          headers: { 'Content-Type': 'application/json', 'X-Sophia-Token': this.token },
+          headers: { 'Content-Type': 'application/json', 'X-Nova-Token': this.token },
           body: JSON.stringify({ action: action, params: params || {} })
         });
         const data = await res.json().catch(function () { return null; });
@@ -4258,6 +4472,24 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
     } catch (e) { /* blocked */ }
     return { ok: false };
   }
+  function copyText(text) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { toast('Copied. Press Ctrl + V in the AI box.'); }, function () {});
+        return true;
+      }
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      toast('Copied. Press Ctrl + V in the AI box.');
+      return true;
+    } catch (e) { return false; }
+  }
   function follow(url) {
     // last resort when pop-ups are blocked: move this tab to the link
     try { location.assign(url); return true; } catch (e) { return false; }
@@ -4294,8 +4526,8 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
   function addMessage(text, who, container, links) {
     const target = container || log;
     const row = document.createElement('div');
-    row.className = 'msg ' + (who || 'sophia');
-    if (who === 'sophia' || who === 'meta' || who === 'error' || who === 'user') {
+    row.className = 'msg ' + (who || 'nova');
+    if (who === 'nova' || who === 'meta' || who === 'error' || who === 'user') {
       const av = document.createElement('div');
       av.className = 'avatar';
       av.setAttribute('aria-hidden', 'true');
@@ -4331,7 +4563,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
   function welcome() {
     const name = brainApi ? brainApi.userName() : '';
     const hello = name ? 'Hello ' + name + '!' : 'Hello!';
-    addMessage(hello + ' I am Sophia, your personal AI assistant. I can open apps and websites, change the volume or brightness, remember things for you, do maths, look things up and talk things through.', 'sophia');
+    addMessage(hello + ' I am Nova, your personal AI assistant. I can open apps and websites, change the volume or brightness, remember things for you, do maths, look things up and talk things through.', 'nova');
     addMessage('Try: "open YouTube", "volume up", "what time is it", "remember that my bag is in the cupboard", or "YouTube kholo". Type or speak, your choice.', 'meta');
   }
 
@@ -4365,6 +4597,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
       savedSpecs: LAPTOP_DATA,
       openUrl: openUrl,
       follow: follow,
+      copy: copyText,
       openUri: openUri,
       helper: function (action, params) { return api.call(action, params); },
       navigate: function (href) { location.href = href; },
@@ -4411,7 +4644,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
     if (!options.hub) addMessage(typed, 'user', log);
     else addMessage(typed, 'user', hubLog);
     journal('you', typed);
-    const thinking = options.hub ? null : addMessage('', 'sophia', log);
+    const thinking = options.hub ? null : addMessage('', 'nova', log);
     let dots = null;
     if (thinking) {
       dots = document.createElement('span');
@@ -4423,8 +4656,8 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
       const reply = await brainApi.handle(typed);
       if (thinking) thinking.remove();
       if (reply.text) {
-        addMessage(reply.text, 'sophia', target, reply.links);
-        journal('sophia', reply.text);
+        addMessage(reply.text, 'nova', target, reply.links);
+        journal('nova', reply.text);
       } else if (!reply.links.length) {
         addMessage('I am not sure what to do with that yet. Type "help" to see what I can do.', 'meta', target);
       }
@@ -4482,7 +4715,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
       return;
     }
     if (sub) sub.textContent = appList.length + ' apps found on this laptop. Click one to open it.';
-    if (note) note.textContent = 'One click opens it straight away. Say or type "open ' + (appList[0] ? (appList[0].quick || appList[0].name) : 'word') + '" and Sophia finds it too.';
+    if (note) note.textContent = 'One click opens it straight away. Say or type "open ' + (appList[0] ? (appList[0].quick || appList[0].name) : 'word') + '" and Nova finds it too.';
     list.slice(0, 400).forEach(function (app) {
       const b = document.createElement('button');
       b.type = 'button';
@@ -4612,7 +4845,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
     box.innerHTML = '';
     const hint = document.getElementById('moodHint');
     if (!keys.length) {
-      if (hint) hint.textContent = 'Nothing noticed yet. When you tell Sophia how you feel, she keeps a gentle note here.';
+      if (hint) hint.textContent = 'Nothing noticed yet. When you tell Nova how you feel, she keeps a gentle note here.';
       return;
     }
     if (hint) hint.textContent = 'Last updated ' + new Date(moods[moods.length - 1].at).toLocaleString() + '. Only on this laptop.';
@@ -4741,7 +4974,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
       if (this.mode === mode && (this.raf || mode === 'idle')) return;
       this.mode = mode;
       waveValue.textContent = mode === 'listen' ? 'Listening' : mode === 'speak' ? 'Speaking' : mode === 'busy' ? 'Working' : 'Idle';
-      waveLabel.textContent = mode === 'idle' ? 'Microphone' : mode === 'speak' ? 'Sophia' : 'Microphone';
+      waveLabel.textContent = mode === 'idle' ? 'Microphone' : mode === 'speak' ? 'Nova' : 'Microphone';
       if (!this.raf && mode !== 'idle') this.raf = requestAnimationFrame(this.tick.bind(this));
       if (mode === 'idle') this.draw();
     }
@@ -4781,7 +5014,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
         discovery: 'Tell me about the James Webb Space Telescope discovery',
         curiosity: 'The Fermi paradox and whether aliens exist'
       };
-      ask(map[btn.dataset.topic] || 'Hello Sophia', { hub: true });
+      ask(map[btn.dataset.topic] || 'Hello Nova', { hub: true });
     });
   });
   hubOverlay.addEventListener('click', function (e) { if (e.target === hubOverlay) closeHub(); });
@@ -4834,7 +5067,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
     const text = document.getElementById('hubPrivacyText');
     const states = { checking: 'Waking up\u2026', laptop: 'Ready \u00b7 full laptop control', preview: 'Preview mode: commands are simulated', browser: 'Browser mode: websites and built-in apps work, other apps need Start_Sophia.bat' };
     text.textContent = settings.provider === 'builtin'
-      ? 'Private: nothing leaves this laptop unless Sophia looks something up on Wikipedia.'
+      ? 'Private: nothing leaves this laptop unless Nova looks something up on Wikipedia.'
       : 'AI model connected: your questions go to ' + (settings.provider === 'gemini' ? 'Google Gemini' : 'your AI service') + '.';
     const modeTag = document.getElementById('modeText');
     if (api.state === 'laptop') { modeTag.textContent = 'Laptop control active'; document.getElementById('modePill').className = 'pill ok'; }
@@ -4926,7 +5159,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
     settings.base = document.getElementById('setBase').value.trim() || settings.base;
     settings.model = document.getElementById('setModel').value || settings.model;
     writeJSON(KEYS.settings, settings);
-    setAiStatus('ok', settings.provider === 'builtin' ? 'Saved. Sophia uses her built-in brain only.' : 'Saved. Sophia will use ' + (settings.model || 'your AI model') + ' for open questions.');
+    setAiStatus('ok', settings.provider === 'builtin' ? 'Saved. Nova uses her built-in brain only.' : 'Saved. Nova will use ' + (settings.model || 'your AI model') + ' for open questions.');
     updatePrivacyTag();
   });
 
@@ -4943,7 +5176,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
     if (!rows.length) {
       const p = document.createElement('div');
       p.className = 'hint';
-      p.textContent = 'Nothing saved yet. Tell Sophia: "remember that my bag is in the cupboard".';
+      p.textContent = 'Nothing saved yet. Tell Nova: "remember that my bag is in the cupboard".';
       box.appendChild(p);
       return;
     }
@@ -4993,7 +5226,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
   });
   document.getElementById('replayBtn').addEventListener('click', function () {
     const last = brainApi && brainApi.state.lastReply;
-    if (!last) { toast('Sophia has not said anything yet.'); return; }
+    if (!last) { toast('Nova has not said anything yet.'); return; }
     speak(last);
   });
 
@@ -5001,11 +5234,11 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
   function notice(mode) {
     const box = document.getElementById('noticeText');
     if (mode === 'laptop') {
-      box.innerHTML = '<b>Laptop control is active.</b> Sophia can open any app, close apps, change the volume and brightness, take screenshots and lock the laptop. The helper is running on this computer at 127.0.0.1 only.';
+      box.innerHTML = '<b>Laptop control is active.</b> Nova can open any app, close apps, change the volume and brightness, take screenshots and lock the laptop. The helper is running on this computer at 127.0.0.1 only.';
     } else if (mode === 'preview') {
-      box.innerHTML = '<b>Preview mode.</b> This page is served by the Sophia helper in test mode, so commands are simulated and nothing on the computer is touched.';
+      box.innerHTML = '<b>Preview mode.</b> This page is served by the Nova helper in test mode, so commands are simulated and nothing on the computer is touched.';
     } else {
-      box.innerHTML = 'You opened this page directly in a browser. Websites, the calculator and Windows settings work from here. To let Sophia open <b>any app</b> (Notepad, Chrome, Word), close apps, change the volume or take screenshots, double-click <code>Start_Sophia.bat</code> in this same folder.';
+      box.innerHTML = 'You opened this page directly in a browser. Websites, the calculator and Windows settings work from here. To let Nova open <b>any app</b> (Notepad, Chrome, Word), close apps, change the volume or take screenshots, double-click <code>Start_Sophia.bat</code> in this same folder.';
     }
     void box;
   }
@@ -5032,7 +5265,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
     if (api.state === 'laptop') {
       const info = api.info && api.info.specs;
       if (info) LAPTOP_DATA.live = info;
-      document.getElementById('modePill').title = 'Sophia helper running on this laptop';
+      document.getElementById('modePill').title = 'Nova helper running on this laptop';
     }
     document.getElementById('input').focus();
   }

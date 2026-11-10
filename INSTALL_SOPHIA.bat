@@ -1,13 +1,13 @@
 @echo off
 setlocal
-title Sophia - setup
+title Nova - setup
 cd /d "%~dp0"
 echo.
-echo   Sophia - one step installer
+echo   Nova - one step installer
 echo   ==========================
 echo.
-echo   I will copy Sophia into a folder, keep a backup of the old one,
-echo   and put a shortcut called "Sophia" on your Desktop.
+echo   I will copy Nova into a folder, keep a backup of the old one,
+echo   and put a shortcut called "Nova" on your Desktop.
 echo.
 echo   Nothing is uploaded. Nothing is deleted.
 echo.

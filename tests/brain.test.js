@@ -372,6 +372,12 @@ test('the catalogue has no duplicate names pointing at different things', () => 
     if (site.search) assert.match(site.search, /\{q\}/, site.id);
     assert.match(site.url, /^https:\/\//, site.id);
   }
+  // the AI sites this version adds are ordinary sites: a real address, no second-class handling
+  for (const id of ['chatgpt', 'gemini', 'grok', 'antigravity', 'claude']) {
+    const site = c.SITES.find((x) => x.id === id);
+    assert.ok(site, 'missing AI site: ' + id);
+    assert.match(site.url, /^https:\/\//, id);
+  }
 });
 
 /* ---------------------------------------------- feelings and knowledge */
@@ -496,4 +502,74 @@ test('games, riddles and capitals work', async () => {
   assert.match((await sophia.handle('convert 10 km to miles')).text, /6\.2/);
   assert.match((await sophia.handle('what is the average of 12 18 25')).text, /18\.3/);
   assert.match((await sophia.handle('average of 12, 18 and 25')).text, /18\.3/);
+});
+
+test('asking an AI opens its own page with the question already in it', async () => {
+  const opened = [];
+  const asked = [];
+  const sophia = Brain.create({
+    store: { load: () => null, save: () => {} },
+    mode: () => 'browser',
+    openUrl: async (url) => { opened.push(url); return { ok: true }; },
+    copy: (t) => asked.push(t),
+    now: () => new Date('2026-11-10T09:30:00')
+  });
+  const a = await sophia.handle('ask chatgpt how do rockets work');
+  assert.match(a.text, /ChatGPT/i);
+  assert.ok(opened.some((u) => u === 'https://chatgpt.com/?q=how%20do%20rockets%20work'), opened.join(' '));
+
+  const b = await sophia.handle('ask grok why is the sky blue');
+  assert.ok(opened.some((u) => /^https:\/\/grok\.com\/\?q=why/.test(u)), opened.join(' '));
+  assert.match(b.text, /Grok/i);
+
+  const c = await sophia.handle('open antigravity');
+  assert.ok(opened.some((u) => /antigravity/.test(u)), opened.join(' '));
+  assert.strictEqual(c.text.length > 0, true);
+
+  // Gemini has no ask-address, so she copies the question and says so plainly
+  const d = await sophia.handle('ask gemini to explain photosynthesis');
+  assert.match(d.text, /Ctrl \+ V/);
+  assert.deepStrictEqual(asked, ['explain photosynthesis']);
+});
+
+test('the new games keep playing when you just type your turn', async () => {
+  const env = { store: { load: () => null, save: () => {} }, mode: () => 'browser', random: () => 0.42, now: () => new Date('2026-11-10T10:00:00') };
+  const sophia = Brain.create(env);
+
+  const menu = await sophia.handle('play a game');
+  assert.match(menu.text, /story/i);
+  assert.match(menu.text, /scramble/i);
+
+  // story game: my sentence is taken, she answers with one of hers
+  await sophia.handle('4');
+  const turn = await sophia.handle('I heard a knock at the door');
+  assert.match(turn.text, /Your turn|story/i);
+  const told = await sophia.handle('end story');
+  assert.match(told.text, /Here is our story/);
+  assert.match(told.text, /I heard a knock at the door/);
+
+  // scramble: a hint names the first letter and the answer moves the game on
+  await sophia.handle('play a game');
+  const start = await sophia.handle('5');
+  assert.match(start.text, /Unscramble/);
+  const hint = await sophia.handle('hint');
+  assert.match(hint.text, /starts with/);
+  await sophia.handle('stop the game');
+
+  // guess the number: free typing is understood as a guess
+  await sophia.handle('play a game');
+  await sophia.handle('1');
+  const guess = await sophia.handle('50');
+  assert.match(guess.text, /higher|lower|Yes|close/i);
+  const stopped = await sophia.handle('stop game');
+  assert.match(stopped.text, /stopped/i);
+});
+
+test('she calls herself Nova, and still answers to Sophia', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser' });
+  const who = await sophia.handle('who are you');
+  assert.match(who.text, /Nova/);
+  assert.ok(!/\bSophia\b/.test(who.text), who.text);
+  const old = await sophia.handle('hey sophia');
+  assert.ok(old.text.length > 0);
 });
