@@ -1,6 +1,6 @@
-# Vega &mdash; personal AI assistant (version 3.1)
+# Vega &mdash; personal AI assistant (version 3.1.1)
 
-**Vega** is the new name of the assistant inside `assistant.html` (she was Vega in 3.0 and Sophia before that). She is the
+**Vega** is the new name of the assistant inside `assistant.html` (she was Nova in 3.0 and Sophia before that). She is the
 same helper you already know, with a new name and a lot more to do: she opens
 ChatGPT, Grok and Antigravity exactly like she opens YouTube, she can carry a
 question into them for you, and when the internet is off she plays five
@@ -20,13 +20,14 @@ except for the things that need the internet (websites, Wikipedia, voice).
 
 ## 1. What goes on the laptop
 
-Vega is five small files that sit together in one folder:
+Vega is six small files that sit together in one folder:
 
 | File | What it is |
 | --- | --- |
 | `assistant.html` | Vega herself. This is the page you open. |
 | `sophia_helper.py` | A small helper that lets Vega use Windows. |
 | `Start_Sophia.bat` | Double-click this to start Vega. |
+| `vega.ico` | Her icon: the tab, and the shortcut on your Desktop. |
 | `INSTALL_SOPHIA.bat` | The one-step installer. |
 | `Install_Sophia.ps1` | The script the installer runs. |
 
@@ -65,6 +66,47 @@ install it once from <https://www.python.org/downloads/windows/> and tick
 Without Python everything except laptop control still works.
 
 ---
+
+## 2a. What changed in this pass (3.1.1)
+
+These were real defects, found by sending about 130 ordinary sentences through her
+and reading every answer. No new features were added to hide them.
+
+| What was wrong | What she does now |
+| --- | --- |
+| "can you drive" opened **Google Drive** | questions about her own ability are answered, never turned into a website |
+| "can you hack", "do you spy on me", "can you read my gmail" went to a Google search | honest answers, and the privacy answer lists exactly what she can and cannot see |
+| "my mother is ill" got "Rest and water", as if it were about you | she notices it is someone else, and answers for them |
+| keyboard mash ("asdkjhasd", "asdf asdf") offered a Google search | she says she did not catch it and asks again |
+| "open", "what", "why" on their own got a search offer | "Open what?" / "tell me the rest" |
+| "good morning" was treated as a mood report | it is a greeting |
+| "who is the president of India" answered with an unrelated India fact | she says plainly that the name changes and her notes are frozen, then offers the live page |
+| "remind me to ..." only stored a sentence | it now lands in the "for you, right now" card with the right day |
+| "help me study", "teach me something" went to a search | real study advice |
+| "spell ...", "meaning of ...", "synonym of ...", "translate ... in hindi" did nothing | a small hand-written word book answers them, and says so when a word is missing |
+| "you there?", "test", "testing 123" went to a search | "I am here" |
+| some Hinglish ("mujhe padhai karni hai", "khana kha liya", "kya tum mere ho") was not understood | they are understood |
+
+---
+
+## 2f. Her icon
+
+![Vega icon](icons/icon-512.png)
+
+One mark is used everywhere, so she looks like herself in every place you meet her:
+
+| Where | What you see |
+| --- | --- |
+| The browser tab | the V mark, at 32 px |
+| Pinned to the taskbar or start menu | the same mark, from the page's own icon |
+| The `Vega` shortcut on your Desktop | `vega.ico`, six sizes inside one file (16 to 256 px) |
+| The top-left corner of her page | the same mark, 46 px, in a rounded tile |
+
+The icon is a `V` built from two ribbons of light, cyan meeting teal, inside three
+thin orbit rings on deep navy &mdash; the same two colours her page already uses.
+The full set lives in `icons/` (`icon-16.png` up to `icon-512.png`, plus
+`vega.ico`). Only `vega.ico` travels into the installed folder; the rest are here
+so the mark stays the same if you ever need it bigger.
 
 ## 3. What Vega can do
 
@@ -450,7 +492,8 @@ To undo everything: rename `assistant-old-<date>.html` back to
 | `Start_Sophia.bat` | Double-click starter. Finds Python, then opens Vega. |
 | `INSTALL_SOPHIA.bat` | One-step installer: copies the files and makes a Desktop shortcut. |
 | `Install_Sophia.ps1` | The PowerShell script behind the installer. |
-| `tests/brain.test.js` | 53 tests for what Vega understands. `node --test tests/brain.test.js` |
+| `vega.ico` | Her icon, in six sizes. The installer puts it in the folder and on the shortcut. |
+| `tests/brain.test.js` | 58 tests for what Vega understands. `node --test tests/brain.test.js` |
 | `tests/test_helper.py` | 37 tests for the helper, the installer and the server. `python3 -m unittest discover tests` |
 
 Old versions: `git show 09ca826:assistant.html` is the file exactly as you

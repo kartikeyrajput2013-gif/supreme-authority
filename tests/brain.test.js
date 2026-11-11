@@ -723,3 +723,97 @@ test('a long question is never mistaken for a game choice', async () => {
   assert.match(r.text, /100/);
   assert.ok(!/story|scramble|guess the number/i.test(r.text));
 });
+
+test('"can you drive" is a question about her, not a request to open Google Drive', async () => {
+  const opened = [];
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser', now: () => new Date('2026-11-10T10:00:00'), openUrl: (u) => { opened.push(u); return { ok: true }; } });
+  const r = await sophia.handle('can you drive');
+  assert.strictEqual(opened.length, 0);
+  assert.match(r.text, /cannot drive/i);
+  assert.ok(!/drive\.google/i.test(r.text));
+});
+
+test('she is honest about what she cannot do, and does not just search it', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser', now: () => new Date('2026-11-10T10:00:00'), openUrl: () => ({ ok: true }) });
+  for (const q of ['can you hack', 'can you read my gmail', 'can you see my screen', 'can you call me']) {
+    const r = await sophia.handle(q);
+    assert.match(r.text, /^(?:No|I do not|I cannot)/i, q + ' should start with an honest no');
+    assert.ok(!/should i search google/i.test(r.text), q + ' must not offer a search');
+  }
+  const privacy = await sophia.handle('do you spy on me');
+  assert.match(privacy.text, /do not spy/i);
+});
+
+test('keyboard mash gets a human answer, not a Google search offer', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser', now: () => new Date('2026-11-10T10:00:00') });
+  for (const junk of ['asdkjhasd', 'jkdhfjkdhfjk', 'asdf asdf']) {
+    const r = await sophia.handle(junk);
+    assert.ok(!/should i search google/i.test(r.text), junk + ' should not be searched');
+    assert.ok(r.text.length > 10);
+  }
+  const bare = await sophia.handle('open');
+  assert.match(bare.text, /open what/i);
+});
+
+test('a bare question word asks for the rest instead of searching it', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser', now: () => new Date('2026-11-10T10:00:00') });
+  for (const word of ['what', 'why', 'how']) {
+    const r = await sophia.handle(word);
+    assert.ok(!/should i search google/i.test(r.text), word + ' alone should not be searched');
+  }
+});
+
+test('"good morning" is a greeting, not a mood report', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser', now: () => new Date('2026-11-10T10:00:00') });
+  const morning = await sophia.handle('good morning');
+  assert.ok(!/how you are feeling/i.test(morning.text));
+  assert.match(morning.text, /hi|hello|ready|morning|day/i);
+  const night = await sophia.handle('good night');
+  assert.match(night.text, /good night|sleep/i);
+});
+
+test('she never mixes up who is unwell', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser', now: () => new Date('2026-11-10T10:00:00') });
+  const r = await sophia.handle('my mother is ill');
+  assert.ok(!/rest and water/i.test(r.text), 'must not answer as if the user were ill');
+  assert.match(r.text, /sorry|worry|doctor|water/i);
+});
+
+test('an office holder gets honesty, not a random fact', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser', now: () => new Date('2026-11-10T10:00:00'), openUrl: () => ({ ok: true }) });
+  const r = await sophia.handle('who is the president of india');
+  assert.match(r.text, /do not keep|frozen|live page|changes/i);
+  assert.ok(!/Thar Desert|cricket|river/i.test(r.text));
+});
+
+test('"remind me" reaches the card with the right day', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser', now: () => new Date('2026-11-10T10:00:00') });
+  const r = await sophia.handle('remind me to call mom tomorrow');
+  assert.match(r.text, /remember/i);
+  const card = sophia.focus();
+  assert.strictEqual(card.length, 1);
+  assert.strictEqual(card[0].days, 1);
+  assert.match(card[0].text, /call mom/i);
+});
+
+test('the word book spells, defines and translates, and admits what it does not know', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser' });
+  const spell = await sophia.handle('spell definitely');
+  assert.match(spell.text, /D-E-F-I-N-I-T-E-L-Y/);
+  const mean = await sophia.handle('meaning of serene');
+  assert.match(mean.text, /calm/i);
+  const syn = await sophia.handle('synonym of happy');
+  assert.match(syn.text, /glad|cheerful/i);
+  const tr = await sophia.handle('translate hello in hindi');
+  assert.match(tr.text, /नमस्ते/);
+  const missing = await sophia.handle('meaning of zyzzyva');
+  assert.ok(!/means/i.test(missing.text.split('\n')[0]), 'must not invent a meaning');
+});
+
+test('small talk and Hinglish are understood, not searched', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser', now: () => new Date('2026-11-10T10:00:00') });
+  for (const q of ['you there?', 'testing 123', 'help me study', 'teach me something', 'khana kha liya', 'kya tum mere ho']) {
+    const r = await sophia.handle(q);
+    assert.ok(!/should i search google/i.test(r.text), q + ' should not be searched');
+  }
+});

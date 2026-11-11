@@ -319,9 +319,26 @@ class InstallerTests(unittest.TestCase):
         self.assertNotIn("del ", self.bat.lower())
         self.assertNotIn("rd ", self.bat.lower())
 
-    def test_installer_copies_exactly_the_three_files(self):
-        for name in ("assistant.html", "sophia_helper.py", "Start_Sophia.bat"):
+    def test_installer_copies_exactly_the_four_files(self):
+        for name in ("assistant.html", "sophia_helper.py", "Start_Sophia.bat", "vega.ico"):
             self.assertIn(name, self.ps1)
+
+    def test_the_icon_is_real_and_the_shortcut_uses_it(self):
+        import struct
+        ico = os.path.join(ROOT, "vega.ico")
+        self.assertTrue(os.path.exists(ico), "the icon file must ship with her")
+        raw = open(ico, "rb").read()
+        # a real .ico starts with 0,0,1,0 and holds several sizes
+        self.assertEqual(raw[:4], b"\x00\x00\x01\x00")
+        count = struct.unpack("<H", raw[4:6])[0]
+        self.assertGreaterEqual(count, 4, "six sizes keep it sharp everywhere")
+        self.assertIn("vega.ico", self.ps1)
+        self.assertIn("IconLocation", self.ps1)
+        # the page carries the same mark in its tab
+        html = open(os.path.join(ROOT, "assistant.html"), encoding="utf-8").read()
+        self.assertIn('rel="icon"', html)
+        self.assertIn('rel="apple-touch-icon"', html)
+        self.assertIn('rel="manifest"', html)
 
     def test_installer_backs_up_the_old_page(self):
         self.assertIn("assistant-old-", self.ps1)

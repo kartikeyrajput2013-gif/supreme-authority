@@ -13,7 +13,7 @@ Write-Host "    Vega - one step installer" -ForegroundColor Cyan
 Write-Host "  ============================================" -ForegroundColor Cyan
 Write-Host ""
 
-$files = @('assistant.html', 'sophia_helper.py', 'Start_Sophia.bat')
+$files = @('assistant.html', 'sophia_helper.py', 'Start_Sophia.bat', 'vega.ico')
 foreach ($f in $files) {
     if (-not (Test-Path (Join-Path $here $f))) {
         Write-Host "  I cannot find $f next to this installer." -ForegroundColor Red
@@ -134,8 +134,11 @@ foreach ($dest in $targets) {
         Write-Host "    old assistant.html backed up as $(Split-Path -Leaf $backup)" -ForegroundColor Gray
     }
     foreach ($f in $files) {
-        Copy-Item (Join-Path $here $f) (Join-Path $dest $f) -Force
-        Write-Host "    copied $f" -ForegroundColor Green
+        $src = Join-Path $here $f
+        if (Test-Path $src) {
+            Copy-Item $src (Join-Path $dest $f) -Force
+            Write-Host "    copied $f" -ForegroundColor Green
+        }
     }
 }
 
@@ -149,7 +152,9 @@ try {
     $lnk.TargetPath = (Join-Path $first 'Start_Sophia.bat')
     $lnk.WorkingDirectory = $first
     $lnk.Description = 'Start Vega, your personal AI assistant'
-    $lnk.IconLocation = 'shell32.dll,21'
+    $icoPath = Join-Path $first 'vega.ico'
+    if (Test-Path $icoPath) { $lnk.IconLocation = $icoPath }
+    else { $lnk.IconLocation = 'shell32.dll,21' }
     $lnk.Save()
     Write-Host ""
     Write-Host "  A shortcut called Vega is now on your Desktop." -ForegroundColor Green
