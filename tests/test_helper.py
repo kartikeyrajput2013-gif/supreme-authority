@@ -361,4 +361,86 @@ class InstallerTests(unittest.TestCase):
             self.assertNotIn(action, helper.DANGEROUS)
 
     def test_helper_version_is_current(self):
-        self.assertEqual(helper.VERSION, "1.2.0")
+        self.assertEqual(helper.VERSION, "1.3.0")
+
+
+class FindFileTest(unittest.TestCase):
+    """The name search: what it finds, what it refuses, and what it never returns."""
+
+    def setUp(self):
+        import tempfile, shutil
+        self.tmp = tempfile.mkdtemp(prefix="vega-find-")
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        os.makedirs(os.path.join(self.tmp, "Documents", "College"))
+        os.makedirs(os.path.join(self.tmp, "Downloads"))
+        os.makedirs(os.path.join(self.tmp, "Pictures"))
+        os.makedirs(os.path.join(self.tmp, "Windows", "System32"))
+        self._old = helper.HOME_OVERRIDE
+        helper.HOME_OVERRIDE = self.tmp
+
+    def tearDown(self):
+        helper.HOME_OVERRIDE = self._old
+
+    def touch(self, rel, size=100):
+        path = os.path.join(self.tmp, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "wb") as fh:
+            fh.write(b"x" * size)
+        return path
+
+    def test_finds_by_part_of_the_name_and_says_where(self):
+        self.touch("Documents/College/physics project.docx", 1200)
+        self.touch("Downloads/physics-notes.pdf", 5000)
+        r = helper.action_find_file({"name": "physics"})
+        self.assertTrue(r["ok"])
+        self.assertEqual(r["count"], 2)
+        names = {f["name"] for f in r["files"]}
+        self.assertEqual(names, {"physics project.docx", "physics-notes.pdf"})
+        for f in r["files"]:
+            self.assertIn(f["folder"], ("Documents", "Downloads"))
+            self.assertTrue(os.path.isabs(f["path"]))
+
+    def test_exact_match_comes_first(self):
+        self.touch("Documents/resume.docx")
+        self.touch("Documents/old resume backup.docx")
+        r = helper.action_find_file({"name": "resume.docx"})
+        self.assertEqual(r["files"][0]["name"], "resume.docx")
+
+    def test_never_returns_programs_or_windows_internals(self):
+        self.touch("Windows/System32/kernel-physics.dll")
+        self.touch("Windows/System32/helper-physics.exe")
+        self.touch("Documents/physics-notes.pdf")
+        r = helper.action_find_file({"name": "physics"})
+        names = [f["name"] for f in r["files"]]
+        self.assertEqual(names, ["physics-notes.pdf"])
+
+    def test_never_returns_a_password_store(self):
+        self.touch("Documents/passwords-physics.txt")
+        self.touch("Documents/Login Data")
+        r = helper.action_find_file({"name": "physics"})
+        self.assertEqual(r["count"], 0)
+        r2 = helper.action_find_file({"name": "login data"})
+        self.assertEqual(r2["count"], 0)
+
+    def test_an_unknown_name_is_an_honest_empty_list(self):
+        self.touch("Documents/notes.pdf")
+        r = helper.action_find_file({"name": "zzzz-qqq"})
+        self.assertTrue(r["ok"])
+        self.assertEqual(r["count"], 0)
+        self.assertFalse(r["stopped_early"])
+
+    def test_bad_names_are_refused(self):
+        for bad in ("", "   ", "a\nb", "x" * 200):
+            with self.subTest(bad=bad):
+                r = helper.action_find_file({"name": bad})
+                self.assertFalse(r["ok"])
+                self.assertEqual(r["error"], "bad_name")
+
+    def test_sizes_are_human_readable(self):
+        self.touch("Documents/physics big.pdf", 2 * 1024 * 1024)
+        r = helper.action_find_file({"name": "physics big"})
+        self.assertRegex(r["files"][0]["size"], r"2\.0 MB")
+
+    def test_find_file_is_registered_and_not_dangerous(self):
+        self.assertIn("find_file", helper.ACTIONS)
+        self.assertNotIn("find_file", helper.DANGEROUS)

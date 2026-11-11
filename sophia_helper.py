@@ -31,7 +31,7 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, unquote
 
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 IS_WINDOWS = os.name == "nt"
 MAX_BODY = 16 * 1024          # 16 KB is plenty for one command
 DEFAULT_PORTS = list(range(8765, 8775))
@@ -286,6 +286,181 @@ def action_open_url(params):
     if not parsed.netloc or any(c in url for c in "\r\n\t\"' "):
         return fail("bad_url")
     return webbrowser.open(url) and ok(opened=url) or fail("open_failed")
+
+
+# ---------------------------------------------------------------- files by name
+# How many folders deep, and how many files, a name search will look at before
+# it gives up. A slow answer is worse than an honest "too many files".
+FILE_SEARCH_DEPTH = 4
+FILE_SEARCH_LIMIT = 20000
+FILE_SEARCH_MS = 2500
+HOME_OVERRIDE = ""  # empty means the real home folder; tests set this
+# Names that are never worth showing a person: Windows internals, installers,
+# temporary junk, and anything that is really a program.
+FILE_SKIP_EXT = {
+    ".exe", ".dll", ".sys", ".msi", ".msix", ".cab", ".bat", ".cmd", ".ps1",
+    ".vbs", ".jar", ".iso", ".tmp", ".temp", ".lnk", ".url", ".ini", ".dat",
+    ".db", ".log", ".etl", ".pf", ".manifest", ".mui",
+}
+FILE_SKIP_DIRS = {
+    "windows", "winsxs", "system32", "syswow64", "node_modules", ".git",
+    "appdata", "temp", "$recycle.bin", "recovery", "programdata",
+    "packages", "microsoft", "installer", "assembly", "driverstore",
+}
+# The places a person actually keeps their own things, best first.
+FILE_ROOTS = [
+    ("Desktop", ("Desktop",)),
+    ("Downloads", ("Downloads",)),
+    ("Documents", ("Documents",)),
+    ("Pictures", ("Pictures",)),
+    ("Music", ("Music",)),
+    ("Videos", ("Videos",)),
+    ("OneDrive", ("OneDrive", "OneDrive - Personal")),
+]
+
+
+def _human_size(n):
+    try:
+        n = float(n)
+    except (TypeError, ValueError):
+        return ""
+    for unit in ("B", "KB", "MB", "GB"):
+        if n < 1024 or unit == "GB":
+            return ("%d %s" % (n, unit)) if unit == "B" else ("%.1f %s" % (n, unit))
+        n /= 1024.0
+    return ""
+
+
+def _home():
+    return os.path.expanduser("~")
+
+
+def _search_roots():
+    """Real folders that exist, in the order a person would look."""
+    out = []
+    home = HOME_OVERRIDE or _home()
+    for label, names in FILE_ROOTS:
+        for name in names:
+            path = os.path.join(home, name)
+            if os.path.isdir(path):
+                out.append((label, path))
+                break
+    return out
+
+
+def _normalise_name(text):
+    return re.sub(r"[^a-z0-9]+", " ", str(text or "").lower()).strip()
+
+
+def _score_file(query, name, folder_label):
+    """Higher is better. Exact name wins, then start, then any word, then part."""
+    q = _normalise_name(query)
+    n = _normalise_name(os.path.splitext(name)[0]) + " " + _normalise_name(
+        os.path.splitext(name)[1].lstrip(".")
+    )
+    n = n.strip()
+    if not q:
+        return 0
+    score = 0
+    if n == q:
+        score = 100
+    elif n.startswith(q):
+        score = 80
+    elif (" " + q + " ") in (" " + n + " "):
+        score = 60
+    elif q in n:
+        score = 40
+    elif all(part in n for part in q.split()):
+        score = 20
+    if not score:
+        return 0
+    # the folders people actually use should win ties
+    bonus = {"Desktop": 8, "Downloads": 7, "Documents": 6}.get(folder_label, 0)
+    return score + bonus
+
+
+def action_find_file(params):
+    """Find a file on this laptop by the name the person used.
+
+    Read-only: it lists and stats files, it never opens, reads, moves or
+    deletes anything. It skips program files, Windows internals, hidden
+    system folders and anything that looks like a password store, so what
+    comes back is always something a person would recognise.
+    """
+    query = str(params.get("name", "")).strip()
+    if not query or len(query) > 120 or any(c in query for c in "\r\n\t"):
+        return fail("bad_name")
+    roots = _search_roots()
+    if not roots and not IS_WINDOWS:
+        return fail("unsupported_os", "File search uses your real Windows folders.")
+    if not roots:
+        # Windows but no usual folders exist: look in the helper's own folder
+        roots = [("this folder", os.path.dirname(os.path.abspath(__file__)))]
+
+    started = time.time()
+    matches = []
+    seen = 0
+    stopped_early = False
+
+    for label, root in roots:
+        for base, dirs, files in os.walk(root):
+            # never descend into system or build folders
+            depth = base[len(root):].count(os.sep)
+            dirs[:] = [
+                d for d in dirs
+                if d.lower() not in FILE_SKIP_DIRS
+                and not d.startswith(".")
+                and not d.startswith("$")
+                and depth < FILE_SEARCH_DEPTH
+            ]
+            for name in files:
+                seen += 1
+                if seen > FILE_SEARCH_LIMIT:
+                    stopped_early = True
+                    break
+                ext = os.path.splitext(name)[1].lower()
+                if ext in FILE_SKIP_EXT or name.startswith("~$"):
+                    continue
+                low = name.lower()
+                if "password" in low or "passwords" in low or low in ("login data", "cookies"):
+                    continue
+                score = _score_file(query, name, label)
+                if not score:
+                    continue
+                path = os.path.join(base, name)
+                try:
+                    size = os.path.getsize(path)
+                    changed = os.path.getmtime(path)
+                except OSError:
+                    continue
+                matches.append({
+                    "name": name,
+                    "path": path,
+                    "folder": label,
+                    "sub": os.path.relpath(base, root).replace(os.sep, "\\") if base != root else "",
+                    "ext": ext.lstrip("."),
+                    "size": _human_size(size),
+                    "changed": int(changed),
+                    "score": score,
+                })
+            if seen > FILE_SEARCH_LIMIT or (time.time() - started) * 1000 > FILE_SEARCH_MS:
+                stopped_early = True
+                break
+        if stopped_early and seen > FILE_SEARCH_LIMIT:
+            break
+
+    matches.sort(key=lambda m: (-m["score"], -m["changed"]))
+    # drop lower-scoring duplicates that are really the same document
+    best = []
+    for m in matches:
+        if any(b["name"].lower() == m["name"].lower() for b in best):
+            continue
+        best.append(m)
+        if len(best) >= 12:
+            break
+    for m in best:
+        m.pop("score", None)
+    return ok(files=best, count=len(best), looked=seen, stopped_early=stopped_early, query=query)
 
 
 def action_open_folder(params):
@@ -826,6 +1001,7 @@ ACTIONS = {
     "system_info": action_system_info,
     "list_apps": action_list_apps,
     "open_path": action_open_path,
+    "find_file": action_find_file,
     "security_check": action_security_check,
     "open_self": action_open_self,
 }

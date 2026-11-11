@@ -817,3 +817,75 @@ test('small talk and Hinglish are understood, not searched', async () => {
     assert.ok(!/should i search google/i.test(r.text), q + ' should not be searched');
   }
 });
+
+test('"open my resume" is a file, not a website or an app', () => {
+  assert.deepStrictEqual(only('open my resume'), { intent: 'open.file', query: 'resume' });
+  assert.deepStrictEqual(only('open the physics project file'), { intent: 'open.file', query: 'physics project' });
+  assert.deepStrictEqual(only('where is my marksheet'), { intent: 'open.file', query: 'marksheet' });
+  assert.deepStrictEqual(only('open resume.pdf').query, 'resume.pdf');
+  // apps and sites must still win when that is what they are
+  assert.strictEqual(only('open calculator').intent, 'open');
+  assert.strictEqual(only('open youtube').intent, 'open');
+});
+
+test('one match opens silently, several are numbered and the number works', async () => {
+  const calls = [];
+  const found = [
+    { name: 'physics project.docx', path: 'C:/Users/K/Documents/College/physics project.docx', folder: 'Documents', sub: 'College', ext: 'docx', size: '1.2 MB', changed: 2 },
+    { name: 'physics notes.pdf', path: 'C:/Users/K/Downloads/physics notes.pdf', folder: 'Downloads', sub: '', ext: 'pdf', size: '900 KB', changed: 1 }
+  ];
+  const sophia = Brain.create({
+    store: { load: () => null, save: () => {} }, mode: () => 'laptop',
+    now: () => new Date('2026-11-10T10:00:00'),
+    helper: async (a, p) => {
+      calls.push([a, p]);
+      if (a === 'find_file') return { ok: true, files: found, count: found.length };
+      if (a === 'open_path') return { ok: true, opened: p.path };
+      return { ok: true };
+    }
+  });
+  let r = await sophia.handle('open my physics project file');
+  assert.match(r.text, /which one/i);
+  assert.match(r.text, /1\. physics project\.docx/);
+  assert.match(r.text, /2\. physics notes\.pdf/);
+  assert.strictEqual(calls.filter((c) => c[0] === 'open_path').length, 0, 'nothing may open before she is told which');
+
+  r = await sophia.handle('2');
+  assert.match(r.text, /Opening physics notes\.pdf/);
+  assert.deepStrictEqual(calls.pop(), ['open_path', { path: found[1].path }]);
+
+  // a single match goes straight through, no question
+  const one = Brain.create({
+    store: { load: () => null, save: () => {} }, mode: () => 'laptop',
+    helper: async (a, p) => (a === 'find_file' ? { ok: true, files: [found[0]], count: 1 } : { ok: true })
+  });
+  const r2 = await one.handle('open my resume');
+  assert.match(r2.text, /Opening physics project\.docx from Documents > College/);
+});
+
+test('a file she cannot find says so and offers the web, not a guess', async () => {
+  const sophia = Brain.create({
+    store: { load: () => null, save: () => {} }, mode: () => 'laptop',
+    helper: async (a) => (a === 'find_file' ? { ok: true, files: [], count: 0 } : { ok: true })
+  });
+  const r = await sophia.handle('where is my marksheet');
+  assert.match(r.text, /could not find anything called "marksheet"/i);
+  assert.match(r.text, /desktop.*downloads.*documents/i);
+});
+
+test('without Python she asks for the folder and gives a real file link', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser' });
+  let r = await sophia.handle('open my resume');
+  assert.match(r.text, /folder/i);
+  r = await sophia.handle('C:\\Users\\Kartikey\\Documents');
+  assert.strictEqual(r.links.length, 1);
+  assert.strictEqual(r.links[0].url, 'file:///C:/Users/Kartikey/Documents');
+});
+
+test('she explains how to install Python, including the step people miss', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser' });
+  const r = await sophia.handle('do i need python');
+  assert.match(r.text, /python\.org/);
+  assert.match(r.text, /Add python\.exe to PATH/);
+  assert.match(r.text, /Start_Sophia\.bat/);
+});

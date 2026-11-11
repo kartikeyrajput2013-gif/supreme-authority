@@ -1,4 +1,4 @@
-# Vega &mdash; personal AI assistant (version 3.1.1)
+# Vega &mdash; personal AI assistant (version 3.2)
 
 **Vega** is the new name of the assistant inside `assistant.html` (she was Nova in 3.0 and Sophia before that). She is the
 same helper you already know, with a new name and a lot more to do: she opens
@@ -107,6 +107,57 @@ thin orbit rings on deep navy &mdash; the same two colours her page already uses
 The full set lives in `icons/` (`icon-16.png` up to `icon-512.png`, plus
 `vega.ico`). Only `vega.ico` travels into the installed folder; the rest are here
 so the mark stays the same if you ever need it bigger.
+
+## 2g. Opening a file by its name (new in 3.2)
+
+This is the thing she could not do before: find a real file on the laptop from the
+name you say, and open it.
+
+Say any of these:
+
+```
+open my resume
+open the physics project file
+open resume.pdf
+where is my marksheet
+find my assignment
+open the file called holiday photos
+```
+
+**With Python** (the full version, started with `Start_Sophia.bat`):
+
+1. She looks through **Desktop, Downloads, Documents, Pictures, Music, Videos and OneDrive**, four folders deep.
+2. She ranks what she finds: an exact name first, then a name that starts the same, then a name that contains the words.
+3. **One clear match:** she opens it and tells you where it was &mdash; "Opening physics notes.pdf from Downloads."
+4. **Several matches:** she shows a numbered list with folder and size, then waits:
+
+```
+I found 2 files called something like "physics project". Which one?
+1. physics project.docx  - Documents > College (1.2 MB)
+2. physics notes.pdf  - Downloads (900 KB)
+Say the number, or say "first", "second", or "cancel".
+```
+
+5. **Nothing found:** she says where she looked and offers a web search. She never guesses and opens the wrong file.
+6. **The file moved:** "That file moved or was renamed since I found it." She does not pretend it opened.
+
+**Without Python** (double-clicked `assistant.html`): she cannot look through the
+folder herself, so she asks for the folder **once**, then puts a real button under
+the message that opens it. Say `how do I install python` and she gives the exact
+steps, including the "Add python.exe to PATH" box most people miss.
+
+### What the search will never do
+
+- It never opens, reads, moves, renames or deletes a file while searching. It only lists names, sizes and folder positions.
+- It never returns programs (`.exe`, `.dll`, `.msi`, `.bat`, scripts) or Windows internals.
+- It never returns anything whose name contains "password", or a browser's saved-login file.
+- It stops after 2.5 seconds or 20,000 files and says so, rather than freezing the laptop.
+
+Tests: `tests/test_helper.py` builds a fake home folder and proves the rules above
+&mdash; exact match first, no programs, no password files, honest empty answer,
+human-readable sizes.
+
+---
 
 ## 3. What Vega can do
 
@@ -464,7 +515,7 @@ the laptop.
 I cannot reach your laptop from here: nothing on my side can open your folders
 or install anything for you. So the download installs itself.
 
-1. Download **`Vega-3.1.zip`** from GitHub and unzip it.
+1. Download **`Vega-3.2.zip`** from GitHub and unzip it.
 2. Double-click **`INSTALL_SOPHIA.bat`** inside the unzipped folder. (If you
    prefer one single file, download `Vega_Install_One_File.bat` instead and
    double-click that; it does the same thing and unpacks itself.)
@@ -488,13 +539,13 @@ To undo everything: rename `assistant-old-<date>.html` back to
 | File | Purpose |
 | --- | --- |
 | `assistant.html` | Vega: the brain, the page, the look. One file, no build step. |
-| `sophia_helper.py` | Local Windows helper and tiny web server (Python standard library only). |
+| `sophia_helper.py` | Local Windows helper and tiny web server (Python standard library only). Also finds files by name. |
 | `Start_Sophia.bat` | Double-click starter. Finds Python, then opens Vega. |
 | `INSTALL_SOPHIA.bat` | One-step installer: copies the files and makes a Desktop shortcut. |
 | `Install_Sophia.ps1` | The PowerShell script behind the installer. |
 | `vega.ico` | Her icon, in six sizes. The installer puts it in the folder and on the shortcut. |
-| `tests/brain.test.js` | 58 tests for what Vega understands. `node --test tests/brain.test.js` |
-| `tests/test_helper.py` | 37 tests for the helper, the installer and the server. `python3 -m unittest discover tests` |
+| `tests/brain.test.js` | 68 tests for what Vega understands. `node --test tests/brain.test.js` |
+| `tests/test_helper.py` | 46 tests for the helper, the file search, the installer and the server. `python3 -m unittest discover tests` |
 
 Old versions: `git show 09ca826:assistant.html` is the file exactly as you
 first uploaded it, and `git show 5cd7650:assistant.html` is version 2.2 (before
