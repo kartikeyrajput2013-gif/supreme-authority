@@ -2440,6 +2440,16 @@ function moodSummary(moods, nowMs) {
     if ((m = t.match(/^(?:capital of|what(?:'s| is)? the capital of)\s*(.+)$/)) || (m = t.match(/^(.+?) (?:ki|ka) capital (?:kya hai|kya h)$/))) {
       return { intent: 'capital', ask: m[1].trim() };
     }
+    // the reasoning engine: algebra, geometry, percentages, units, money, numbers.
+    // It runs after the everyday commands so it can never steal one, and before
+    // the generic question, so "area of a circle" is answered, not looked up.
+    const reasoned = reason(t);
+    if (reasoned) {
+      // a single number is lifted to the step so callers can read it directly
+      const step = { intent: 'reason', reason: reasoned };
+      if (reasoned.value !== undefined) step.value = reasoned.value;
+      return step;
+    }
     const conv = convertUnits(t);
     if (conv) return { intent: 'convert', conv: conv };
     const avg = averageOf(t);
@@ -3022,6 +3032,405 @@ function averageOf(t) {
   return { average: sum / nums.length, sum: sum, count: nums.length };
 }
 
+/* ---------------------------------------------------------------------------
+   The reasoning engine: the questions her word bank cannot answer.
+   Everything here is deterministic. If it cannot work something out it returns
+   null and says nothing, instead of guessing.
+   --------------------------------------------------------------------------- */
+
+/** Turn a spoken expression into plain arithmetic, or null. */
+function spokenToMath(text) {
+  let s = ' ' + String(text || '') + ' ';
+  s = s.replace(/\s*(?:=|\?|equals|equal to|is equal to|please)\s*$/g, ' ');
+  s = s.replace(/\bplus\b/gi, '+').replace(/\bminus\b/gi, '-')
+    .replace(/\b(?:times|multiplied by|multiply by)\b/gi, '*')
+    .replace(/\b(?:divided by|divide by)\b/gi, '/')
+    .replace(/\b(?:to the power of|to the power|raised to the power of|raised to)\b/gi, '^')
+    .replace(/\bsquared\b/gi, '^2').replace(/\bcubed\b/gi, '^3');
+  s = s.replace(/(\d),(?=\d{3}\b)/g, '$1').replace(/[×]/g, '*').replace(/[÷]/g, '/').replace(/−/g, '-');
+  return s.trim();
+}
+
+/* ------------------------------- simple algebra ---------------------------- */
+/**
+ * Solve one unknown in a linear equation: 2x + 5 = 17, 3x - 7 = 14, x/4 = 9.
+ * Returns { variable, value, steps } or null when it is not that shape.
+ * It never claims a solution it did not check by putting it back in.
+ */
+function solveLinear(text) {
+  const raw = String(text || '').toLowerCase()
+    .replace(/^(?:what is|what's|whats|solve|find|calculate|work out|the value of)\s+/,'')
+    .replace(/^(?:x|the unknown)\s+if\s+/, '')
+    .replace(/\?+\s*$/, '').trim();
+  const m = raw.match(/^([^=]+)=([^=]+)$/);
+  if (!m) return null;
+  const variable = (raw.match(/[a-z]/) || [null])[0];
+  if (!variable || /[a-z]/.test(raw.replace(new RegExp(variable, 'g'), ''))) return null;
+
+  // things like "2x" become "2*x", a bare "x" becomes "1*x"
+  function terms(side) {
+    return side.replace(/\s+/g, '')
+      .replace(new RegExp('(\\d)' + variable, 'g'), '$1*' + variable)
+      .replace(new RegExp('(?<![\\d*])' + variable, 'g'), '1*' + variable);
+  }
+  const left = terms(m[1]), right = terms(m[2]);
+  if (!/^[-+*/().\d*x]+$/.test(left) || !/^[-+*/().\d*x]+$/.test(right)) return null;
+  if (new RegExp('\\*' + variable).test(left + right) === false && left.indexOf(variable) < 0 && right.indexOf(variable) < 0) return null;
+
+  // evaluate each side for two values of x, then solve the straight line
+  function sideValue(expr, xv) {
+    const js = expr.replace(new RegExp('(?<![\\w.])' + variable + '(?![\\w])', 'g'), '(' + xv + ')');
+    if (!/^[-+*/().\d\s]+$/.test(js)) throw new Error('syntax');
+    // eslint-disable-next-line no-new-func
+    const v = Function('"use strict";return (' + js + ')')();
+    if (typeof v !== 'number' || !isFinite(v)) throw new Error('bad');
+    return v;
+  }
+  let a0, a1, b0, b1;
+  try {
+    a0 = sideValue(left, 0); a1 = sideValue(left, 1);
+    b0 = sideValue(right, 0); b1 = sideValue(right, 1);
+  } catch (e) { return null; }
+  const slope = (a1 - a0) - (b1 - b0);
+  if (Math.abs(slope) < 1e-12) return null;
+  const value = (b0 - a0) / slope;
+  if (!isFinite(value)) return null;
+  // check it for real: both sides must agree once the answer is put back
+  let checkL, checkR;
+  try { checkL = sideValue(left, value); checkR = sideValue(right, value); } catch (e) { return null; }
+  if (Math.abs(checkL - checkR) > 1e-6) return null;
+  const pretty = Math.abs(value - Math.round(value)) < 1e-9 ? Math.round(value) : Math.round(value * 10000) / 10000;
+  return { variable: variable, value: pretty, check: Math.round(checkL * 10000) / 10000 };
+}
+
+/**
+ * Solve x^2 + bx + c = 0 from a sentence, including "x squared minus 4 = 0".
+ * The discriminant decides the honest answer: two roots, one root, or no real
+ * root - and it says which, instead of printing a number that does not exist.
+ */
+function solveQuadratic(text) {
+  let t = String(text || '').toLowerCase()
+    .replace(/^(?:what is|what's|whats|solve|find|calculate|work out)\s+/, '')
+    .replace(/\b(?:equals?|is)\s+0\b/, '=0')
+    .replace(/\?+\s*$/, '')
+    .replace(/\s+/g, '').trim();
+  if (t.indexOf('=') >= 0 && !/=0$/.test(t)) return null;
+  // "x squared minus 4 equals 0" and "x squared minus 4" mean the same thing
+  t = t.replace(/=0$/, '');
+  if (t.indexOf('=') < 0 && /(?:equals?|is)0$/.test(t)) t = t.replace(/(?:equals?|is)0$/, '');
+  const variable = (t.match(/[a-z]/) || [null])[0];
+  if (!variable) return null;
+  const v = variable;
+  t = t.replace(new RegExp(v + 'squared', 'g'), v + '^2')
+       .replace(new RegExp(v + '\\\\^2', 'g'), v + '^2');
+  // spoken operators, after the spaces are gone
+  t = t.replace(/plus/g, '+').replace(/minus/g, '-').replace(/times/g, '*');
+  if (t.indexOf(v + '^2') < 0) return null;
+  if (/[a-z]/.test(t.split(v + '^2').join('').split(v).join(''))) return null;
+
+  // Parse by hand, one character at a time. No backtracking regex, so it always ends.
+  let A = 0, B = 0, C = 0;
+  let i = 0;
+  let sign = 1;
+  while (i < t.length) {
+    const ch = t[i];
+    if (ch === '+') { sign = 1; i++; continue; }
+    if (ch === '-') { sign = -1; i++; continue; }
+    // a number, optional
+    let numText = '';
+    while (i < t.length && /[0-9.]/.test(t[i])) { numText += t[i]; i++; }
+    const hasNum = numText.length > 0;
+    const num = hasNum ? parseFloat(numText) : 1;
+    if (t.startsWith(v + '^2', i)) { A += sign * num; i += v.length + 2; sign = 1; continue; }
+    if (t[i] === v) { B += sign * num; i += 1; sign = 1; continue; }
+    if (hasNum) { C += sign * num; sign = 1; continue; }
+    // a character we cannot use: this is not a quadratic she can solve
+    return null;
+  }
+  if (!A) return null;
+
+  const disc = B * B - 4 * A * C;
+  const round = (n) => Math.round(n * 10000) / 10000;
+  if (disc < 0) {
+    return { kind: 'quadratic', a: A, b: B, c: C, disc: disc, text:
+      'That has no real answer: the part under the square root is ' + round(disc) +
+      ', and a negative there means the curve never touches zero.' };
+  }
+  if (Math.abs(disc) < 1e-12) {
+    const r = round(-B / (2 * A));
+    return { kind: 'quadratic', a: A, b: B, c: C, root: r, text:
+      'There is one answer, ' + v + ' = ' + r + ', because the square root part is zero, so both answers land on the same number.' };
+  }
+  const s1 = round((-B + Math.sqrt(disc)) / (2 * A));
+  const s2 = round((-B - Math.sqrt(disc)) / (2 * A));
+  const lo = Math.min(s1, s2), hi = Math.max(s1, s2);
+  // verify honestly: put each root back into the expression
+  const ok = [lo, hi].every(function (r) { return Math.abs(A * r * r + B * r + C) < 1e-6; });
+  if (!ok) return null;
+  return { kind: 'quadratic', a: A, b: B, c: C, roots: [lo, hi], disc: disc, text:
+    'There are two answers, ' + v + ' = ' + lo + ' and ' + v + ' = ' + hi +
+    '. I put both back in, and each one makes the expression zero.' };
+}
+
+/* -------------------------------- geometry -------------------------------- */
+const SHAPES = [
+  { re: /(?:area of (?:a |the )?)?circle[^.\d]*radius(?: of)? ([\d.]+)/i, kind: 'circle-area', label: 'a circle with radius {r}', compute: (n) => Math.PI * n * n,
+    formula: (n) => 'pi x ' + n + ' x ' + n },
+  { re: /(?:circumference of (?:a |the )?)?circle[^.\d]*radius(?: of)? ([\d.]+)/i, kind: 'circle-circ', label: 'the circumference of a circle with radius {r}', compute: (n) => 2 * Math.PI * n,
+    formula: (n) => '2 x pi x ' + n },
+  { re: /area of (?:a |the )?(?:rectangle|rectangular)[^.\d]*(\d+(?:\.\d+)?)\s*(?:by|and|x|×|\*)\s*(\d+(?:\.\d+)?)/i, kind: 'rect-area', two: true,
+    label: 'a rectangle {a} by {b}', compute: (a, b) => a * b, formula: (a, b) => a + ' x ' + b },
+  { re: /(?:area of (?:a |the )?)?triangle[^.\d]*(?:base(?: of)? )?(\d+(?:\.\d+)?)[^.\d]*(?:height(?: of)? )?(\d+(?:\.\d+)?)/i, kind: 'tri-area', two: true,
+    label: 'a triangle with base {a} and height {b}', compute: (a, b) => 0.5 * a * b, formula: (a, b) => 'half of ' + a + ' x ' + b },
+  { re: /area of (?:a |the )?square[^.\d]*(?:side(?: of)? )?(\d+(?:\.\d+)?)/i, kind: 'sq-area', label: 'a square with side {r}', compute: (n) => n * n,
+    formula: (n) => n + ' x ' + n },
+  { re: /(?:volume of (?:a |the )?)?cube[^.\d]*(?:side(?: of)? )?(\d+(?:\.\d+)?)/i, kind: 'cube-vol', label: 'a cube with side {r}', compute: (n) => n * n * n,
+    formula: (n) => n + ' x ' + n + ' x ' + n },
+  { re: /volume of (?:a |the )?(?:box|rectangular)[^.\d]*(\d+(?:\.\d+)?)[^.\d]*(\d+(?:\.\d+)?)[^.\d]*(\d+(?:\.\d+)?)/i, kind: 'box-vol', three: true,
+    label: 'a box {a} x {b} x {c}', compute: (a, b, c) => a * b * c, formula: (a, b, c) => a + ' x ' + b + ' x ' + c },
+  { re: /area of (?:a |the )?(?:sphere|ball)[^.\d]*radius(?: of)? ([\d.]+)/i, kind: 'sphere-area', label: 'the surface of a sphere with radius {r}', compute: (n) => 4 * Math.PI * n * n,
+    formula: (n) => '4 x pi x ' + n + ' x ' + n },
+  { re: /volume of (?:a |the )?sphere[^.\d]*radius(?: of)? ([\d.]+)/i, kind: 'sphere-vol', label: 'a sphere with radius {r}', compute: (n) => (4 / 3) * Math.PI * n * n * n,
+    formula: (n) => '(4/3) x pi x ' + n + '^3' },
+  { re: /(?:area of (?:a |the )?)?cylinder[^.\d]*radius(?: of)? ([\d.]+)[^.\d]*(?:height(?: of)? )?([\d.]+)/i, kind: 'cyl-vol', two: true,
+    label: 'a cylinder with radius {a} and height {b}', compute: (a, b) => Math.PI * a * a * b, formula: (a, b) => 'pi x ' + a + '^2 x ' + b }
+];
+
+function solveShape(text) {
+  const t = String(text || '');
+  if (!/area|volume|circumference|surface/i.test(t)) return null;
+  for (let i = 0; i < SHAPES.length; i++) {
+    const s = SHAPES[i];
+    const m = t.match(s.re);
+    if (!m) continue;
+    const nums = m.slice(1).map(Number);
+    if (!nums.length || nums.some(function (n) { return !isFinite(n) || n < 0; })) continue;
+    const value = s.compute.apply(null, nums);
+    if (!isFinite(value)) continue;
+    const label = s.label.replace('{r}', nums[0]).replace('{a}', nums[0]).replace('{b}', nums[1]).replace('{c}', nums[2]);
+    return {
+      kind: s.kind,
+      label: label,
+      formula: s.formula.apply(null, nums),
+      value: Math.round(value * 100) / 100,
+      exact: value
+    };
+  }
+  return null;
+}
+
+/* -------------------------------- percentages ------------------------------ */
+function solvePercent(text) {
+  const t = String(text || '');
+  let m;
+  // "what is 15% of 240"
+  if ((m = t.match(/([\d.]+)\s*(?:%|percent|per cent)\s*of\s*([\d.]+)/i))) {
+    const p = parseFloat(m[1]), whole = parseFloat(m[2]);
+    const v = Math.round(p * whole) / 100;
+    return { kind: 'percent-of', p: p, whole: whole, value: v,
+      text: p + '% of ' + whole + ' is ' + groupDigits(v) + '.' };
+  }
+  // "what percent of 80 is 20"
+  if ((m = t.match(/(?:what|how many)\s*(?:%|percent|per cent)\s*of\s*([\d.]+)\s*is\s*([\d.]+)/i))) {
+    const whole = parseFloat(m[1]), part = parseFloat(m[2]);
+    if (!whole) return null;
+    const pv = Math.round(1000 * part / whole) / 10;
+    return { kind: 'percent-which', value: pv,
+      text: part + ' is ' + pv + '% of ' + whole + '.' };
+  }
+  // "20 is what percent of 80"
+  if ((m = t.match(/([\d.]+)\s*is\s*(?:what|how many)\s*(?:%|percent|per cent)\s*of\s*([\d.]+)/i))) {
+    const part = parseFloat(m[1]), whole = parseFloat(m[2]);
+    if (!whole) return null;
+    return { kind: 'percent-which', value: Math.round(1000 * part / whole) / 10,
+      text: part + ' is ' + (Math.round(1000 * part / whole) / 10) + '% of ' + whole + '.' };
+  }
+  // "price 1200 with 18% off", "increase 500 by 12%"
+  if ((m = t.match(/([\d.]+)\s*(?:%|percent|per cent)\s*(off|discount|increase|decrease|more|less)\b(?:.*?)([\d.]+)?/i))) {
+    const p = parseFloat(m[1]), dir = m[2].toLowerCase(), base = m[3] ? parseFloat(m[3]) : null;
+    if (base != null) {
+      const delta = Math.round(base * p) / 100;
+      const value = /increase|more/.test(dir) ? base + delta : base - delta;
+      return { kind: 'percent-change', value: value,
+        text: p + '% ' + dir + ' on ' + base + ' is ' + Math.round(value * 100) / 100 + ' (a change of ' + Math.round(delta * 100) / 100 + ').' };
+    }
+  }
+  return null;
+}
+
+/* ------------------- more units, through one small table ------------------- */
+const UNIT_TABLE = {
+  // length, metres as the base
+  mm: { base: 'length', factor: 0.001, name: 'millimetres', re: /^(?:mm|millimetres?|millimeters?)$/ },
+  cm: { base: 'length', factor: 0.01, name: 'centimetres', re: /^(?:cm|centimetres?|centimeters?)$/ },
+  m: { base: 'length', factor: 1, name: 'metres', re: /^(?:m|metres?|meters?)$/ },
+  km: { base: 'length', factor: 1000, name: 'kilometres', re: /^(?:km|kilometres?|kilometers?)$/ },
+  in: { base: 'length', factor: 0.0254, name: 'inches', re: /^(?:in|inch(?:es)?)$/ },
+  ft: { base: 'length', factor: 0.3048, name: 'feet', re: /^(?:ft|foot|feet)$/ },
+  yd: { base: 'length', factor: 0.9144, name: 'yards', re: /^(?:yd|yards?)$/ },
+  mi: { base: 'length', factor: 1609.344, name: 'miles', re: /^(?:mi|miles?)$/ },
+  nmi: { base: 'length', factor: 1852, name: 'nautical miles', re: /^(?:nmi|nautical miles?)$/ },
+  // mass, grams as the base
+  mg: { base: 'mass', factor: 0.001, name: 'milligrams', re: /^(?:mg|milligrams?)$/ },
+  g: { base: 'mass', factor: 1, name: 'grams', re: /^(?:g|grams?|grammes?)$/ },
+  kg: { base: 'mass', factor: 1000, name: 'kilograms', re: /^(?:kg|kilograms?|kilos?)$/ },
+  t: { base: 'mass', factor: 1000000, name: 'tonnes', re: /^(?:t|tonnes?|tons?)$/ },
+  lb: { base: 'mass', factor: 453.59237, name: 'pounds', re: /^(?:lb|lbs|pounds?)$/ },
+  oz: { base: 'mass', factor: 28.349523125, name: 'ounces', re: /^(?:oz|ounces?)$/ },
+  // volume, litres as the base
+  ml: { base: 'volume', factor: 0.001, name: 'millilitres', re: /^(?:ml|millilitres?|milliliters?)$/ },
+  l: { base: 'volume', factor: 1, name: 'litres', re: /^(?:l|litres?|liters?)$/ },
+  cup: { base: 'volume', factor: 0.24, name: 'cups', re: /^(?:cups?)$/ },
+  gal: { base: 'volume', factor: 3.785411784, name: 'US gallons', re: /^(?:gal|gallons?)$/ },
+  // time, seconds as the base
+  sec: { base: 'time', factor: 1, name: 'seconds', re: /^(?:s|secs?|seconds?)$/ },
+  min: { base: 'time', factor: 60, name: 'minutes', re: /^(?:mins?|minutes?)$/ },
+  hr: { base: 'time', factor: 3600, name: 'hours', re: /^(?:h|hrs?|hours?)$/ },
+  day: { base: 'time', factor: 86400, name: 'days', re: /^(?:days?)$/ },
+  week: { base: 'time', factor: 604800, name: 'weeks', re: /^(?:weeks?)$/ },
+  // data, bytes as the base
+  b: { base: 'data', factor: 1, name: 'bytes', re: /^(?:b|bytes?)$/ },
+  kb: { base: 'data', factor: 1024, name: 'kilobytes', re: /^(?:kb|kilobytes?)$/ },
+  mb: { base: 'data', factor: 1048576, name: 'megabytes', re: /^(?:mb|megabytes?)$/ },
+  gb: { base: 'data', factor: 1073741824, name: 'gigabytes', re: /^(?:gb|gigabytes?)$/ },
+  tb: { base: 'data', factor: 1099511627776, name: 'terabytes', re: /^(?:tb|terabytes?)$/ }
+};
+
+function unitKey(word) {
+  const w = String(word || '').toLowerCase().trim();
+  const keys = Object.keys(UNIT_TABLE);
+  for (let i = 0; i < keys.length; i++) {
+    if (UNIT_TABLE[keys[i]].re.test(w)) return keys[i];
+  }
+  return null;
+}
+
+/** "5 km to miles", "how many grams in 2.5 kg", "12 hours in minutes" */
+function convertAny(t) {
+  // "5 km to miles", "how many grams in 2.5 kg", "convert 12 hours into minutes",
+  // "what is 12 GB in MB" - the lead word is noise, the numbers are the question
+  t = String(t || '').replace(/^\s*(?:what is|what's|whats|how much is|please|tell me)\s+/i, '').trim();
+  const m = String(t || '').match(
+    /^(?:convert\s+|how\s+(?:much|many)\s+(?:is|are)\s+)?(-?[\d.]+)\s*([a-z]{1,20})\s*(?:to|in|into|as)\s*([a-z]{1,20})\b/i
+  ) || String(t || '').match(
+    /^how\s+(?:much|many)\s+([a-z]{1,20})\s+(?:(?:is|are)\s+)?(?:there\s+)?(?:in|to|into)\s+(-?[\d.]+)\s*([a-z]{1,20})\b/i
+  ) || String(t || '').match(
+    /^how\s+(?:much|many)\s+([a-z]{1,20})\s+(?:is|are)\s+(-?[\d.]+)\s*([a-z]{1,20})\b/i
+  );
+  if (!m) return null;
+  // two shapes: value-then-unit, or the "how many X in Y" shape which is reversed
+  let value, fromWord, toWord;
+  if (/^how\s/.test(String(t).trim()) && /^[a-z]/.test(m[1])) {
+    toWord = m[1]; value = parseFloat(m[2]); fromWord = m[3];
+  } else {
+    value = parseFloat(m[1]); fromWord = m[2]; toWord = m[3];
+  }
+  const from = unitKey(fromWord), to = unitKey(toWord);
+  if (!from || !to) return null;
+  if (UNIT_TABLE[from].base !== UNIT_TABLE[to].base) return null;
+  if (!isFinite(value)) return null;
+  const result = (value * UNIT_TABLE[from].factor) / UNIT_TABLE[to].factor;
+  return { value: value, from: from, to: to, fromName: UNIT_TABLE[from].name, toName: UNIT_TABLE[to].name, result: result };
+}
+
+/** "what is 7 factorial", "gcd of 24 and 36", "lcm of 4 and 6", "is 97 prime" */
+function solveNumbers(text) {
+  const t = String(text || '');
+  let m;
+  if ((m = t.match(/(?:factorial of |)([\d.]{1,3})\s*(?:!|factorial)/i))) {
+    const n = parseInt(m[1], 10);
+    if (n > 170) return { kind: 'too-big', text: 'That factorial is far bigger than anyone needs on a laptop. 170 is the practical limit.' };
+    let v = 1;
+    for (let i = 2; i <= n; i++) v *= i;
+    return { kind: 'factorial', value: v, text: n + ' factorial is ' + fmtBig(v) + '.' };
+  }
+  if ((m = t.match(/\b(gcd|hcf|lcm)\b[^\d]*([\d.]+)[^\d]+([\d.]+)/i))) {
+    const a = Math.abs(parseInt(m[2], 10)), b = Math.abs(parseInt(m[3], 10));
+    if (!a || !b) return null;
+    const g = (function gcd(x, y) { return y ? gcd(y, x % y) : x; })(a, b);
+    if (/lcm/i.test(m[1])) return { kind: 'lcm', value: (a * b) / g, text: 'The LCM of ' + a + ' and ' + b + ' is ' + ((a * b) / g) + '.' };
+    return { kind: 'gcd', value: g, text: 'The GCD of ' + a + ' and ' + b + ' is ' + g + '.' };
+  }
+  if ((m = t.match(/^is ([\d.]+) (?:a )?prime/i))) {
+    const n = parseInt(m[1], 10);
+    if (n < 2) return { kind: 'prime', value: false, text: n + ' is not prime: primes are 2 and above.' };
+    for (let i = 2; i * i <= n; i++) if (n % i === 0) return { kind: 'prime', value: false, text: n + ' is not prime: it is ' + i + ' x ' + (n / i) + '.' };
+    return { kind: 'prime', value: true, text: n + ' is prime. Nothing divides it but 1 and itself.' };
+  }
+  return null;
+}
+
+/** 2500 -> "2,500", 3.1069 -> "3.1069". Only for what she says out loud. */
+function groupDigits(n) {
+  const v = Number(n);
+  if (!isFinite(v)) return String(n);
+  if (Number.isInteger(v)) return v.toLocaleString('en-IN');
+  const parts = String(v).split('.');
+  return Number(parts[0]).toLocaleString('en-IN') + '.' + parts[1];
+}
+
+/** Big numbers with the digits grouped, so nobody miscounts zeros. */
+function fmtBig(n) {
+  const v = Number(n);
+  if (!isFinite(v)) return String(n);
+  if (Math.abs(v) < 1e21 && Number.isInteger(v)) {
+    return v.toLocaleString('en-IN');
+  }
+  return String(Math.round(v * 1000) / 1000);
+}
+
+/* ------------------------ money and everyday maths ------------------------ */
+function solveMoney(text) {
+  const t = String(text || '');
+  let m;
+  // "if i buy 3 apples at 20 each"
+  if ((m = t.match(/(\d+)\s*(?:items?|things?|apples?|books?|pens?|bottles?|kg|kilos?)?\s*(?:at|for|costing|of)\s*(?:rs\.?|₹|\$)?\s*([\d.]+)\s*(?:each|per item|a piece|apiece)/i))) {
+    const qty = parseFloat(m[1]), price = parseFloat(m[2]);
+    return { kind: 'total', value: qty * price, text: qty + ' at ' + price + ' each is ' + fmtBig(qty * price) + '.' };
+  }
+  // "simple interest on 5000 at 8% for 3 years"
+  if ((m = t.match(/simple interest[^\d]*([\d.]+)[^\d]*([\d.]+)\s*%[^\d]*([\d.]+)\s*(?:years?|yrs?)/i))) {
+    const p = parseFloat(m[1]), r = parseFloat(m[2]), y = parseFloat(m[3]);
+    const si = (p * r * y) / 100;
+    return { kind: 'si', value: si, text: 'Simple interest on ' + groupDigits(p) + ' at ' + r + '% for ' + y + ' years is ' + groupDigits(Math.round(si * 100) / 100) + ', so you pay back ' + groupDigits(Math.round((p + si) * 100) / 100) + '.' };
+  }
+  // "compound interest on 5000 at 8% for 3 years"
+  if ((m = t.match(/compound interest[^\d]*([\d.]+)[^\d]*([\d.]+)\s*%[^\d]*([\d.]+)\s*(?:years?|yrs?)/i))) {
+    const p = parseFloat(m[1]), r = parseFloat(m[2]), y = parseFloat(m[3]);
+    const amount = p * Math.pow(1 + r / 100, y);
+    return { kind: 'ci', value: amount - p, text: 'Compound interest on ' + groupDigits(p) + ' at ' + r + '% for ' + y + ' years is ' + groupDigits(Math.round((amount - p) * 100) / 100) + ', so the total is ' + groupDigits(Math.round(amount * 100) / 100) + '.' };
+  }
+  // "average of 4, 8 and 10" with a friendly sentence
+  const avg = averageOf(t);
+  if (avg) return { kind: 'average', value: avg.average, text: 'The average of those ' + avg.count + ' numbers is ' + (Math.round(avg.average * 1000) / 1000) + ' (they add up to ' + avg.sum + ').' };
+  return null;
+}
+
+/**
+ * One door for every reasoning question. Order matters: the most specific
+ * shapes first, so "area of a circle" never falls through to arithmetic.
+ */
+function reason(text) {
+  const t = String(text || '').trim();
+  if (!t) return null;
+  const shape = solveShape(t);
+  if (shape) return { kind: 'shape', shape: shape };
+  const quad = solveQuadratic(t);
+  if (quad) return { kind: 'quadratic', quad: quad };
+  const algebra = solveLinear(t);
+  if (algebra) return { kind: 'algebra', algebra: algebra };
+  const money = solveMoney(t);
+  if (money) return { kind: 'money', money: money };
+  const pct = solvePercent(t);
+  // flattened on purpose: a percent answer is one number and one sentence
+  if (pct) return Object.assign({ kind: 'percent' }, pct);
+  const conv = convertAny(t);
+  if (conv) return { kind: 'unit', unit: conv };
+  const nums = solveNumbers(t);
+  if (nums) return { kind: 'number', number: nums };
+  return null;
+}
+
 /* ------------------------------------------------------------- more topics */
 const KNOWLEDGE_MORE = [
   {
@@ -3110,7 +3519,7 @@ const KNOWLEDGE_MORE = [
     ]
   },
   {
-    id: 'matter', label: 'matter and materials', names: ['matter', 'states of matter', 'friction', 'gravity', 'newton laws', 'laws of motion'],
+    id: 'matter', label: 'matter and materials', names: ['matter', 'states of matter', 'friction', 'solid liquid gas', 'physical change', 'chemical change'],
     facts: [
       'Matter exists as solids, liquids and gases, and also as plasma, which is what stars are mostly made of.',
       'In a solid, particles are packed and vibrate in place; in a liquid they slide past each other; in a gas they fly far apart.',
@@ -3159,14 +3568,17 @@ const KNOWLEDGE_MORE = [
     ]
   },
   {
-    id: 'money', label: 'money and the economy', names: ['money', 'economy', 'bank', 'interest', 'tax', 'gst', 'rupee', 'budget', 'savings'],
+    id: 'money', label: 'money and the economy', names: ['money', 'economy', 'bank', 'banks', 'interest', 'simple interest', 'compound interest', 'inflation', 'loan', 'loans', 'tax', 'gst', 'rupee', 'budget', 'savings'],
     facts: [
       'The rupee is the currency of India. The symbol ₹ was designed in 2010 by D. Udaya Kumar.',
       'Interest is the price of borrowing money: you pay it on loans, and you can earn it on savings.',
       'GST stands for Goods and Services Tax, introduced in India in 2017 to replace many separate taxes.',
       'A budget is a plan for money: what comes in, what goes out, and what is left.',
       'Compound interest grows money faster than simple interest because you earn interest on your interest.',
-      'Inflation means prices rising over time, so the same money buys a little less each year.'
+      'Inflation means prices rising over time, so the same money buys less. At 6% inflation, something costing 100 today costs about 106 next year.',
+      'Simple interest is paid only on the amount you started with. Compound interest is paid on the interest too, so it grows faster.',
+      'Rule of 72: divide 72 by the interest rate to see roughly how many years money takes to double. At 8%, about nine years.',
+      'Saving a little early beats saving a lot late, because of compounding. Time matters more than the amount.'
     ],
     quiz: [
       { q: 'What is the currency of India?', a: 'The rupee' },
@@ -3188,6 +3600,150 @@ const KNOWLEDGE_MORE = [
       { q: 'Which ISRO mission landed near the Moon’s south pole?', a: 'Chandrayaan-3' },
       { q: 'When did Apollo 11 land on the Moon?', a: '20 July 1969' },
       { q: 'What does a rocket push down to move up?', a: 'Gas' }
+    ]
+  },
+  {
+    id: 'cell', label: 'cells and life', names: ['cell', 'cells', 'cell biology', 'nucleus', 'mitochondria', 'cytoplasm', 'cell membrane', 'plant cell', 'animal cell', 'meiosis', 'mitosis'],
+    facts: [
+      'Every living thing is made of cells. Some are one cell, like bacteria; you are made of about 30 trillion.',
+      'The nucleus is the control room of a cell: it holds the DNA, which is the instruction book.',
+      'Mitochondria are the power stations of the cell. They turn food into energy the cell can use.',
+      'A plant cell has a stiff wall of cellulose around it, which an animal cell does not have. That wall is why trees stay upright.',
+      'Photosynthesis happens in chloroplasts, which are green because of chlorophyll. Only plants and some algae have them.',
+      'Mitosis makes two identical cells, which is how you grow and heal. Meiosis makes sex cells with half the chromosomes, which is how children differ from parents.',
+      'Red blood cells have no nucleus, so they can carry more oxygen. They last about 120 days and are replaced all the time.'
+    ],
+    quiz: [
+      { q: 'Which part of the cell holds the DNA?', a: 'The nucleus' },
+      { q: 'What do mitochondria do?', a: 'They make energy' },
+      { q: 'What is the stiff wall around a plant cell made of?', a: 'Cellulose' },
+      { q: 'Which process makes two identical cells?', a: 'Mitosis' }
+    ]
+  },
+  {
+    id: 'gravity', label: 'gravity and motion', names: ['gravity', 'gravitation', 'newton', 'newton laws', 'newton second law', 'laws of motion', 'inertia', 'free fall', 'weightlessness', 'weight'],
+    facts: [
+      'Gravity is the pull between any two things with mass. Bigger mass means a bigger pull; more distance means a weaker one.',
+      'On Earth gravity pulls you down at about 9.8 metres per second, every second. Drop a stone and after two seconds it is falling at nearly 20 metres per second.',
+      'Newton\'s first law: a thing keeps doing what it is doing unless a force acts on it. That is why you jerk forward when a bus brakes.',
+      'Newton\'s second law: force equals mass times acceleration (F = ma). Push the same force on twice the mass and it moves half as fast.',
+      'Newton\'s third law: every action has an equal and opposite reaction. A rocket pushes gas down, and the gas pushes the rocket up.',
+      'Your weight changes on the Moon but your mass does not. On the Moon you weigh about one sixth as much because gravity there is weaker.',
+      'Astronauts float not because there is no gravity but because they and the station are falling together around the Earth.'
+    ],
+    quiz: [
+      { q: 'What is the force equation?', a: 'F = ma' },
+      { q: 'What does Newton\'s third law say?', a: 'Every action has an equal and opposite reaction' },
+      { q: 'How much is gravity on Earth?', a: 'About 9.8 metres per second squared' },
+      { q: 'Does your mass change on the Moon?', a: 'No, only your weight' }
+    ]
+  },
+  {
+    id: 'democracy', label: 'democracy and government', names: ['democracy', 'government', 'constitution', 'parliament', 'election', 'elections', 'vote', 'voting', 'fundamental rights', 'republic', 'civics'],
+    facts: [
+      'Democracy means the people choose who governs, and can remove them without violence.',
+      'India is the largest democracy in the world, with more than 900 million voters.',
+      'The Constitution of India came into force on 26 January 1950, which is why that day is Republic Day.',
+      'India has three parts of government: the legislature makes laws, the executive runs the country, and the judiciary decides if laws are fair.',
+      'Fundamental Rights are in Part III of the Constitution. They include equality, freedom of speech, and protection from discrimination.',
+      'A vote is secret and equal: a billionaire and a farmer each get one.',
+      'The Election Commission of India runs elections. Since 1951 it has used ink on a finger so nobody can vote twice.'
+    ],
+    quiz: [
+      { q: 'When did the Indian Constitution come into force?', a: '26 January 1950' },
+      { q: 'Which part of the government makes laws?', a: 'The legislature' },
+      { q: 'Which body runs elections in India?', a: 'The Election Commission' },
+      { q: 'How many voters does India have?', a: 'More than 900 million' }
+    ]
+  },
+  {
+    id: 'ecosystem', label: 'ecosystems and food chains', names: ['ecosystem', 'food chain', 'food web', 'habitat', 'biodiversity', 'producer', 'consumer', 'decomposer', 'pollination', 'extinction'],
+    facts: [
+      'An ecosystem is living things plus the place they live: a pond, a forest, even the soil in a pot.',
+      'A food chain always starts with a producer, usually a plant, because only plants make their own food from sunlight.',
+      'Decomposers such as fungi and bacteria close the loop: they break dead things back into soil so plants can use them again.',
+      'Remove one animal from a food web and the whole web shifts. That is why wolves returning to Yellowstone changed the rivers.',
+      'Bees pollinate about a third of the food we eat. Without them, many fruits and vegetables would disappear.',
+      'Biodiversity means many kinds of life. A place with many species survives shocks better than a place with few.',
+      'Extinction is permanent. Once the last one dies, the species never comes back, which is different from being endangered.'
+    ],
+    quiz: [
+      { q: 'What always starts a food chain?', a: 'A producer, such as a plant' },
+      { q: 'What do decomposers do?', a: 'They break dead things into soil' },
+      { q: 'Who pollinates about a third of our food?', a: 'Bees' },
+      { q: 'What does biodiversity mean?', a: 'Many kinds of life in one place' }
+    ]
+  },
+  {
+    id: 'acids', label: 'acids, bases and reactions', names: ['acid', 'acids', 'base', 'bases', 'alkali', 'ph', 'ph scale', 'neutralisation', 'neutralization', 'indicator', 'litmus', 'salt', 'corrosion'],
+    facts: [
+      'Acids taste sour and turn blue litmus red. Bases taste bitter, feel slippery, and turn red litmus blue.',
+      'The pH scale runs from 0 to 14. Below 7 is acidic, 7 is neutral, above 7 is basic.',
+      'Lemon juice is about pH 2. Your stomach acid is about pH 1.5, strong enough to dissolve metal.',
+      'Mixing an acid with a base gives salt and water. That is called neutralisation, and it is what an antacid tablet does.',
+      'Never taste a chemical in a lab. Use litmus paper or a pH indicator instead.',
+      'Baking soda is a mild base, which is why it settles a sour stomach and puts out a small kitchen fire.',
+      'Acid rain forms when gases from burning fuel mix with water in the air. It damages stone, soil and lakes.'
+    ],
+    quiz: [
+      { q: 'What pH is neutral?', a: '7' },
+      { q: 'What does acid do to blue litmus paper?', a: 'Turns it red' },
+      { q: 'What is acid plus base called?', a: 'Neutralisation' },
+      { q: 'What is baking soda?', a: 'A mild base' }
+    ]
+  },
+  {
+    id: 'evolution', label: 'evolution and natural selection', names: ['evolution', 'natural selection', 'darwin', 'adaptation', 'species', 'fossil', 'fossils', 'mutation', 'survival of the fittest'],
+    facts: [
+      'Evolution means living things change over many generations, and the ones better suited to their place leave more young.',
+      'Charles Darwin published On the Origin of Species in 1859, after years of watching finches on the Galapagos Islands.',
+      '"Survival of the fittest" does not mean strongest. It means best fitted to that particular place and moment.',
+      'A mutation is a copying mistake in DNA. Most are harmless, some help, and a few cause disease.',
+      'Fossils are the record: we can see whales with legs and birds with teeth in the older rocks.',
+      'Antibiotic resistance is evolution happening in days. Bacteria that survive a drug pass on the resistance.',
+      'Humans and chimpanzees share about 98.8% of their DNA, which means a common ancestor, not that we came from them.'
+    ],
+    quiz: [
+      { q: 'Who wrote On the Origin of Species?', a: 'Charles Darwin' },
+      { q: 'What does survival of the fittest really mean?', a: 'Best suited to that place' },
+      { q: 'What is a mutation?', a: 'A copying mistake in DNA' },
+      { q: 'What share of DNA do humans and chimps share?', a: 'About 98.8%' }
+    ]
+  },
+  {
+    id: 'numbers', label: 'numbers and prime numbers', names: ['prime number', 'primes', 'composite number', 'factor', 'factors', 'multiple', 'multiples', 'hcf', 'lcm', 'rational number', 'irrational number', 'fibonacci'],
+    facts: [
+      'A prime number has exactly two factors: 1 and itself. 2, 3, 5, 7, 11 and 13 are prime. 1 is not prime, and 2 is the only even prime.',
+      'There are infinitely many primes. Euclid proved it more than 2,000 years ago with a proof that still works.',
+      'A composite number has more than two factors, like 12, which is 1, 2, 3, 4, 6 and 12.',
+      'HCF is the biggest number that divides both. LCM is the smallest that both divide into. For 24 and 36 they are 12 and 72.',
+      'Pi is the distance around a circle divided by the distance across it, about 3.14159, and it never repeats or ends.',
+      'Rational numbers can be written as a fraction. Irrational ones cannot, and pi is irrational.',
+      'The Fibonacci sequence is 1, 1, 2, 3, 5, 8, 13, and each number is the two before it added. Sunflowers often grow in these numbers.'
+    ],
+    quiz: [
+      { q: 'Is 1 a prime number?', a: 'No' },
+      { q: 'What is the only even prime?', a: '2' },
+      { q: 'What is the HCF of 24 and 36?', a: '12' },
+      { q: 'What is pi to five decimals?', a: '3.14159' }
+    ]
+  },
+  {
+    id: 'study', label: 'how memory and study work', names: ['memory', 'how memory works', 'spaced repetition', 'revision', 'study techniques', 'forgetting curve', 'active recall', 'sleep and memory'],
+    facts: [
+      'Your brain forgets most of what it hears within a day unless you come back to it. That is the forgetting curve, and it is normal, not a sign you are bad at it.',
+      'Spaced repetition beats rereading because each return is a little harder, and a small struggle is what makes memory stick.',
+      'Active recall means closing the book and writing what you remember. It feels worse than rereading and works far better.',
+      'Sleep is when the day is filed away. Losing a night of sleep before an exam costs more than the extra hour of reading gains.',
+      'Explaining a topic out loud to someone, even to a wall, shows you exactly where the gap is.',
+      'Switch topics after 25 to 40 minutes. Attention has a shelf life, and a short walk resets it.',
+      'Understanding beats memorising for anything you must use, because a understood fact is rebuildable and a memorised one is not.'
+    ],
+    quiz: [
+      { q: 'What is active recall?', a: 'Writing what you remember with the book closed' },
+      { q: 'What is the forgetting curve?', a: 'Memory fading fast unless you return to it' },
+      { q: 'What does spaced repetition mean?', a: 'Returning to material at growing gaps' },
+      { q: 'Why does sleep matter before an exam?', a: 'It files the day into memory' }
     ]
   }
 ];
@@ -4799,6 +5355,45 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
     function fmtUnit(u) {
       return { km: 'km', mi: 'miles', kg: 'kg', lb: 'pounds', cm: 'cm', in: 'inches', l: 'litres', ml: 'ml', c: 'degrees Celsius', f: 'degrees Fahrenheit' }[u] || u;
     }
+    /**
+     * Answer a reasoning question out loud, showing the working.
+     * The working is what makes it teaching rather than a lookup: a person
+     * can check it, and can do the next one themselves.
+     */
+    function doReason(r, out) {
+      if (!r) { out.say('I could not work that one out. Try writing it as numbers, like "25 times 4".'); return; }
+      function say(text, silent) { out.say(text, { silent: !!silent }); }
+
+      if (r.kind === 'quadratic') {
+        say(r.quad.text);
+        return;
+      }
+      if (r.kind === 'algebra') {
+        const a = r.algebra;
+        say('Let us solve it properly. There is only one unknown, ' + a.variable + ', so one answer is enough.');
+        say('Step 1: move everything with ' + a.variable + ' to one side and the plain numbers to the other.');
+        say('Step 2: divide, and ' + a.variable + ' = ' + a.value + '.');
+        say('I checked it by putting ' + a.value + ' back in: both sides come out at ' + a.check + ', so it is right.');
+        return;
+      }
+      if (r.kind === 'shape') {
+        const sh = r.shape;
+        say('Working out ' + sh.label + '.');
+        say('The formula is ' + sh.formula + ', which gives ' + fmtNumber(sh.value) + '.');
+        if (/circle|sphere|cylinder/.test(sh.kind)) say('I used pi as 3.14159, so the last digits may shift slightly.', true);
+        return;
+      }
+      if (r.kind === 'percent' || (typeof r.kind === 'string' && r.kind.indexOf('percent') === 0)) return say(r.text);
+      if (r.kind === 'unit') {
+        const u = r.unit;
+        const shown = Math.round(u.result * 10000) / 10000;
+        say(groupDigits(u.value) + ' ' + u.fromName + ' is ' + groupDigits(shown) + ' ' + u.toName + '.');
+        return;
+      }
+      if (r.kind === 'number') return say(r.number.text);
+      if (r.kind === 'money') return say(r.money.text);
+      out.say('I could not work that one out.');
+    }
     function doConvert(step, out) {
       const c = step.conv;
       out.say(c.value + ' ' + fmtUnit(c.from) + ' is ' + fmtNumber(Math.round(c.result * 1000) / 1000) + ' ' + fmtUnit(c.to) + '.');
@@ -5846,6 +6441,7 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       if (it === 'game.stop') return doGame(step, out);
       if (it === 'ask.ai') return doAskAi(step, out);
       if (it === 'capital') return doCapitals(step, out);
+      if (it === 'reason') return doReason(step.reason, out);
       if (it === 'convert') return doConvert(step, out);
       if (it === 'average') {
         out.say('The average of those numbers is ' + fmtNumber(Math.round(step.avg.average * 1000) / 1000) + '.');

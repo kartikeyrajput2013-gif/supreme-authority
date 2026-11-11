@@ -180,6 +180,8 @@ Write-Host "  own sk-... key from platform.openai.com. She speaks the new" -Fore
 Write-Host "  Responses API and the older chat API, and explains a bad key." -ForegroundColor Gray
 Write-Host "  Also new: combos, three daily quests, prestige at level 20," -ForegroundColor Gray
 Write-Host "  and one command that reads a new computer and opens your app." -ForegroundColor Gray
+Write-Host "  She now solves algebra, quadratics, geometry, units and money" -ForegroundColor Gray
+Write-Host "  herself, shows the working, and never guesses." -ForegroundColor Gray
 Write-Host ""
 Write-Host "  If Windows shows a small warning about Python, Vega still opens" -ForegroundColor Gray
 Write-Host "  in browser mode; she just cannot change volume or play with apps." -ForegroundColor Gray

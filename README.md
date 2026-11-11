@@ -18,6 +18,68 @@ except for the things that need the internet (websites, Wikipedia, voice).
 
 ---
 
+## 0. The file to download, named exactly, and the steps
+
+There are **two files on the GitHub page**. You only need one of them.
+
+| The file | Size | Use it when |
+| --- | --- | --- |
+| **`Vega_Install_One_File.bat`** | about 1.5 MB | **Normal case.** One file, nothing to unzip, no folder to lose. |
+| **`Vega-3.4.zip`** | about 330 KB | A browser or antivirus refuses `.bat` downloads, or you want to read the files first. |
+
+Everything else on the page (the `.html`, the `.py`, the `.ps1`) is the same
+content **for reading**, not for clicking. If you download those separately you
+will get six files that do not know each other.
+
+### Downloading `Vega_Install_One_File.bat` from GitHub
+
+1. Open the repository page:
+   `https://github.com/kartikeyrajput2013-gif/supreme-authority`
+2. Look at the file list in the middle of the page. It is the long list that
+   starts with a folder called `icons`.
+3. Find the line that says **`Vega_Install_One_File.bat`**. If you cannot see
+   it, press `Ctrl + F` and type `Vega_Install_One_File`.
+4. **Click that name once.** The file opens as a page, and at the top right of
+   that page there is a **download icon** (a small arrow pointing down into a
+   tray).
+5. Click the **download icon**. Your browser saves the file. It usually lands in
+   `C:\Users\YourName\Downloads`.
+6. If the browser says *"this type of file can harm your computer"*, choose
+   **Keep**. That warning appears for every `.bat` file that exists, including
+   harmless ones, because it is a script. You can read it: it is plain text.
+7. Go to `Downloads`, **right-click** `Vega_Install_One_File.bat`, and choose
+   **Run as administrator** if the normal double-click does nothing.
+8. It asks where to install her (press Enter to accept `C:\Users\You\Vega`),
+   unpacks everything, makes the Desktop shortcut, and offers to start her.
+
+### Downloading `Vega-3.4.zip` instead
+
+1. Same page. Find **`Vega-3.4.zip`** in the list.
+2. Click it, then click the **download icon** at the top right.
+3. In `Downloads`, **right-click the zip and choose Extract All**, then Extract.
+   Do not run anything from inside the zip; Windows cannot install from there.
+4. Open the extracted folder and double-click **`INSTALL_SOPHIA.bat`**.
+
+### If you cannot find the download button at all
+
+You are probably looking at the **README** (the long page with all this text)
+rather than the **file list**. The file list is reached by clicking the
+repository name at the top, or by going to
+`https://github.com/kartikeyrajput2013-gif/supreme-authority/tree/main`.
+The README has no download button; the file list does, on each file's own page.
+
+### What the file does, before you run it
+
+It carries four files inside itself as text, unpacks them with the `certutil`
+program that is already part of Windows, keeps a backup as
+`assistant-old.html` if you had an older one, and makes a Desktop shortcut with
+her icon. It does not go online, does not install a service, does not ask for
+administrator rights to write anywhere except the folder you choose, and
+nothing is uploaded. If `certutil` is missing it says so and tells you to use
+the zip instead. That is the whole installer.
+
+---
+
 ## 1. What goes on the laptop
 
 Vega is six small files that sit together in one folder:
@@ -401,6 +463,110 @@ Below level 20 she refuses, says exactly how far away it is, and takes nothing.
 That is deliberate: a prestige you can buy is not a prestige.
 
 Try: `play a game`, `quests`, `combo`, `prestige`, `stats`.
+
+---
+
+## 2j. The reasoning engine: what she works out herself (new in 3.4)
+
+3.4 added a real solver under her conversation, so a large class of school
+questions is answered **on the laptop, with no key, no internet and no waiting**.
+The important part is not just the answer, it is the working.
+
+### Algebra
+
+```
+You: what is x if 2x + 5 = 17
+
+Vega: Let us solve it properly. There is only one unknown, x, so one answer is enough.
+      Step 1: move everything with x to one side and the plain numbers to the other.
+      Step 2: divide, and x = 6.
+      I checked it by putting 6 back in: both sides come out at 17, so it is right.
+```
+
+It handles the linear shapes: `3x - 7 = 14`, `x/4 = 9`, `5x + 2 = 3x + 10`.
+It solves them numerically **and then verifies** by substituting the answer back
+into both sides; if the two sides disagree it refuses instead of printing a
+wrong number.
+
+Quadratics are handled by the real formula, and it tells you how many answers
+exist instead of forcing two:
+
+```
+x^2 + 5x + 6 = 0                    -> x = -3 and x = -2, both put back and checked
+solve x squared minus 4 equals 0    -> x = -2 and x = 2
+x squared plus 3x minus 10 equals 0 -> x = -5 and x = 2
+x squared minus 6x plus 9 equals 0  -> one answer, x = 3, because the root part is zero
+x^2 + 1 = 0                         -> no real answer, the part under the root is negative
+```
+
+Two unknowns at once (`2x + y = 7`) are still out of reach, and she says so
+rather than guessing.
+
+### Geometry
+
+| You ask | She says |
+| --- | --- |
+| `area of a circle with radius 5` | `Working out a circle with radius 5. The formula is pi x 5 x 5, which gives 78.54.` |
+| `area of a triangle with base 10 and height 6` | `... the formula is half of 10 x 6, which gives 30.` |
+| `volume of a cube with side 3` | `... 3 x 3 x 3 ... 27.` |
+| `volume of a sphere with radius 4` | `... (4/3) x pi x 4^3 ...` |
+| `area of a rectangle 8 by 5` | `... 8 x 5 ... 40.` |
+
+Circles, spheres, cylinders, squares, rectangles, triangles and boxes. The
+formula is printed with the numbers already in it, so it doubles as a check.
+
+### Units, with one table instead of a pile of special cases
+
+Length (mm, cm, m, km, inches, feet, yards, miles, nautical miles), mass
+(mg, g, kg, tonnes, pounds, ounces), volume (ml, litres, cups, gallons), time
+(seconds to weeks) and data (bytes to terabytes).
+
+```
+how many grams in 2.5 kg        -> 2.5 kilograms is 2,500 grams.
+what is 12 GB in MB             -> 12 gigabytes is 12,288 megabytes.
+how many minutes in 3 hours     -> 3 hours is 180 minutes.
+convert 5 km to miles           -> 5 kilometres is 3.1069 miles.
+```
+
+A conversion between two different kinds of thing is refused: mass is never
+turned into length just because both look like a word she knows.
+
+### Percentages, money and number facts
+
+```
+what is 15% of 240                          -> 15% of 240 is 36.
+20 is what percent of 80                    -> 20 is 25% of 80.
+simple interest on 5000 at 8% for 3 years   -> ... is 1,200, so you pay back 6,200.
+compound interest on 5000 at 8% for 3 years -> ... so the total is 6,298.56.
+if i buy 3 apples at 20 each                -> 3 at 20 each is 60.
+what is 7 factorial                         -> 7 factorial is 5,040.
+gcd of 24 and 36                            -> The GCD of 24 and 36 is 12.
+is 97 prime                                 -> 97 is prime. Nothing divides it but 1 and itself.
+```
+
+Numbers come back grouped (`12,288`, not `12288`), because the point of an
+answer is that a person can read it.
+
+### Nine new knowledge packs
+
+Her own notes now cover **cells and life**, **gravity and motion**,
+**democracy and government**, **ecosystems and food chains**,
+**acids and bases**, **evolution**, **inflation and interest**,
+**prime numbers**, and **how memory and study work** &mdash; each with facts and a
+quiz, so `quiz me on cells` works. That is 38 topics in total, all offline.
+
+A relevance bug went with it: asking about *gravity* used to return a fact
+about solids, because the old matcher picked whichever topic name was longest
+rather than whichever matched best. She now answers the subject you actually
+named, and a test holds it there.
+
+### The honest boundary
+
+This engine is **rule-based, not a language model**. It is excellent inside its
+shapes and blind outside them. Ask it for the integral of x squared and it will
+not invent one; it will offer the web search or your own connected AI model.
+That is the correct behaviour: a wrong confident answer is worse than an honest
+"I cannot work that out".
 
 ---
 
@@ -861,7 +1027,7 @@ To undo everything: rename `assistant-old-<date>.html` back to
 | `INSTALL_SOPHIA.bat` | One-step installer: copies the files and makes a Desktop shortcut. |
 | `Install_Sophia.ps1` | The PowerShell script behind the installer. |
 | `vega.ico` | Her icon, in six sizes. The installer puts it in the folder and on the shortcut. |
-| `tests/brain.test.js` | 87 tests for what Vega understands. `node --test tests/brain.test.js` |
+| `tests/brain.test.js` | 95 tests for what Vega understands. `node --test tests/brain.test.js` |
 | `tests/test_helper.py` | 57 tests for the helper, the file search, the installer and the server. `python3 -m unittest discover tests` |
 
 Old versions: `git show 09ca826:assistant.html` is the file exactly as you

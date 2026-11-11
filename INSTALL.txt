@@ -66,6 +66,15 @@ WHAT IS NEW IN THIS VERSION (3.1)
   other site. Say "ask grok why is the sky blue" and she opens Grok with
   the question already in the box. Gemini and Antigravity get it on the
   clipboard; you press Ctrl + V. No login, no fake account, no pretending.
+- A reasoning engine that works with no internet and no key: algebra
+  ("what is x if 2x + 5 = 17"), quadratics ("x^2 + 5x + 6 = 0"), geometry
+  ("area of a circle with radius 5"), units ("how many grams in 2.5 kg"),
+  percentages, simple and compound interest, factorial, GCD and prime checks.
+  She shows the working and checks her own answer; when she cannot work
+  something out she says so instead of guessing.
+- Nine more knowledge packs with quizzes: cells, gravity, democracy,
+  ecosystems, acids and bases, evolution, inflation and interest, prime
+  numbers, and how memory works. 38 topics in all, all offline.
 - Real ChatGPT inside her window, if you want it: Settings, choose OpenAI,
   paste your own sk-... key from platform.openai.com, press Test connection.
   She then asks OpenAI which models the key can use, asks one a test

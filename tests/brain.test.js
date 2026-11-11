@@ -306,13 +306,13 @@ test('a connected AI model can answer and run safe commands, but not power actio
       enabled: () => true,
       chat: async (messages) => {
         answers.push(messages[messages.length - 1].content);
-        if (/newton/i.test(messages[messages.length - 1].content)) return "Newton's third law says every action has an equal and opposite reaction.";
+        if (/photosynthesis/i.test(messages[messages.length - 1].content)) return "A mushroom is not a plant, so it does not photosynthesise.";
         return 'Opening that for you.\nDO: open youtube\nDO: shut down';
       }
     }
   });
-  let r = await sophia.handle('who is newton');
-  assert.match(r.text, /equal and opposite/);
+  let r = await sophia.handle('does photosynthesis happen in a mushroom');
+  assert.match(r.text, /does not photosynthesise/);
   r = await sophia.handle('do the thing for me');
   assert.match(r.text, /Opening that for you/);
   assert.strictEqual(calls.length, 1, 'exactly one safe command may reach the laptop');
@@ -1192,4 +1192,130 @@ test('the prestige threshold is stated in one place', () => {
   assert.match(script, /const PRESTIGE_AT = 20/);
   const matches = script.match(/PRESTIGE_AT/g) || [];
   assert.ok(matches.length >= 3, 'the number is used, not copied into three sentences');
+});
+
+test('the reasoning engine solves algebra and checks its own answer', async () => {
+  const v = Brain.create({});
+  const cases = [
+    ['what is x if 2x + 5 = 17', 6],
+    ['solve 3x - 7 = 14', 7],
+    ['2x + 5 = 17', 6],
+    ['x/4 = 9', 36]
+  ];
+  for (const [q, want] of cases) {
+    const r = await v.handle(q);
+    assert.match(r.text, new RegExp('= ' + want + '\\b'), q + ' should give ' + want);
+    assert.match(r.text, /checked it by putting/, q + ' must show the check');
+  }
+});
+
+test('geometry uses the right formula and says it', async () => {
+  const v = Brain.create({});
+  let r = await v.handle('area of a circle with radius 5');
+  assert.match(r.text, /78\.54/);
+  assert.match(r.text, /pi/, 'the formula must be shown, not just the answer');
+
+  r = await v.handle('area of a triangle with base 10 and height 6');
+  assert.match(r.text, /30\b/);
+
+  r = await v.handle('volume of a cube with side 3');
+  assert.match(r.text, /27\b/);
+
+  // a wrong shape must not be invented
+  r = await v.handle('area of a giraffe with radius 5');
+  assert.doesNotMatch(r.text, /78\.54/);
+});
+
+test('units, money and number facts answer without the internet', async () => {
+  const v = Brain.create({});
+  const cases = [
+    ['how many grams in 2.5 kg', /2,500 grams/],
+    ['how many minutes in 3 hours', /180 minutes/],
+    ['what is 12 GB in MB', /12,288 megabytes/],
+    ['convert 5 km to miles', /3\.1069 miles/],
+    ['simple interest on 5000 at 8% for 3 years', /1,200/],
+    ['if i buy 3 apples at 20 each', /60/],
+    ['what is 7 factorial', /5,040/],
+    ['gcd of 24 and 36', /12/],
+    ['is 97 prime', /is prime/],
+    ['20 is what percent of 80', /25% of 80/]
+  ];
+  for (const [q, re] of cases) {
+    const r = await v.handle(q);
+    assert.match(r.text, re, q);
+  }
+});
+
+test('the reasoning engine never guesses', async () => {
+  // a mismatched unit conversion must fall through, not invent an answer
+  const v = Brain.create({});
+  const r = await v.handle('convert 5 kilograms to kilometres');
+  assert.doesNotMatch(r.text, /kilometres\.$/, 'mass cannot be converted to length');
+});
+
+test('real school topics answer from her own notes, and stay on topic', async () => {
+  const v = Brain.create({ random: () => 0.35, now: () => new Date('2026-11-11T10:00:00') });
+  const cases = [
+    ['what is a cell', /cells and life/i],
+    ['what is democracy', /democracy and government/i],
+    ['what is an ecosystem', /ecosystems and food chains/i],
+    ['what is evolution', /evolution and natural selection/i],
+    ['what is inflation', /money and the economy/i],
+    ['what is an acid', /acids, bases and reactions/i],
+    ['what is a prime number', /numbers and prime numbers/i],
+    ['what is newton second law', /gravity and motion/i]
+  ];
+  for (const [q, label] of cases) {
+    const r = await v.handle(q);
+    assert.match(r.text, label, q + ' must find its own topic');
+    assert.doesNotMatch(r.text, /could not find/i, q + ' must not offer a search');
+  }
+
+  // the specific topic must win: "gravity" is not a fact about solids
+  const g = await v.handle('what is gravity');
+  assert.match(g.text, /gravity|motion/i);
+  assert.doesNotMatch(g.text, /solids, li/i, 'a loose match must never answer a different subject');
+});
+
+test('each new topic can run a quiz, so the knowledge is usable', async () => {
+  const v = Brain.create({ random: () => 0.5 });
+  for (const topic of ['cells', 'gravity', 'democracy', 'acids', 'evolution', 'inflation']) {
+    const r = await v.handle('quiz me on ' + topic);
+    assert.match(r.text, /./, 'quiz on ' + topic + ' must start');
+    assert.doesNotMatch(r.text, /I have quiz packs on/i, topic + ' must be a known pack');
+  }
+});
+
+test('quadratics answer honestly, including the spoken form, and never hang', async () => {
+  const v = Brain.create({});
+  let r = await v.handle('solve x squared minus 4 equals 0');
+  assert.match(r.text, /x = -2/);
+  assert.match(r.text, /x = 2/);
+
+  r = await v.handle('x^2 + 5x + 6 = 0');
+  assert.match(r.text, /x = -3/);
+  assert.match(r.text, /x = -2/);
+
+  r = await v.handle('x squared plus 3x minus 10 equals 0');
+  assert.match(r.text, /x = -5/);
+  assert.match(r.text, /x = 2/);
+
+  // one root, and no real root: both must be named as such
+  r = await v.handle('x squared minus 6x plus 9 equals 0');
+  assert.match(r.text, /one answer, x = 3/);
+  r = await v.handle('x^2 + 1 = 0');
+  assert.match(r.text, /no real answer/);
+
+  // a shape she cannot solve must not invent a number
+  r = await v.handle('integral of x squared');
+  assert.doesNotMatch(r.text, /x = /);
+});
+
+test('the solver always stops, even on odd input', async () => {
+  // this is the failure that must never ship: a loop that never ends
+  const v = Brain.create({});
+  const odd = ['x squared', 'x^2 =', '= 0', 'x squared plus plus 3', 'x squared 4 5 6'];
+  const started = Date.now();
+  for (const q of odd) await v.handle(q);
+  assert.ok(Date.now() - started < 5000, 'solving must never hang');
 });
