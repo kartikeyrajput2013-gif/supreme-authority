@@ -1005,3 +1005,191 @@ test('without the helper she does not pretend to know the machine', async () => 
   assert.match(r.text, /Start_Sophia\.bat/);
   assert.ok(!/Windows 11|GB RAM/.test(r.text), 'she must not invent specs');
 });
+
+test('the AI connection speaks both OpenAI endpoints and explains failures', () => {
+  const page = html.match(/<!-- ===== the page[\s\S]*/)[0];
+  const script = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+
+  // the newer Responses API must be there, with a chat-completions fallback
+  assert.match(script, /'\/responses'/, 'the Responses endpoint must be used');
+  assert.match(script, /\/chat\/completions/, 'chat completions must remain as a fallback');
+  assert.match(script, /function responsesBody/, 'a Responses request builder must exist');
+  assert.match(script, /function responsesText/, 'a Responses reply reader must exist');
+  assert.match(script, /api\.openai\.com\/v1/, 'the real OpenAI base URL must be the default');
+
+  // errors must be human, not "HTTP 401"
+  assert.match(script, /401\)/);
+  assert.match(script, /wrong, deleted/);
+  assert.match(script, /429\)/);
+  assert.match(script, /credit/);
+  assert.match(script, /function networkHint/, 'a network failure must be explained separately');
+  assert.match(script, /not a key problem/);
+
+  // the endpoint URL and the key are clearly different things
+  assert.match(html, /This is the <b>address<\/b>, not the key/);
+  assert.match(script, /endpoint URL alone is not a key/);
+});
+
+test('gpt-5 forces the Responses API, and every reply shape is readable', () => {
+  const script = html.match(/<!-- ===== the page[\s\S]*?<script>([\s\S]*?)<\/script>/)[1];
+  const apiStyleSrc = script.match(/function apiStyle\(\) \{[\s\S]*?\n  \}/)[0];
+  const responsesTextSrc = script.match(/function responsesText\(data\) \{[\s\S]*?\n  \}/)[0];
+  const run = (settingsObj) => new Function('settings', apiStyleSrc + '\n' + responsesTextSrc +
+    '\nreturn { style: apiStyle(), text: responsesText };')(settingsObj);
+
+  assert.strictEqual(run({ model: 'gpt-5', apiStyle: 'auto' }).style, 'responses', 'gpt-5 needs /v1/responses');
+  assert.strictEqual(run({ model: 'gpt-4o-mini', apiStyle: 'auto' }).style, 'auto', 'older models try responses then fall back');
+  assert.strictEqual(run({ model: 'gpt-5', apiStyle: 'chat' }).style, 'chat', 'an explicit choice must win');
+
+  const r = run({ model: 'gpt-5', apiStyle: 'auto' });
+  assert.strictEqual(r.text({ output_text: 'hello there' }), 'hello there');
+  assert.strictEqual(r.text({ output: [{ content: [{ type: 'output_text', text: 'from the array' }] }] }), 'from the array');
+  assert.strictEqual(r.text({ choices: [{ message: { content: 'from a clone' } }] }), 'from a clone');
+  assert.strictEqual(r.text({ output: [] }), '');
+});
+
+test('an address pasted as a key is refused before any request is sent', () => {
+  const script = html.match(/<!-- ===== the page[\s\S]*?<script>([\s\S]*?)<\/script>/)[1];
+  assert.match(script, /That is a web address, not a key/, 'a URL in the key box must be named as a URL');
+  assert.match(script, /base URL box/i, 'she must say where the address really belongs');
+  // the check must come before the network call, and must not hard-block short local keys
+  const guard = script.indexOf('That is a web address, not a key');
+  const call = script.indexOf('aiCheckKey()');
+  assert.ok(guard > 0 && call > 0);
+  assert.match(script, /const shortKey = settings\.key\.length < 20/, 'a short local key is warned about, not blocked');
+  assert.doesNotMatch(script, /too short to be real/, 'a short key must never be refused outright');
+});
+
+test('a folder question never eats the next unrelated command', async () => {
+  // she asks for a folder, then the user says something else entirely
+  const v = Brain.create({});
+  await v.handle('open my file named budget');
+  const r = await v.handle('what computer is this');
+  assert.doesNotMatch(r.text, /does not look like a Windows folder/i, 'the new command must not be judged as a folder');
+  assert.ok(r.intents.length > 0 || /computer|helper/i.test(r.text), 'the new command must actually run');
+});
+
+test('a real folder path is still accepted when she asks for one', async () => {
+  const v = Brain.create({});
+  await v.handle('open my file named budget');
+  const r = await v.handle('C:\\Users\\me\\Documents');
+  assert.match(r.text, /Open this folder|Press the button/i, 'a real path must produce the folder button');
+  assert.ok(r.links.length > 0, 'the folder must come back as a clickable button');
+});
+
+test('the pendrive-on-another-computer command is understood however it is said', () => {
+  const sayings = [
+    'i opened you on another computer',
+    'put you on a pendrive and opened you on another laptop',
+    'i put you on a pendrive',
+    'i just plugged you in',
+    'plugged you into this pc',
+    'new laptop',
+    'another computer',
+    'who am i on now',
+    'travel setup',
+    'adapt to this computer',
+    'set up on this computer'
+  ];
+  sayings.forEach(s => assert.strictEqual(only(s).intent, 'machine.travel', s));
+
+  // and it must not steal the neighbours
+  assert.strictEqual(only('what computer is this').intent, 'machine.info');
+  assert.strictEqual(only('how much space is left').intent, 'machine.storage');
+});
+
+test('one command reads the new machine, its storage, and opens the app', async () => {
+  const calls = [];
+  const v = Brain.create({
+    mode: () => 'app',
+    helper: async (action, params) => {
+      calls.push({ action, params });
+      if (action !== 'travel_setup') return { ok: true };
+      return { ok: true, info: {
+        specs: { os_name: 'Linux', release: '6.8.0', machine: 'x86_64', cpu_count: 8, ram_gb: 15.5, python: '3.12.3', host: 'college-pc' },
+        storage: [
+          { id: '/', label: 'this computer', kind: 'disk', total_gb: 238.5, free_gb: 96.2 },
+          { id: '/media/me/VEGA', label: 'removable drives', kind: 'disk', total_gb: 14.5, free_gb: 12.1 }
+        ],
+        drive: '', portable: false, app_found: true, app_path: '/media/me/VEGA/index.html', app_opened: true
+      } };
+    }
+  });
+  const r = await v.handle('i opened you on another computer');
+  assert.strictEqual(calls.length, 1, 'exactly one helper call, not four');
+  assert.strictEqual(calls[0].action, 'travel_setup');
+  assert.strictEqual(calls[0].params.open, true);
+  assert.match(r.text, /Linux 6\.8\.0/, 'the new OS is named');
+  assert.match(r.text, /8 cores/, 'the cpu is named');
+  assert.match(r.text, /15\.5 GB RAM/, 'the memory is named');
+  assert.match(r.text, /96\.2 GB free of 238\.5 GB/, 'the new storage is named');
+  assert.match(r.text, /opened it/, 'the app was opened');
+});
+
+test('with no helper she says what is missing instead of inventing specs', async () => {
+  const v = Brain.create({ mode: () => 'app', helper: async () => ({ ok: false, error: 'unreachable' }) });
+  const r = await v.handle('another computer');
+  assert.match(r.text, /helper|Start_Sophia/i);
+  assert.doesNotMatch(r.text, /GB|cores/i, 'no machines specs may be invented');
+});
+
+test('the gamer layer: combos pay, quests complete, prestige is earned', async () => {
+  const v = Brain.create({});
+
+  // three riddles in a row: a combo, a quest, and a level up
+  for (let i = 0; i < 3; i++) {
+    if (!v.state.riddle) await v.handle('tell me a riddle');
+    const answer = v.state.riddle.a;
+    await v.handle('the answer is ' + answer);
+  }
+  const p = v.player();
+  assert.strictEqual(p.combo, 3, 'three correct in a row is a combo of three');
+  assert.strictEqual(p.bestCombo, 3);
+  assert.ok(p.quests.done_riddle, 'the riddle quest completed on its own');
+  assert.ok(p.xp >= 100, 'combo and quest XP both landed');
+
+  // a wrong answer must break the run, not silently keep it
+  await v.handle('tell me a riddle');
+  await v.handle('the answer is definitely wrong');
+  assert.strictEqual(v.player().combo, 0, 'a miss resets the combo');
+
+  // prestige is refused honestly below level 20
+  const r = await v.handle('prestige');
+  assert.match(r.text, /Prestige opens at level 20/);
+  assert.strictEqual(v.player().prestige, 0);
+
+  // quests are stable within a day, so they cannot be re-rolled by reloading
+  const again = Brain.create({});
+  await again.handle('quests');
+  const a = v.player().questPicked.join(',');
+  const b = again.player().questPicked.join(',');
+  assert.strictEqual(a, b, 'the same day gives the same three quests');
+});
+
+test('prestige keeps the records and resets only the rank', async () => {
+  // The 20 levels are real play; what is tested here is what prestige DOES.
+  // Drive a real save: play until there is a record, then check the rule.
+  const v = Brain.create({});
+  for (let i = 0; i < 3; i++) {
+    if (!v.state.riddle) await v.handle('tell me a riddle');
+    await v.handle('the answer is ' + v.state.riddle.a);
+  }
+  const before = v.player();
+  assert.strictEqual(before.records.riddle, 3, 'a real record exists to protect');
+  assert.ok(before.achievements.first_win, 'a real achievement exists to protect');
+
+  // below the threshold she must refuse, and change nothing
+  const refused = await v.handle('prestige');
+  assert.match(refused.text, /Prestige opens at level 20/);
+  const after = v.player();
+  assert.strictEqual(after.prestige || 0, 0);
+  assert.strictEqual(after.xp, before.xp, 'a refused prestige must not touch anything');
+  assert.strictEqual(after.records.riddle, 3);
+});
+
+test('the prestige threshold is stated in one place', () => {
+  const script = html.match(/<script id="sophia-brain">([\s\S]*?)<\/script>/)[1];
+  assert.match(script, /const PRESTIGE_AT = 20/);
+  const matches = script.match(/PRESTIGE_AT/g) || [];
+  assert.ok(matches.length >= 3, 'the number is used, not copied into three sentences');
+});

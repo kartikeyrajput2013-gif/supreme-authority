@@ -484,3 +484,56 @@ class ThisMachineTest(unittest.TestCase):
         self.assertNotIn("C:\\Vega", raw, "no hard-coded install path")
         self.assertIn("On drive", raw, "she should say which drive she is on")
         self.assertIn("%~dp0sophia_helper.py", raw)
+
+
+class TestTravelSetup(unittest.TestCase):
+    """The one command for 'I carried her to another computer'."""
+
+    def test_it_is_registered_as_a_real_action(self):
+        self.assertIn("travel_setup", helper.ACTIONS)
+        self.assertNotIn("travel_setup", helper.DANGEROUS, "looking at a machine is not dangerous")
+
+    def test_it_reports_specs_storage_and_the_app_without_inventing_any(self):
+        fake_specs = {"os_name": "Linux", "os_detail": "Linux-6.8.0", "machine": "x86_64",
+                      "cpu_count": 8, "ram_gb": 15.5, "python": "3.12.3", "host": "college-pc"}
+        fake_storage = [{"id": "/", "label": "this computer", "kind": "disk",
+                         "total_gb": 238.5, "free_gb": 96.2}]
+        with mock.patch.object(helper, "_travel_specs", return_value=fake_specs), \
+             mock.patch.object(helper, "_travel_storage", return_value=fake_storage), \
+             mock.patch.object(helper, "_travel_app", return_value=None):
+            r = helper.action_travel_setup({})
+        self.assertTrue(r["ok"])
+        self.assertEqual(r["info"]["specs"]["os_name"], "Linux")
+        self.assertEqual(r["info"]["storage"][0]["free_gb"], 96.2)
+        self.assertFalse(r["info"]["app_found"])
+        self.assertFalse(r["info"]["app_opened"])
+
+    def test_open_false_only_looks_and_does_not_launch_anything(self):
+        with mock.patch.object(helper, "_travel_specs", return_value={}), \
+             mock.patch.object(helper, "_travel_storage", return_value=[]), \
+             mock.patch.object(helper, "_travel_app", return_value="/tmp/index.html"), \
+             mock.patch.object(helper, "_start") as started:
+            r = helper.action_travel_setup({"open": False})
+        self.assertTrue(r["info"]["app_found"])
+        self.assertFalse(r["info"]["app_opened"])
+        started.assert_not_called()
+
+    def test_a_missing_app_is_reported_as_missing(self):
+        with mock.patch.object(helper, "_travel_specs", return_value={}), \
+             mock.patch.object(helper, "_travel_storage", return_value=[]), \
+             mock.patch.object(helper, "_travel_app", return_value=None):
+            r = helper.action_travel_setup({})
+        self.assertFalse(r["info"]["app_found"])
+        self.assertNotIn("app_path", [k for k, v in r["info"].items() if v])
+
+    def test_storage_reading_never_raises_on_this_machine(self):
+        got = helper._travel_storage()
+        self.assertIsInstance(got, list)
+        for d in got:
+            self.assertIn("id", d)
+            self.assertGreaterEqual(d["free_gb"], 0)
+            self.assertGreaterEqual(d["total_gb"], 0)
+
+    def test_app_discovery_finds_the_page_beside_the_helper(self):
+        with mock.patch.object(helper.os.path, "isfile", side_effect=lambda p: p.endswith("index.html")):
+            self.assertTrue(helper._travel_app().endswith("index.html"))

@@ -955,6 +955,162 @@ def action_open_self(params):
         return fail("open_failed", str(exc)[:120])
 
 
+def _travel_specs():
+    """The specs of whichever machine the stick is plugged into right now.
+
+    Works on Windows, macOS and Linux, and says which of the three it found
+    instead of pretending they are the same. Only reads; changes nothing.
+    """
+    probe = {
+        "os_name": platform.system() or "unknown",
+        "os_detail": platform.platform(),
+        "release": platform.release(),
+        "version": platform.version()[:120],
+        "machine": platform.machine(),
+        "processor": platform.processor() or "",
+        "python": platform.python_version(),
+        "host": socket.gethostname(),
+    }
+    try:
+        probe["cpu_count"] = os.cpu_count() or 0
+    except (OSError, ValueError):
+        probe["cpu_count"] = 0
+    # memory
+    try:
+        if IS_WINDOWS:
+            script = "$cs = Get-CimInstance Win32_ComputerSystem; "\
+                     "[math]::Round($cs.TotalPhysicalMemory/1GB,1)"
+            res = ps_command(script, timeout=15)
+            if res.get("ok") and str(res.get("output", "")).strip():
+                probe["ram_gb"] = float(str(res["output"]).strip().splitlines()[0])
+        elif platform.system() == "Darwin":
+            code, out, _err = _run(["sysctl", "-n", "hw.memsize"], timeout=8)
+            if code == 0 and out.strip().isdigit():
+                probe["ram_gb"] = round(int(out.strip()) / (1024 ** 3), 1)
+        else:
+            with open("/proc/meminfo", "r", encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    if line.startswith("MemTotal:"):
+                        probe["ram_gb"] = round(int(line.split()[1]) / (1024 ** 2), 1)
+                        break
+    except (OSError, ValueError, TypeError, IndexError):
+        pass
+    return probe
+
+
+def _travel_storage():
+    """Every place this machine can save to, and how much room is left.
+
+    Windows: every drive letter, labelled disk or USB.
+    macOS / Linux: the root filesystem and anything mounted under /Volumes or
+    /media, which is where a pendrive actually appears on those systems.
+    """
+    out = []
+    if IS_WINDOWS:
+        for d in _disks():
+            out.append({"id": d["id"], "label": d["label"] or "disk",
+                        "kind": d["kind"], "total_gb": d["total_gb"],
+                        "free_gb": d["free_gb"]})
+        return out
+    targets = [("/", "this computer")]
+    if platform.system() == "Darwin":
+        targets.append(("/Volumes", "external drives"))
+    else:
+        targets.append(("/media", "removable drives"))
+        targets.append(("/mnt", "mounted drives"))
+    seen = set()
+    for path, label in targets:
+        try:
+            if not os.path.isdir(path):
+                continue
+            entries = [path] if path == "/" else [
+                os.path.join(path, e) for e in sorted(os.listdir(path))
+            ]
+            for entry in entries:
+                try:
+                    st = os.statvfs(entry)
+                    total = round((st.f_blocks * st.f_frsize) / (1024 ** 3), 1)
+                    free = round((st.f_bavail * st.f_frsize) / (1024 ** 3), 1)
+                except (OSError, AttributeError):
+                    continue
+                if not total or entry in seen:
+                    continue
+                seen.add(entry)
+                out.append({"id": entry, "label": label, "kind": "disk",
+                            "total_gb": total, "free_gb": free})
+        except OSError:
+            continue
+    return out
+
+
+def _travel_app():
+    """Is the person's own app sitting next to Vega on this stick?
+
+    Looks for index.html beside the helper. If it is there, that is "the app",
+    and it can be opened here in one command on any of the three systems.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    for name in ("index.html", "Index.html", "INDEX.HTML"):
+        page = os.path.join(here, name)
+        if os.path.isfile(page):
+            return page
+    return None
+
+
+def action_travel_setup(params):
+    """One command for "I put her on a pendrive and opened her on another computer".
+
+    It answers the whole sentence in one call:
+      - which OS this is, and its specs (CPU, RAM, 32/64-bit)
+      - every place that can store files, with the free space on each
+      - where Vega herself is running from, and whether that is a stick
+      - whether the person's own app is next to her, and if so opens it
+
+    ``open`` can be passed as false to only look and report. Nothing is
+    installed, nothing is changed, and on an OS where an action is not
+    possible she says so instead of pretending.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    want_open = params.get("open", True)
+    if isinstance(want_open, str):
+        want_open = want_open.strip().lower() not in ("0", "false", "no", "off")
+
+    specs = _travel_specs()
+    storage = _travel_storage()
+    app = _travel_app()
+
+    data = {
+        "specs": specs,
+        "storage": storage,
+        "vega_folder": here,
+        "drive": _drive_letter_of(here),
+        "portable": _is_removable(here),
+        "app_found": bool(app),
+        "app_path": app or "",
+        "can": _report_caps(),
+    }
+
+    opened = None
+    if app and want_open:
+        if IS_WINDOWS:
+            res = _start(app)
+            opened = bool(res.get("ok"))
+            if not opened:
+                data["open_error"] = res.get("message") or res.get("error") or "Windows could not open it"
+        elif platform.system() == "Darwin":
+            code, _out, err = _run(["open", app], timeout=12)
+            opened = code == 0
+            if not opened:
+                data["open_error"] = (err or "macOS could not open it")[:160]
+        else:
+            code, _out, err = _run(["xdg-open", app], timeout=12)
+            opened = code == 0
+            if not opened:
+                data["open_error"] = (err or "this desktop could not open it")[:160]
+    data["app_opened"] = bool(opened)
+    return ok(info=data)
+
+
 def action_security_check(params):
     """Look at a few real settings on this laptop. Read-only: nothing is changed.
 
@@ -1153,6 +1309,7 @@ ACTIONS = {
     "show_folder": action_show_folder,
     "security_check": action_security_check,
     "open_self": action_open_self,
+    "travel_setup": action_travel_setup,
 }
 # In preview mode these are never run, even if someone sends them.
 DANGEROUS = {"shutdown", "restart", "sleep", "signout"}

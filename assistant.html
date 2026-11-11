@@ -80,6 +80,14 @@
   .player-stat span { font-size: 10.5px; color: var(--muted); letter-spacing: 0.3px; }
   .player-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .player-tag { font-size: 11px; padding: 3px 9px; border-radius: 999px; border: 1px solid rgba(45, 212, 191, 0.4); color: var(--teal); }
+  .quest-list { margin-top: 12px; display: grid; gap: 6px; }
+  .quest-head { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted, #8b9cb3); }
+  .quest { display: flex; align-items: center; gap: 9px; font-size: 12.5px; padding: 6px 10px; border-radius: 9px; background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.06); }
+  .quest.done { border-color: rgba(45, 212, 191, 0.45); background: rgba(45, 212, 191, 0.08); }
+  .quest-mark { font-variant-numeric: tabular-nums; font-weight: 650; color: var(--teal); min-width: 30px; text-align: center; }
+  .quest.done .quest-text { text-decoration: line-through; opacity: .65; }
+  .quest-text { flex: 1; }
+  .quest-xp { color: var(--teal); font-variant-numeric: tabular-nums; font-size: 11.5px; opacity: .85; }
 
   .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
   .brand-mark {
@@ -584,6 +592,7 @@
         </div>
         <div class="xp-bar" role="progressbar" aria-labelledby="playerRank"><div class="xp-fill" id="xpFill"></div></div>
         <div class="player-grid" id="playerGrid"></div>
+        <div class="quest-list" id="playerQuests"></div>
         <p class="app-note" id="playerNote">Say "play a game", or type the old code if you know it.</p>
       </section>
 
@@ -780,12 +789,23 @@
     <div class="field" id="keyField" hidden>
       <label for="setKey">API key</label>
       <input id="setKey" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your API key" />
-      <div class="hint">The key is saved only in this browser, on this laptop. Ask a parent before creating an AI account.</div>
+      <div class="hint">A key is a long secret that starts with <code>sk-</code>. A URL is not a key: <code>api.openai.com/v1/responses</code> is the address I call, and I already know it. The key is saved only in this browser, on this laptop, and is never sent anywhere except that AI service.</div>
     </div>
 
     <div class="field" id="baseField" hidden>
       <label for="setBase">Base URL</label>
       <input id="setBase" type="text" spellcheck="false" placeholder="https://api.openai.com/v1" />
+      <div class="hint">This is the <b>address</b>, not the key. Paste <code>https://api.openai.com/v1</code> here. If you paste a full endpoint like <code>/v1/responses</code>, I trim it for you.</div>
+    </div>
+
+    <div class="field" id="apiStyleField" hidden>
+      <label for="setApiStyle">OpenAI endpoint style</label>
+      <select id="setApiStyle">
+        <option value="auto">Automatic (recommended)</option>
+        <option value="responses">Responses API (/v1/responses) - needed for GPT-5</option>
+        <option value="chat">Chat completions (/v1/chat/completions) - older, most clones</option>
+      </select>
+      <div class="hint">Automatic tries the newer Responses API first, then falls back. Both use the same key.</div>
     </div>
 
     <div class="field" id="modelField" hidden>
@@ -890,6 +910,8 @@
 
 <!-- ===== the brain, kept in one script so it can be tested on its own ===== -->
 <script id="sophia-brain">
+
+
 /* ==========================================================================
    VEGA'S BRAIN
    Understands what you type or say, decides what to do, and writes the reply.
@@ -898,7 +920,7 @@
 const SophiaBrain = (function () {
   'use strict';
 
-  const VERSION = '3.3.0';
+  const VERSION = '3.4.0';
 
   /* ---------------------------------------------------------------- helpers */
   function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
@@ -2401,6 +2423,9 @@ function moodSummary(moods, nowMs) {
     if (/^(?:daily challenge|challenge|play (?:the )?challenge|todays challenge|today'?s challenge|start (?:the )?challenge)$/.test(t)) return { intent: 'game.challenge' };
     if (/^(?:stats|my stats|my score|score|scoreboard|progress|my level|level|xp|how am i doing|my records|records|achievements|badges)$/.test(t)) return { intent: 'game.stats' };
     if (/^(?:high ?score|best score|my best)$/.test(t)) return { intent: 'game.stats' };
+    if (/^(?:quests?|daily quests?|todays quests|today'?s quests|my quests|what are my quests|goals)$/.test(t)) return { intent: 'game.quests' };
+    if (/^(?:prestige|prestige me|go prestige|reset and prestige)$/.test(t)) return { intent: 'game.prestige' };
+    if (/^(?:combo|my combo|combo count)$/.test(t)) return { intent: 'game.combo' };
     if (/^(?:play again|again|one more|another round|rematch|one more round|next round|another game)$/.test(t)) return { intent: 'game.again' };
     if (/^(?:(?:stop|end|quit|close|finish)(?: the)?(?: game| story)?|i do not want to play|i don'?t want to play|that is enough|no more game)$/.test(t)) return { intent: 'game.stop' };
     if ((m = t.match(/^(?:ask|tell|show|send)(?: it to)? (chatgpt|chat gpt|gpt|gemini|grok|claude|copilot|antigravity|chatbot|the ai|ai)\s+(how|why|what|who|when|where|if|whether|to|for|about)\s+(.+)$/))) {
@@ -3218,6 +3243,30 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
     const fq = fileQuery(original);
     if (fq) return { intent: 'open.file', query: fq };
 
+    // "I put you on a pendrive and opened you on another computer" - one command
+    // that does the whole setup: read the new OS, its specs, its storage, and
+    // open the app that is sitting next to her if there is one.
+    if (isTravelCommand(t)) {
+      return { intent: 'machine.travel' };
+    }
+    // Does this sentence mean "I carried her to a different machine"?
+    // Written as tests a person would say, not one giant brittle pattern.
+    function isTravelCommand(t) {
+      if (/^(?:travel|portable|pendrive|pen drive|usb) set ?up$/.test(t)) return true;
+      if (/^(?:who am i on now|what am i running on now|set up here)$/.test(t)) return true;
+      if (/^(?:(?:another|a different|a new|new|this) )?(?:computer|laptop|pc|machine)$/.test(t)) return true;
+      if (/^(?:i am|i'm) on (?:another|a different|a new) (?:computer|laptop|pc|machine)$/.test(t)) return true;
+      if (/^(?:adapt|adjust|fit) (?:yourself )?to this (?:computer|laptop|pc|machine)$/.test(t)) return true;
+      if (/^set ?up on this (?:computer|laptop|pc|machine)$/.test(t)) return true;
+      // "i just plugged you in", "plugged you into this pc"
+      if (/^(?:i )?(?:just )?plugged? (?:you|it|this) in(?:to)?(?: (?:this|the) (?:computer|laptop|pc))?$/.test(t)) return true;
+      // "put you on a pendrive", optionally followed by "and opened you on another laptop"
+      if (/^(?:i )?put (?:you|it|this) on (?:a |the )?(?:pendrive|pen drive|usb|flash drive)(?: and (?:then )?opened you(?: up)?(?: on| in)? (?:another|a different|a new) (?:computer|laptop|pc|machine|os))?$/.test(t)) return true;
+      // "opened you on another computer", "i opened her on a new laptop"
+      if (/^(?:i )?(?:just )?(?:opened|started|ran) (?:you|her|it|this)(?: up)? on (?:another|a different|a new) (?:computer|laptop|pc|machine|os)$/.test(t)) return true;
+      return false;
+    }
+
     // this computer, and where she is running from
     if (/^(?:what (?:computer|laptop|machine|os|system) (?:is this|am i on|are you on)|which (?:computer|os|windows|laptop) is this|what (?:windows|version) is this|am i on windows|tell me about this (?:computer|laptop|machine)|what are the specs (?:of this laptop)?|laptop specs|system info(?:rmation)?|where are you running(?: from)?|are you on (?:a )?(?:usb|pendrive|pen drive|flash drive)|am i running you from (?:a )?(?:usb|pendrive|pen drive))$/i.test(t)) {
       return { intent: 'machine.info' };
@@ -3522,10 +3571,17 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       best: {},
       records: {},
       achievements: {},
-      secret: false
+      secret: false,
+      combo: 0,
+      bestCombo: 0,
+      prestige: 0,
+      bestXp: 0,
+      questDay: null,
+      quests: {},
+      questPicked: []
     };
     if (!p || typeof p !== 'object') return base;
-    ['xp', 'level', 'streak', 'bestStreak', 'gamesPlayed', 'wins'].forEach(function (k) {
+    ['xp', 'level', 'streak', 'bestStreak', 'gamesPlayed', 'wins', 'combo', 'bestCombo', 'prestige', 'bestXp'].forEach(function (k) {
       if (typeof p[k] === 'number' && isFinite(p[k]) && p[k] >= 0) base[k] = Math.floor(p[k]);
     });
     if (typeof p.name === 'string' && p.name.trim()) base.name = p.name.trim().slice(0, 24);
@@ -3533,6 +3589,9 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
     if (p.best && typeof p.best === 'object') base.best = p.best;
     if (p.records && typeof p.records === 'object') base.records = p.records;
     if (p.achievements && typeof p.achievements === 'object') base.achievements = p.achievements;
+    if (p.quests && typeof p.quests === 'object') base.quests = p.quests;
+    if (typeof p.questDay === 'string') base.questDay = p.questDay;
+    if (Array.isArray(p.questPicked)) base.questPicked = p.questPicked.slice(0, 3);
     base.secret = !!p.secret;
     base.level = levelForXp(base.xp);
     return base;
@@ -4675,6 +4734,9 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
         const rec = record('riddle', (p.records.riddle || 0) + 1);
         if ((p.records.riddle || 0) >= 5) award('riddle_5', out);
         award('first_win', out);
+        bumpCombo('solving it', out);
+        questTick('win1', 1, out);
+        questTick('riddle', 1, out);
         out.say('Yes! The answer is ' + state.riddle.a + '. Well done.' + xpLine(Object.assign({}, xp, { amount: first ? XP.win + 10 : XP.win })) +
           ' Riddles solved: ' + (p.records.riddle || 0) + '.');
         void rec;
@@ -4682,6 +4744,7 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
         return;
       }
       state.riddle.tries = (state.riddle.tries || 0) + 1;
+      breakCombo(out);
       if (state.riddle.tries >= 2) {
         out.say('Close! The answer is ' + state.riddle.a + '. Want another one?');
         state.riddle = null;
@@ -4839,6 +4902,7 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
     /** Called once per game start: keeps the daily streak honest. */
     function touchStreak(out) {
       const p = player();
+      questTick('play2', 1, out);
       const d = today();
       if (p.lastDay === d) return null;
       const y = new Date(now().getTime() - 86400000);
@@ -4862,6 +4926,157 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       savePlayer();
       const up = p.level > before;
       return up ? { level: p.level, up: true, why: why } : { level: p.level, up: false, why: why };
+    }
+
+    /* ---------------- combo: reward a good run inside one game ---------------- */
+    /**
+     * Every correct answer in a row builds a combo. It pays out on its own,
+     * so a person feels the run growing instead of only seeing the total at
+     * the end. Combo XP is small on purpose: it rewards care, not grinding.
+     */
+    function bumpCombo(why, out) {
+      const p = player();
+      p.combo = (p.combo || 0) + 1;
+      if (p.combo > (p.bestCombo || 0)) p.bestCombo = p.combo;
+      let bonus = 0;
+      if (p.combo === 3) bonus = 5;
+      else if (p.combo === 5) bonus = 10;
+      else if (p.combo >= 8 && p.combo % 4 === 0) bonus = 15;
+      if (bonus) {
+        p.xp += bonus;
+        p.level = levelForXp(p.xp);
+        if (out) out.say('Combo x' + p.combo + '! +' + bonus + ' XP for ' + (why || 'keeping it going') + '.', { silent: true });
+      }
+      savePlayer();
+      return p.combo;
+    }
+
+    /** A miss breaks the combo, which is what makes it worth something. */
+    function breakCombo(out) {
+      const p = player();
+      if ((p.combo || 0) >= 3 && out) out.say('Combo ended at ' + p.combo + '. Next run can be longer.', { silent: true });
+      p.combo = 0;
+      savePlayer();
+    }
+
+    /* ---------------- daily quests: three small goals, new every day ---------------- */
+    const QUEST_POOL = [
+      { id: 'play2', text: 'Play two games today', need: 2, xp: 20 },
+      { id: 'win1', text: 'Win one game today', need: 1, xp: 25 },
+      { id: 'guess', text: 'Beat Guess the Number in 6 tries or fewer', need: 1, xp: 25 },
+      { id: 'chain', text: 'Reach a chain of 6 words', need: 1, xp: 20 },
+      { id: 'riddle', text: 'Solve two riddles', need: 2, xp: 20 },
+      { id: 'scramble', text: 'Solve two scrambles', need: 2, xp: 20 },
+      { id: 'challenge', text: 'Finish the Daily Challenge', need: 1, xp: 30 },
+      { id: 'combo', text: 'Build a combo of 5', need: 1, xp: 25 }
+    ];
+
+    /** A tiny stable hash so the same day always gives the same three quests. */
+    function questSeed(d) {
+      const k = dayKey(d);
+      let h = 0;
+      for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) % 100000;
+      return h;
+    }
+
+    function todayQuests() {
+      const p = player();
+      const d = today();
+      if (p.questDay !== d) {
+        const seed = questSeed(now());
+        const picked = [];
+        const used = {};
+        for (let i = 0; i < 3; i++) {
+          let idx = (seed + i * 3 + i * i) % QUEST_POOL.length;
+          let guard = 0;
+          while (used[idx] && guard < QUEST_POOL.length) { idx = (idx + 1) % QUEST_POOL.length; guard++; }
+          used[idx] = true;
+          picked.push(QUEST_POOL[idx].id);
+        }
+        p.questDay = d;
+        p.quests = {};
+        p.questPicked = picked;
+      }
+      if (!Array.isArray(p.questPicked) || !p.questPicked.length) p.questPicked = ['play2', 'win1', 'riddle'];
+      return p.questPicked.map(function (id) {
+        return QUEST_POOL.filter(function (q) { return q.id === id; })[0];
+      }).filter(Boolean);
+    }
+
+    /**
+     * Count one thing towards today's quests. Returns the quests that just
+     * completed, so the caller can say so once and never twice.
+     */
+    function questTick(id, amount, out) {
+      const p = player();
+      const quests = todayQuests();
+      p.quests = p.quests || {};
+      const done = [];
+      quests.forEach(function (q) {
+        if (q.id !== id) return;
+        const cur = p.quests[id] || 0;
+        if (cur >= q.need) return;
+        const next = Math.min(q.need, cur + (amount || 1));
+        p.quests[id] = next;
+        if (next >= q.need && !p.quests['done_' + id]) {
+          p.quests['done_' + id] = true;
+          p.xp += q.xp;
+          p.level = levelForXp(p.xp);
+          done.push(q);
+        }
+      });
+      if (done.length) {
+        savePlayer();
+        done.forEach(function (q) {
+          if (out) out.say('Quest done: ' + q.text + '. +' + q.xp + ' XP. Say "quests" to see the rest.', { silent: true });
+        });
+      } else {
+        savePlayer();
+      }
+      return done;
+    }
+
+    function questLine() {
+      const p = player();
+      const quests = todayQuests();
+      p.quests = p.quests || {};
+      const lines = quests.map(function (q) {
+        const cur = Math.min(p.quests[q.id] || 0, q.need);
+        return '  ' + (cur >= q.need ? '[done]' : '[' + cur + '/' + q.need + ']') + ' ' + q.text + ' (+' + q.xp + ' XP)';
+      });
+      return 'Today\'s quests:\n' + lines.join('\n');
+    }
+
+    /* ---------------- prestige: what happens after Legend ---------------- */
+    const PRESTIGE_AT = 20;
+    function prestigeReady() {
+      const p = player();
+      return levelForXp(p.xp) >= PRESTIGE_AT;
+    }
+
+    /** The level-20 rule as a number, so a test can check it without playing 20 levels. */
+    function prestigeAtLevel() { return PRESTIGE_AT; }
+
+    function doPrestige(out) {
+      const p = player();
+      if (!prestigeReady()) {
+        out.say('Prestige opens at level ' + PRESTIGE_AT + '. You are level ' + levelForXp(p.xp) + '. Keep playing: it is reachable, and nothing is taken from you before then.');
+        return;
+      }
+      p.prestige = (p.prestige || 0) + 1;
+      p.bestXp = Math.max(p.bestXp || 0, p.xp);
+      p.xp = 0;
+      p.level = 1;
+      p.combo = 0;
+      p.quests = {};
+      savePlayer();
+      out.say('Prestige ' + p.prestige + '! Your XP is back to zero on purpose, your records and achievements all stay, and every level from here gives a prestige star. Your best run was ' + p.bestXp + ' XP.');
+      out.say('That is what a gamer means by prestige: you keep the proof, you give back the rank.', { silent: true });
+    }
+
+    function prestigeTag() {
+      const p = player();
+      return p.prestige ? ' *' + p.prestige : '';
     }
 
     function xpLine(res) {
@@ -4921,7 +5136,9 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
         '5. Word Scramble - I mix up a word, you put it back. Solved: ' + (p.records.scramble || 0),
         '6. Daily Challenge - one question set, no repeats, scored out of 5'
       ].join('\n'));
-      out.say('You are Level ' + p.level + ' (' + rankName(p.level) + '), ' + p.streak + ' day streak, ' + p.wins + ' wins. Say a number, or "stats".');
+      out.say('You are Level ' + p.level + ' (' + rankName(p.level) + prestigeTag() + '), ' + p.streak + ' day streak, ' +
+        p.wins + ' wins, best combo ' + (p.bestCombo || 0) + '. Say a number, "stats", "quests" or "prestige".');
+      out.say(questLine(), { silent: true });
       state.menuOpen = true;
       void name;
     }
@@ -5096,6 +5313,9 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       record('challenge', (p.records.challenge || 0) + 1);
       if (right > (p.best.challenge || 0)) p.best.challenge = right;
       if (right >= 5) award('challenge_5', out);
+      questTick('challenge', 1, out);
+      if (right > 0) questTick('win1', 1, out);
+      if (right >= 4) bumpCombo('a strong challenge', out); else breakCombo(out);
       savePlayer();
       const verdict = right === total ? 'Perfect run. That is every point on the board.'
         : right >= 4 ? 'Strong. That is a level above most days.'
@@ -5212,6 +5432,9 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
         const rec = record('scramble', g.score);
         record('bestScrambleRun', g.score);
         if (g.score >= 5) award('scramble_5', out);
+        bumpCombo('unscrambling it', out);
+        questTick('win1', 1, out);
+        questTick('scramble', 1, out);
         const pool = SCRAMBLE_WORDS.filter(function (w) { return w !== g.word && (g.used || []).indexOf(w) < 0; });
         const next = pick(pool.length ? pool : SCRAMBLE_WORDS);
         const mixed = scrambleWord(next, rnd);
@@ -5224,6 +5447,7 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
         const next = pick(SCRAMBLE_WORDS.filter(function (w) { return (g.used || []).indexOf(w) < 0; }));
         const mixed = scrambleWord(next, rnd);
         state.game = { kind: 'scramble', word: next, mixed: mixed, tries: 0, score: g.score, used: (g.used || []).concat([g.word]) };
+        breakCombo(out);
         out.say('The word was "' + g.word + '". No damage done. New word:  ' + mixed.toUpperCase());
         return;
       }
@@ -5257,6 +5481,9 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
         record('guessRun', g.tries);
         if (g.tries <= 3) award('guess_3', out);
         award('first_win', out);
+        bumpCombo('guessing it right', out);
+        questTick('win1', 1, out);
+        if (g.tries <= 6) questTick('guess', 1, out);
         out.say('Yes! It was ' + g.target + '. You got it in ' + g.tries + (g.tries === 1 ? ' try!' : ' tries!') + xpLine(Object.assign({}, xp, { amount: g.tries <= 3 ? XP.perfect : XP.win })) +
           (rec.beat ? ' That beats your old best of ' + rec.old + ' tries.' : '') + '\n' + statusLine());
         state.game = null;
@@ -5269,6 +5496,7 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
         return;
       }
       const left = 8 - g.tries;
+      breakCombo(out);
       out.say((n > g.target ? (n - g.target > 20 ? 'Much lower!' : 'A bit lower.') : (g.target - n > 20 ? 'Much higher!' : 'A bit higher.')) +
         ' Range is now ' + g.lo + ' to ' + g.hi + '. ' + left + ' guess' + (left === 1 ? '' : 'es') + ' left.');
     }
@@ -5451,6 +5679,44 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
         ])));
         return;
       }
+      if (it === 'machine.travel') {
+        if (mode() === 'browser') {
+          out.say('I can open this page on any computer without anything installed. To read the new computer and open your app on it in one step, I need the helper: double-click Start_Sophia.bat on this machine, then say "I opened you on another computer" again.');
+          return;
+        }
+        out.say('New computer. Let me look at it properly before I do anything.', { silent: true });
+        const r = await helper('travel_setup', { open: true });
+        if (!r.ok) { out.say(lostHelper(r) ? LOST : 'I could not read this computer just now.'); return; }
+        const m = (r.info && r.info.specs) || {};
+        const st = (r.info && r.info.storage) || [];
+        const specBits = [];
+        if (m.os_name) specBits.push(m.os_name + (m.release ? ' ' + m.release : ''));
+        if (m.machine) specBits.push(m.machine);
+        if (m.cpu_count) specBits.push(m.cpu_count + ' cores');
+        if (m.ram_gb) specBits.push(m.ram_gb + ' GB RAM');
+        if (m.host) specBits.push('called ' + m.host);
+        out.say('This machine: ' + specBits.join(', ') + '.');
+        if (m.python) out.say('Python ' + m.python + ' is here, so I can open apps and files on it straight away.', { silent: true });
+        if (st.length) {
+          const lines = st.map(function (d) {
+            const pct = d.total_gb ? Math.round(100 * d.free_gb / d.total_gb) : 0;
+            return '  ' + d.id + (d.label ? ' ' + d.label : '') + ': ' + d.free_gb + ' GB free of ' + d.total_gb + ' GB' + (pct < 10 ? ' - low' : '');
+          });
+          out.say('Storage here:\n' + lines.join('\n'));
+        } else {
+          out.say('I could not read the storage on this machine, so I will not guess at it.', { silent: true });
+        }
+        if (r.info && r.info.portable) out.say('I am running from the pendrive (' + (r.info.drive || 'USB') + '), so my own memory and games came with me and nothing was installed here.');
+        else out.say('I am running from ' + ((r.info && r.info.drive) || 'this disk') + '.');
+        if (r.info && r.info.app_found) {
+          if (r.info.app_opened) out.say('Your app was next to me on this stick, so I opened it: ' + (r.info.app_path || 'index.html') + '.');
+          else out.say('Your app is here but this computer would not open it' + (r.info.open_error ? ' (' + r.info.open_error + ')' : '') + '. Open the folder and double-click index.html.');
+        } else {
+          out.say('I did not find an index.html next to me, so there is no app of yours to open on this machine. If you meant a program already installed here, say "open <its name>".', { silent: true });
+        }
+        out.say('Say "what computer is this" any time and I will read this machine again.', { silent: true });
+        return;
+      }
       if (it === 'machine.info') {
         if (mode() === 'browser') {
           out.say('I know a lot about this browser tab, but I cannot read the computer around it unless the helper is running. Double-click Start_Sophia.bat and ask me again, and I will tell you the real machine: Windows version, RAM, cores and every drive.');
@@ -5558,6 +5824,13 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       if (it === 'plan.countdown') return doCountdown(step, out);
       if (it === 'game.challenge') { state.lastGame = 'challenge'; return startChallenge(out); }
       if (it === 'game.stats') return gameStats(out);
+      if (it === 'game.quests') { out.say(questLine()); return; }
+      if (it === 'game.prestige') return doPrestige(out);
+      if (it === 'game.combo') {
+        const pc = player();
+        out.say('Combo: ' + (pc.combo || 0) + ' in a row right now, best ever ' + (pc.bestCombo || 0) + '. Three in a row pays +5 XP, five pays +10, and every fourth after eight pays +15.');
+        return;
+      }
       if (it === 'game.name') return setPlayerName(step.name, out);
       if (it === 'game.menu') return doGame(step, out);
       if (it === 'game.again') {
@@ -5695,11 +5968,18 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       if (state.menuOpen && !state.pending && !state.game) {
         const pick = String(text || '').trim();
         const isPick = /^(?:[1-6]|one|two|three|four|five|six|game\s*[1-6]|play\s*[1-6])$/i.test(pick)
-          || /^(?:stats|records|achievements|badges|my stats|score|scoreboard|progress|never mind|cancel|nothing)$/i.test(pick)
+          || /^(?:stats|records|achievements|badges|my stats|score|scoreboard|progress|never mind|cancel|nothing|quests?|daily quests?|my quests|prestige|combo|my combo)$/i.test(pick)
           || /^(?:story|scramble|riddle|chain|word chain|guess the number|challenge|daily challenge|story game|word scramble|riddles|guess)$/i.test(pick);
         if (isPick) {
           state.menuOpen = false;
           if (/^(?:never mind|cancel|nothing)$/i.test(pick)) { out.say('Okay, no game. Ask me anything.'); return finish(out, ['game.menu']); }
+          if (/^(?:quests?|daily quests?|my quests)$/i.test(pick)) { out.say(questLine()); return finish(out, ['game.quests']); }
+          if (/^(?:prestige)$/i.test(pick)) { doPrestige(out); return finish(out, ['game.prestige']); }
+          if (/^(?:combo|my combo)$/i.test(pick)) {
+            const pl = player();
+            out.say('Combo: ' + (pl.combo || 0) + ' in a row right now, best ever ' + (pl.bestCombo || 0) + '. Three in a row pays +5 XP, five pays +10, and every fourth after eight pays +15.');
+            return finish(out, ['game.combo']);
+          }
           await chooseGame(pick, out);
           return finish(out, ['game.play']);
         }
@@ -5721,9 +6001,16 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
           await chooseFile(text, out);
           steps = [];
         } else if (p.kind === 'file-folder') {
-          state.pending = null;
-          answerFileFolder(text, out);
-          steps = [];
+          // Only treat a real folder path as the answer. Anything else is a new
+          // command, and it must run instead of being eaten by this question.
+          if (/^\s*(?:file:\/{2,3})?[a-z]:[\\\/]|^\s*\\\\/i.test(text)) {
+            state.pending = null;
+            answerFileFolder(text, out);
+            steps = [];
+          } else {
+            state.pending = null;
+            out.say('Okay, no folder. I will do what you asked instead.', { silent: true });
+          }
         } else if (p.kind === 'file-query') {
           if (first === 'yes') { state.pending = null; await p.yes(out); steps = []; }
           else { state.pending = null; out.say('Okay, I will not search for it.'); steps = []; }
@@ -5769,6 +6056,14 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
     return {
       handle: handle,
       player: function () { return Object.assign({}, player()); },
+      /** Today's quests with progress, for the card on the page. */
+      quests: function () {
+        const p = player();
+        p.quests = p.quests || {};
+        return todayQuests().map(function (q) {
+          return { id: q.id, text: q.text, need: q.need, xp: q.xp, done: Math.min(p.quests[q.id] || 0, q.need) };
+        });
+      },
       achievements: ACHIEVEMENTS,
       openTarget: async function (tg) {
         const out = makeOut();
@@ -5844,6 +6139,8 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
 <script>
 
 
+
+
 (function () {
   'use strict';
 
@@ -5890,9 +6187,78 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
     provider: 'builtin',
     key: '',
     base: 'https://api.openai.com/v1',
+    apiStyle: 'auto',
     model: '',
     modelList: []
   }, readJSON(KEYS.settings, {}));
+
+  /* Which OpenAI-compatible endpoint to speak.
+     - "responses" is the newer one (POST /v1/responses), required for GPT-5.
+     - "chat" is the older /v1/chat/completions, which most clones speak.
+     - "auto" tries responses first and falls back, so one setting works everywhere. */
+  function apiStyle() {
+    if (settings.apiStyle === 'chat' || settings.apiStyle === 'responses') return settings.apiStyle;
+    return /gpt-5|o[34]|responses/i.test(settings.model || '') ? 'responses' : 'auto';
+  }
+  function looksLikeOpenAI() {
+    return /api\.openai\.com/i.test(settings.base || '') || /^sk-/.test(settings.key || '');
+  }
+
+  /** Turn the messages Vega already writes into a Responses API request. */
+  function responsesBody(messages, stream) {
+    const system = messages.filter(function (m) { return m.role === 'system'; }).map(function (m) { return m.content; }).join('\n\n');
+    const rest = messages.filter(function (m) { return m.role !== 'system'; });
+    const body = {
+      model: settings.model || 'gpt-4o-mini',
+      input: rest.map(function (m) {
+        return { role: m.role === 'assistant' ? 'assistant' : 'user', content: [{ type: 'input_text', text: String(m.content) }] };
+      }),
+      max_output_tokens: 800
+    };
+    if (system) body.instructions = system;
+    if (stream) body.stream = true;
+    return body;
+  }
+  /** Pull the text out of a Responses API JSON reply, whatever shape it uses. */
+  function responsesText(data) {
+    if (!data) return '';
+    if (typeof data.output_text === 'string' && data.output_text.trim()) return data.output_text.trim();
+    const out = data.output || [];
+    const bits = [];
+    out.forEach(function (item) {
+      (item.content || []).forEach(function (c) {
+        if (typeof c.text === 'string') bits.push(c.text);
+        else if (c.type === 'output_text' && typeof c.text === 'string') bits.push(c.text);
+      });
+    });
+    if (bits.length) return bits.join('').trim();
+    if (data.choices && data.choices[0] && data.choices[0].message) return String(data.choices[0].message.content || '').trim();
+    return '';
+  }
+
+  /** A browser "Failed to fetch" almost always means one of four things. */
+  function networkHint(base) {
+    const reasons = [];
+    if (location.protocol === 'file:') {
+      reasons.push('You opened this page by double-clicking it, so the browser blocks calls to other sites. Start me with Start_Sophia.bat; then the helper serves the page and the key check works.');
+    }
+    if (!/^https?:\/\//.test(base)) reasons.push('The base URL must start with https://');
+    reasons.push('No internet on this laptop right now, or the AI site is blocked by a firewall or a school Wi-Fi.');
+    reasons.push('An extension or the browser is blocking the request.');
+    return 'I could not reach ' + base + ' at all. That is a network problem, not a key problem. ' + reasons.join(' ');
+  }
+
+  /** Explain a failed AI call in words a person can act on. */  /** Explain a failed AI call in words a person can act on. */
+  function aiErrorText(status, data) {
+    const msg = (data && data.error && (data.error.message || data.error.code)) || ('HTTP ' + status);
+    if (status === 401) return 'That key was rejected (401). It is wrong, deleted, or copied with a character missing. A valid OpenAI key starts with sk-.';
+    if (status === 403) return 'The key works but is not allowed to use this model (403). Check the project limits on your OpenAI account.';
+    if (status === 404) return 'That model name does not exist on this account (404). Press "Load models" and pick one from the list.';
+    if (status === 429) return 'Too many requests, or the account has no credit (429). Wait a minute, or check billing on the AI site.';
+    if (status === 400) return 'The request was refused: ' + msg;
+    if (status >= 500) return 'Their server had a problem (' + status + '). Try again in a moment.';
+    return msg;
+  }
 
   /* ---------------------------------------------------------- laptop data */
   // Saved when this page was made. Live values come from the laptop helper.
@@ -6159,29 +6525,93 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
         body: JSON.stringify(body)
       });
       const data = await res.json().catch(function () { return {}; });
-      if (!res.ok) throw new Error((data && data.error && data.error.message) || ('HTTP ' + res.status));
+      if (!res.ok) throw new Error(aiErrorText(res.status, data));
       const parts = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
       const text = (parts || []).map(function (p) { return p.text || ''; }).join('').trim();
       if (!text) throw new Error('The model returned an empty answer.');
       return text;
     }
+
     const base = (settings.base || '').replace(/\/+$/, '');
-    const body = {
-      model: settings.model || 'gpt-4o-mini',
-      messages: [{ role: 'system', content: system }].concat(rest),
-      temperature: 0.8,
-      max_tokens: 700
-    };
-    const res = await fetch(base + '/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + settings.key },
-      body: JSON.stringify(body)
-    });
+    if (!/^https?:\/\//.test(base)) throw new Error('The base URL must start with https://');
+    const style = apiStyle();
+    const errors = [];
+
+    async function callChat() {
+      const body = {
+        model: settings.model || 'gpt-4o-mini',
+        messages: [{ role: 'system', content: system }].concat(rest),
+        max_tokens: 700
+      };
+      if (!/^(?:o3|o4|gpt-5)/i.test(settings.model || '')) body.temperature = 0.8;
+      let res;
+      try {
+        res = await fetch(base + '/chat/completions', {
+        method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + settings.key },
+          body: JSON.stringify(body)
+        });
+      } catch (err) { throw new Error(networkHint(base)); }
+      const data = await res.json().catch(function () { return {}; });
+      if (!res.ok) { const e = new Error(aiErrorText(res.status, data)); e.status = res.status; e.endpoint = 'chat'; throw e; }
+      const text = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+      if (!text) throw new Error('The model returned an empty answer.');
+      return text.trim();
+    }
+
+    async function callResponses() {
+      let res;
+      try {
+        res = await fetch(base + '/responses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + settings.key },
+          body: JSON.stringify(responsesBody(messages, false))
+        });
+      } catch (err) { throw new Error(networkHint(base)); }
+      const data = await res.json().catch(function () { return {}; });
+      if (!res.ok) { const e = new Error(aiErrorText(res.status, data)); e.status = res.status; e.endpoint = 'responses'; throw e; }
+      const text = responsesText(data);
+      if (!text) throw new Error('The model returned an empty answer.');
+      return text;
+    }
+
+    const order = style === 'responses' ? [callResponses, callChat] : style === 'chat' ? [callChat] : [callResponses, callChat];
+    for (let i = 0; i < order.length; i++) {
+      try {
+        return await order[i]();
+      } catch (err) {
+        errors.push(err);
+        // only a "this endpoint does not exist" or "wrong endpoint for model" is worth retrying
+        const retryable = err.status === 404 || (err.status === 400 && /responses|chat/i.test(String(err.message)));
+        if (i === order.length - 1 || !retryable) {
+          // if both failed with an auth problem, the auth message is the useful one
+          const auth = errors.find(function (e) { return e.status === 401 || e.status === 403; });
+          throw auth || err;
+        }
+      }
+    }
+    throw errors[errors.length - 1] || new Error('Could not reach the AI service.');
+  }
+
+  /** A real key check that does not need a model name. */
+  async function aiCheckKey() {
+    if (!settings.key) throw new Error('Paste an API key first.');
+    if (settings.provider === 'gemini') { await aiModelList(); return 'ok'; }
+    const base = (settings.base || '').replace(/\/+$/, '');
+    // /models is the cheapest honest check: it needs the key and nothing else
+    let res;
+    try {
+      res = await fetch(base + '/models', { headers: { Authorization: 'Bearer ' + settings.key } });
+    } catch (err) {
+      throw new Error(networkHint(base));
+    }
     const data = await res.json().catch(function () { return {}; });
-    if (!res.ok) throw new Error((data && data.error && data.error.message) || ('HTTP ' + res.status));
-    const text = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-    if (!text) throw new Error('The model returned an empty answer.');
-    return text;
+    if (!res.ok) throw new Error(aiErrorText(res.status, data));
+    const list = data.data || data.models || [];
+    const chat = list.map(function (m) { return m.id || m.name; }).filter(function (id) {
+      return id && !/embed|whisper|tts|dall-e|moderation|image|audio|realtime/i.test(id);
+    });
+    return chat;
   }
 
   /* ------------------------------------------------------------- browser */
@@ -6778,6 +7208,12 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
     const needsKey = settings.provider !== 'builtin';
     document.getElementById('keyField').hidden = !needsKey;
     document.getElementById('baseField').hidden = settings.provider !== 'openai';
+    const styleField = document.getElementById('apiStyleField');
+    if (styleField) styleField.hidden = settings.provider !== 'openai';
+    const stylePick = document.getElementById('setApiStyle');
+    if (stylePick) stylePick.value = settings.apiStyle || 'auto';
+    const baseBox = document.getElementById('setBase');
+    if (baseBox && !baseBox.value) baseBox.value = settings.base || '';
     document.getElementById('modelField').hidden = !needsKey;
     document.getElementById('providerHint').textContent = settings.provider === 'builtin'
       ? 'The built-in brain handles commands, maths, memory and small talk. An AI model adds free-form answers to questions it does not know.'
@@ -6837,8 +7273,10 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
       [p.records.chain || 0, 'longest chain'],
       [p.records.riddle || 0, 'riddles'],
       [p.records.scramble || 0, 'scrambles'],
-      [(p.best.challenge || 0) + '/5', 'challenge best']
+      [(p.best.challenge || 0) + '/5', 'challenge best'],
+      ['x' + (p.bestCombo || 0), 'best combo']
     ];
+    if (p.prestige) stats.push(['*' + p.prestige, 'prestige']);
     document.getElementById('playerGrid').innerHTML = stats.map(function (s) {
       return '<div class="player-stat"><b>' + s[0] + '</b><span>' + s[1] + '</span></div>';
     }).join('');
@@ -6850,6 +7288,16 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
     const grid = document.getElementById('playerGrid');
     if (grid && grid.nextElementSibling && grid.nextElementSibling.className === 'player-tags') grid.nextElementSibling.remove();
     grid.insertAdjacentHTML('afterend', tags);
+    const questBox = document.getElementById('playerQuests');
+    if (questBox && brainApi.quests) {
+      const qs = brainApi.quests();
+      questBox.innerHTML = qs.length ? '<div class="quest-head">Today\u2019s quests</div>' + qs.map(function (q) {
+        const cur = Math.min(q.done, q.need);
+        const full = cur >= q.need;
+        return '<div class="quest' + (full ? ' done' : '') + '"><span class="quest-mark">' + (full ? '\u2713' : cur + '/' + q.need) + '</span>' +
+          '<span class="quest-text">' + q.text + '</span><span class="quest-xp">+' + q.xp + '</span></div>';
+      }).join('') : '';
+    }
     document.getElementById('playerNote').textContent = p.secret
       ? 'Code Breaker. You found the old code. Say "stats" for the full sheet.'
       : 'Say "play a game", or "stats" to see everything. The old code still works if you know it.';
@@ -7037,30 +7485,75 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
   document.getElementById('testAi').addEventListener('click', async function () {
     settings.provider = document.getElementById('setProvider').value;
     settings.key = document.getElementById('setKey').value.trim();
-    settings.base = document.getElementById('setBase').value.trim() || settings.base;
+    settings.base = document.getElementById('setBase').value.trim() || 'https://api.openai.com/v1';
+    const stylePick = document.getElementById('setApiStyle');
+    if (stylePick) settings.apiStyle = stylePick.value;
     writeJSON(KEYS.settings, settings);
     if (settings.provider === 'builtin') { setAiStatus('ok', 'The built-in brain is always ready.'); return; }
-    if (!settings.key) { setAiStatus('bad', 'Paste your API key first.'); return; }
-    setAiStatus('busy', 'Checking the key and loading models\u2026');
-    try {
-      const list = await aiModelList();
-      if (!list.length) throw new Error('The key worked but no chat models were listed.');
-      settings.modelList = list;
-      if (!settings.model || !list.some(function (m) { return m.id === settings.model; })) settings.model = list[0].id;
-      writeJSON(KEYS.settings, settings);
-      syncSettingsUi();
-      setAiStatus('ok', 'Connected. ' + list.length + ' models found. Using ' + settings.model + '.');
-      await aiChat([{ role: 'system', content: 'Reply with exactly: ok' }, { role: 'user', content: 'Say ok' }]);
-      setAiStatus('ok', 'Connected and answering. Using ' + settings.model + '.');
-    } catch (err) {
-      setAiStatus('bad', 'Could not connect: ' + (err && err.message ? err.message : String(err)));
+    if (!settings.key) { setAiStatus('bad', 'Paste an API key first. The endpoint URL alone is not a key.'); return; }
+    // A web address is an address, not a secret. Catch it before it costs a request.
+    if (/^(https?:\/\/|www\.)/i.test(settings.key) || /\/v1\b|openai\.com/i.test(settings.key)) {
+      setAiStatus('bad', 'That is a web address, not a key. It has no secret in it, so no AI will accept it. ' +
+        'Put the address in the Base URL box above. The key is the long sk-... line you copy once from platform.openai.com under API keys. ' +
+        'If you never made one, nobody can give you theirs: each person uses their own.');
+      return;
     }
+    const shortKey = settings.key.length < 20;
+
+    // Step 1: is the base URL an endpoint or a whole URL someone pasted by mistake?
+    if (/\/(responses|chat\/completions|completions)\/?$/.test(settings.base)) {
+      settings.base = settings.base.replace(/\/(responses|chat\/completions|completions)\/?$/, '');
+      document.getElementById('setBase').value = settings.base;
+      writeJSON(KEYS.settings, settings);
+      setAiStatus('busy', 'That address was a single endpoint, so I trimmed it to the base URL: ' + settings.base);
+    }
+
+    if (!/^sk-/.test(settings.key) && looksLikeOpenAI()) {
+      setAiStatus('warn', 'That does not look like an OpenAI key. A real one starts with sk-. I will still try it.');
+    }
+
+    setAiStatus('busy', shortKey
+      ? 'Step 1 of 3: that key is shorter than a normal OpenAI key, but I will still try it. Asking which models it can use\u2026'
+      : 'Step 1 of 3: checking the key itself\u2026');
+    let models = [];
+    try {
+      models = await aiCheckKey();
+    } catch (err) {
+      setAiStatus('bad', 'The key was not accepted. ' + (err && err.message ? err.message : String(err)));
+      return;
+    }
+    settings.modelList = Array.isArray(models) ? models.map(function (id) { return { id: id, label: id }; }) : settings.modelList;
+    if (!settings.model || (settings.modelList.length && !settings.modelList.some(function (m) { return m.id === settings.model; }))) {
+      const prefer = ['gpt-5', 'gpt-5-mini', 'gpt-4.1', 'gpt-4o', 'gpt-4o-mini'];
+      const pick = prefer.find(function (p) { return settings.modelList.some(function (m) { return m.id === p; }); });
+      settings.model = pick || (settings.modelList[0] && settings.modelList[0].id) || settings.model || 'gpt-4o-mini';
+    }
+    writeJSON(KEYS.settings, settings);
+    syncSettingsUi();
+    const count = settings.modelList.length;
+    setAiStatus('busy', 'Step 2 of 3: the key is good' + (count ? ' (' + count + ' models available)' : '') + '. Sending one small test question\u2026');
+
+    try {
+      const answer = await aiChat([
+        { role: 'system', content: 'You are a connection test. Reply with one short sentence.' },
+        { role: 'user', content: 'In one sentence, say that you are connected to Vega.' }
+      ]);
+      setAiStatus('ok', 'Step 3 of 3: ' + (stylePick && settings.apiStyle === 'responses' ? 'Responses API' : 'connected') +
+        '. The key is valid and the model answered: "' + String(answer).slice(0, 90) + '" Using ' + settings.model + '.');
+    } catch (err) {
+      setAiStatus('warn', 'The key is valid, but the model did not answer: ' + (err && err.message ? err.message : String(err)) +
+        ' Try picking a different model from the list, or choose "Chat completions" below.');
+      return;
+    }
+    updatePrivacyTag();
   });
   document.getElementById('saveAi').addEventListener('click', function () {
     settings.provider = document.getElementById('setProvider').value;
     settings.key = document.getElementById('setKey').value.trim();
     settings.base = document.getElementById('setBase').value.trim() || settings.base;
     settings.model = document.getElementById('setModel').value || settings.model;
+    const styleBox = document.getElementById('setApiStyle');
+    if (styleBox) settings.apiStyle = styleBox.value;
     writeJSON(KEYS.settings, settings);
     setAiStatus('ok', settings.provider === 'builtin' ? 'Saved. Vega uses her built-in brain only.' : 'Saved. Vega will use ' + (settings.model || 'your AI model') + ' for open questions.');
     updatePrivacyTag();
@@ -7226,6 +7719,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
   });
   window.addEventListener('beforeunload', function () { try { stopSpeaking(); voice.abort(); } catch (e) { /* closing */ } });
 })();
+</script>
 </script>
 </body>
 </html>

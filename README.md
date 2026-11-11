@@ -1,4 +1,4 @@
-# Vega &mdash; personal AI assistant (version 3.3)
+# Vega &mdash; personal AI assistant (version 3.4)
 
 **Vega** is the new name of the assistant inside `assistant.html` (she was Nova in 3.0 and Sophia before that). She is the
 same helper you already know, with a new name and a lot more to do: she opens
@@ -207,6 +207,70 @@ laptop specs
 
 ---
 
+## 2h-bis. "Pendrive, another computer, and open my app" &mdash; one command (new in 3.4)
+
+3.3 could *read* the new machine. 3.4 does the whole arrival in **one command**:
+
+```
+You: i opened you on another computer
+```
+
+Everything below happens from that one sentence, in one request to the helper:
+
+```
+Vega: This machine: Linux 6.8.0-45-generic, x86_64, 8 cores, 15.5 GB RAM, called college-pc.
+      Python 3.12.3 is here, so I can open apps and files on it straight away.
+      Storage here:
+        / this computer: 96.2 GB free of 238.5 GB
+        /media/me/VEGA removable drives: 12.1 GB free of 14.5 GB
+      Your app was next to me on this stick, so I opened it: /media/me/VEGA/index.html.
+```
+
+### What "configure the specs of that OS" actually means
+
+It is not installation, and she will not pretend it is. It means she **looks at
+this machine and changes what she offers you**, in the same way a game changes
+its settings when it sees new hardware:
+
+| She finds | So she does |
+| --- | --- |
+| Windows, macOS or Linux | uses the right way to open things on each; names the one she found |
+| Python present | opens apps, your files, folders and settings |
+| No Python | says so plainly, and keeps to websites, memory and games |
+| A pendrive | keeps her own memory, quests and records on the stick, installs nothing |
+| A disk | says so, so you know nothing is leaving that machine |
+| `index.html` next to her | opens **your app** on this computer, without you hunting for it |
+| No `index.html` | says there is no app of yours to open, instead of opening the wrong thing |
+
+### The words that work
+
+Any of these is the same one command:
+
+```
+i opened you on another computer      i put you on a pendrive
+put you on a pendrive and opened you on another laptop
+i just plugged you in                 plugged you into this pc
+another computer                      new laptop
+adapt to this computer                set up on this computer
+who am i on now                       travel setup
+```
+
+### The honest limits of a pendrive
+
+- **Windows, macOS and Linux** are all read correctly. The actions that need
+  Windows &mdash; volume, brightness, screenshots, closing apps &mdash; only work on
+  Windows, and she says so on the machines where they do not.
+- On a **school or office computer** the stick may be read-only, antivirus may
+  block a `.bat`, and Python is often not installed. The page itself still opens
+  in any browser with nothing installed; only the laptop actions wait for Python.
+- **Your memory, quests and records travel with the stick** because they live in
+  that browser's storage on that machine. If you use a different browser there,
+  she starts fresh on it. Nothing is uploaded, and nothing is synced.
+- She **does not install herself** on someone else's computer and leaves no
+  program behind. Only the browser's own data for that page remains.
+
+---
+
 ## 2i. Games, the way a gamer expects (new in 3.3)
 
 The games are now a small arcade with a player card, not five toys that forget you.
@@ -283,6 +347,60 @@ It only pays once.
 - The profile is stored **in the browser on this computer**. Moving her to a pendrive does not move the scores.
 - There is no online leaderboard and no account. Nothing is uploaded.
 - The Daily Challenge questions come from her built-in notes, so the set is finite and stays the same length each day.
+
+---
+
+## 2i-bis. Combos, quests and prestige (new in 3.4)
+
+3.3 gave you a player card. 3.4 gives you a reason to look at it twice a day.
+
+### Combos: a good run is worth more than a good answer
+
+Three correct answers in a row pays **+5 XP**, five pays **+10**, and every
+fourth after eight pays **+15**. A miss ends the run, which is the whole point:
+a combo is a thing you can lose. Your best ever is kept, so a lucky run is
+never forgotten.
+
+```
+You: the answer is a coin
+Vega: Combo x3! +5 XP for solving it.
+      Yes! The answer is A coin. Well done. +30 XP. Riddles solved: 3.
+      Level up! You are level 2 now.
+```
+
+### Daily quests: three goals, new every day
+
+Every morning she picks three jobs from a pool of eight, using the date as a
+seed so they are the same all day and cannot be re-rolled by reloading the page.
+They sit under your player card with a tick box each.
+
+| Quest | What counts | XP |
+| --- | --- | --- |
+| Play two games today | any two starts | 20 |
+| Win one game today | a real win | 25 |
+| Beat Guess the Number in 6 tries or fewer | the guess game | 25 |
+| Reach a chain of 6 words | the word chain | 20 |
+| Solve two riddles | riddles | 20 |
+| Solve two scrambles | scrambles | 20 |
+| Finish the Daily Challenge | the challenge | 30 |
+| Build a combo of 5 | combos | 25 |
+
+Say **"quests"** at any time. She answers even in the middle of the menu.
+
+### Prestige: what happens after Legend
+
+Level 20 is where the ladder currently ends, and a gamer knows that is not an
+ending, it is a door. At level 20 say **"prestige"**:
+
+- your XP goes back to zero **on purpose**
+- your records, achievements, badges and best combo all stay
+- your name gains a star for each prestige, shown on the card as `*1`, `*2`
+- your best ever run is remembered and told back to you
+
+Below level 20 she refuses, says exactly how far away it is, and takes nothing.
+That is deliberate: a prestige you can buy is not a prestige.
+
+Try: `play a game`, `quests`, `combo`, `prestige`, `stats`.
 
 ---
 
@@ -398,8 +516,80 @@ you talk to them there. That is the honest meaning of "a direct connection":
 one command, the right page, the question already in place.
 
 If you would rather have an AI answer **inside** Vega's own window, use
-**Settings -> AI model**, paste a key you own, and she will answer there
-instead. That path is optional; everything above works with no key at all.
+**Settings -> AI key**, explained next. That path is optional; everything above
+works with no key at all.
+
+---
+
+## 3a-bis. Putting real ChatGPT inside the window (new in 3.4)
+
+There are two different things and people mix them up constantly:
+
+| Thing | What it looks like | Where it comes from |
+| --- | --- | --- |
+| The **address** | `https://api.openai.com/v1` | nobody gives this to you; it is the same for everyone |
+| The **key** | `sk-proj-Ab3x...` about 50-160 characters | platform.openai.com, your own account |
+
+`https://api.openai.com/v1/responses` is an **address**, not a key. Pasting an
+address into the key box cannot work, no matter how many times you try, because
+there is no secret in it. Vega now says exactly that in the settings panel
+instead of failing quietly.
+
+To get a real key:
+
+1. Open `platform.openai.com`, sign in, and add a few dollars of credit under
+   **Billing**. A new account with zero credit gets a valid key that still
+   refuses every question.
+2. Open **API keys -> Create new secret key**, name it `vega`, and press Create.
+3. Copy it immediately. It starts with `sk-` and is shown **once**; after you
+   close that box nobody, including OpenAI's support, can show it again.
+4. In Vega press **Settings**, choose **OpenAI (ChatGPT)**, paste the key,
+   leave the address alone, and press **Test connection**.
+
+What the test really does, in three steps, and says out loud:
+
+```
+Step 1 of 3: asking OpenAI which models this key can use...
+Step 2 of 3: asking gpt-5 a one-line question...
+Step 3 of 3: connected. The key is valid and the model answered:
+"I am connected to Vega and ready." Using gpt-5.
+```
+
+If step 1 fails with **401**, the key itself is wrong, deleted, or was copied
+with a character missing. If it fails with **429**, the key is real but the
+account has no credit or is going too fast. If it never reaches OpenAI at all,
+the message says that plainly: *that is a network problem, not a key problem*,
+and lists the four usual causes - offline, a blocked host or firewall, a school
+Wi-Fi, or a browser extension.
+
+### Why there are two endpoints
+
+OpenAI has an older way to ask, `/v1/chat/completions`, and a newer one,
+`/v1/responses`, which is what the newest models such as `gpt-5` expect. Vega
+speaks both:
+
+- **Automatic** (default) picks `/v1/responses` for `gpt-5`-family models and
+  for anything with `-responses-` in the name, and otherwise tries Responses
+  first and quietly falls back to chat completions.
+- **Responses API** or **Chat completions** pins one, for people running a
+  clone or a local server that only speaks one of them.
+
+Both use the same key, and both are billed the same way. The reply is read from
+`output_text`, from `output[].content[].text`, or from the old
+`choices[].message.content`, so whichever shape comes back she can read it.
+
+Why this matters for you: a chatbot on a website forgets you when the tab
+closes, and it cannot see your files. This one sits in her memory, so "explain
+that again, simpler" still knows what *that* was, and questions about your
+files are answered from your own machine before any request leaves it.
+
+**The honest limits.** A key is a spending credential. Anyone holding it can
+spend your credit, so keep it on your own machine and never paste it into a
+chat, a screenshot or a school computer. Vega stores it in your browser's local
+storage on your own laptop, in plain text - protected by your Windows login and
+nothing more. Do not put a key on a shared or borrowed machine. And with no
+key, everything else in Vega still works: the built-in brain, games, files,
+apps, the pendrive mode. The key only adds a smarter answer to open questions.
 
 ---
 
@@ -642,7 +832,7 @@ the laptop.
 I cannot reach your laptop from here: nothing on my side can open your folders
 or install anything for you. So the download installs itself.
 
-1. Download **`Vega-3.3.zip`** from GitHub and unzip it.
+1. Download **`Vega-3.4.zip`** from GitHub and unzip it.
 2. Double-click **`INSTALL_SOPHIA.bat`** inside the unzipped folder. (If you
    prefer one single file, download `Vega_Install_One_File.bat` instead and
    double-click that; it does the same thing and unpacks itself.)
@@ -671,8 +861,8 @@ To undo everything: rename `assistant-old-<date>.html` back to
 | `INSTALL_SOPHIA.bat` | One-step installer: copies the files and makes a Desktop shortcut. |
 | `Install_Sophia.ps1` | The PowerShell script behind the installer. |
 | `vega.ico` | Her icon, in six sizes. The installer puts it in the folder and on the shortcut. |
-| `tests/brain.test.js` | 76 tests for what Vega understands. `node --test tests/brain.test.js` |
-| `tests/test_helper.py` | 51 tests for the helper, the file search, the installer and the server. `python3 -m unittest discover tests` |
+| `tests/brain.test.js` | 87 tests for what Vega understands. `node --test tests/brain.test.js` |
+| `tests/test_helper.py` | 57 tests for the helper, the file search, the installer and the server. `python3 -m unittest discover tests` |
 
 Old versions: `git show 09ca826:assistant.html` is the file exactly as you
 first uploaded it, and `git show 5cd7650:assistant.html` is version 2.2 (before
