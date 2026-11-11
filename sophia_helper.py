@@ -637,6 +637,121 @@ def action_signout(params):
     return ok() if code == 0 else fail("signout_failed")
 
 
+# ---------------------------------------------------------------- this machine
+def _drive_letter_of(path):
+    """The drive a file sits on: C:, D:, or the USB stick's own letter."""
+    try:
+        drive = os.path.splitdrive(os.path.abspath(path))[0]
+    except (ValueError, OSError):
+        drive = ""
+    return drive.upper() if drive else ""
+
+
+def _is_removable(path):
+    """Is this folder on a USB stick rather than the laptop's own disk?"""
+    if not IS_WINDOWS:
+        return False
+    letter = _drive_letter_of(path).replace(":", "")
+    if not letter:
+        return False
+    script = ("$d = Get-CimInstance Win32_LogicalDisk -Filter \"DeviceID='%s:'\"; "
+              "if ($d) { $d.DriveType }") % letter.replace("'", "")
+    res = ps_command(script, timeout=12)
+    if res.get("ok"):
+        try:
+            # DriveType 2 is a removable disk, 5 is a CD, 3 is a fixed disk
+            return int(str(res["output"]).strip().splitlines()[0]) == 2
+        except (ValueError, IndexError):
+            return False
+    return False
+
+
+def _disks():
+    """Every disk the person can save to, with the space left on each."""
+    out = []
+    if not IS_WINDOWS:
+        return out
+    script = ("Get-CimInstance Win32_LogicalDisk | Where-Object { $_.Size -gt 0 } | "
+              "ForEach-Object { @{ id=$_.DeviceID; label=$_.VolumeName; type=[int]$_.DriveType; "
+              "total_gb=[math]::Round($_.Size/1GB,1); free_gb=[math]::Round($_.FreeSpace/1GB,1) } } | "
+              "ConvertTo-Json -Compress")
+    res = ps_command(script, timeout=20)
+    if not res.get("ok"):
+        return out
+    try:
+        data = json.loads(res["output"])
+    except ValueError:
+        return out
+    if isinstance(data, dict):
+        data = [data]
+    kinds = {2: "usb", 3: "disk", 4: "network", 5: "cd", 6: "ram"}
+    for d in data:
+        try:
+            out.append({
+                "id": str(d.get("id", "")),
+                "label": str(d.get("label") or ""),
+                "kind": kinds.get(int(d.get("type") or 3), "disk"),
+                "total_gb": float(d.get("total_gb") or 0),
+                "free_gb": float(d.get("free_gb") or 0),
+            })
+        except (TypeError, ValueError):
+            continue
+    out.sort(key=lambda d: (d["kind"] != "disk", d["id"]))
+    return out
+
+
+def _report_caps():
+    """What she can honestly promise on this machine, checked, not assumed."""
+    py3 = sys.version_info[:2] >= (3, 7)
+    return {
+        "apps": bool(IS_WINDOWS and py3),
+        "settings": bool(IS_WINDOWS and py3),
+        "files": bool(IS_WINDOWS and py3),
+        "screen": bool(IS_WINDOWS and py3),
+        "web": True,
+        "games": True,
+    }
+
+
+def action_where_am_i(params):
+    """Which computer is this, and is Vega running from a stick or a disk?
+
+    This is the answer to "I put her on a pendrive and opened her on another
+    machine": the page and the helper already work anywhere, and this tells
+    the person what they are standing on before anything else happens.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    drive = _drive_letter_of(here)
+    portable = _is_removable(here)
+    data = {
+        "os": platform.platform(),
+        "os_name": "Windows" if IS_WINDOWS else platform.system(),
+        "release": platform.release(),
+        "machine": platform.machine(),
+        "python": platform.python_version(),
+        "host": socket.gethostname(),
+        "folder": here,
+        "drive": drive,
+        "portable": portable,
+        "disks": _disks(),
+    }
+    if IS_WINDOWS:
+        script = ("$os = Get-CimInstance Win32_OperatingSystem; $cs = Get-CimInstance Win32_ComputerSystem; "
+                  "$cpu = Get-CimInstance Win32_Processor | Select-Object -First 1; "
+                  "@{ name = $os.Caption; build = $os.BuildNumber; arch = $os.OSArchitecture; "
+                  "ram_gb = [math]::Round($cs.TotalPhysicalMemory/1GB,1); cpu = $cpu.Name; "
+                  "cores = $cpu.NumberOfLogicalProcessors } | ConvertTo-Json -Compress")
+        res = ps_command(script, timeout=20)
+        if res.get("ok"):
+            try:
+                data.update(json.loads(res["output"]))
+            except ValueError:
+                pass
+    # what she can honestly promise on this machine
+    data["can"] = _report_caps()
+    return ok(info=data)
+
+
 def action_system_info(params):
     info = {
         "os": platform.platform(),
@@ -682,6 +797,37 @@ def action_system_info(params):
         else:
             info.pop("screen", None)
     return ok(info=info)
+
+
+def action_open_new_window(params):
+    """Open a website in its own browser window, so Vega is still there behind it.
+
+    "I opened YouTube and lost you" is the real complaint this answers: a plain
+    tab can end up in front of her, and a window she can alt-tab back to does not.
+    """
+    url = str(params.get("url", "")).strip()
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        return fail("not_allowed")
+    if not parsed.netloc or any(c in url for c in "\r\n\t\"'"):
+        return fail("bad_url")
+    if not IS_WINDOWS:
+        return webbrowser.open(url) and ok(opened=url) or fail("open_failed")
+    # the person's own default browser, in a new window
+    for flag in ("--new-window", "-new-window", ""):
+        cmd = 'start "" ' + (flag + ' ' if flag else '') + '"' + url.replace('"', '') + '"'
+        try:
+            subprocess.Popen(cmd, shell=True, close_fds=True, creationflags=0x08000000)
+            return ok(opened=url, how="new window")
+        except OSError:
+            continue
+    return webbrowser.open(url) and ok(opened=url) or fail("open_failed")
+
+
+def action_show_folder(params):
+    """Open the folder Vega lives in, so the person can see her files."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    return _start(here)
 
 
 def _lnk_target(path):
@@ -1002,6 +1148,9 @@ ACTIONS = {
     "list_apps": action_list_apps,
     "open_path": action_open_path,
     "find_file": action_find_file,
+    "where_am_i": action_where_am_i,
+    "open_new_window": action_open_new_window,
+    "show_folder": action_show_folder,
     "security_check": action_security_check,
     "open_self": action_open_self,
 }

@@ -316,7 +316,7 @@ test('a connected AI model can answer and run safe commands, but not power actio
   r = await sophia.handle('do the thing for me');
   assert.match(r.text, /Opening that for you/);
   assert.strictEqual(calls.length, 1, 'exactly one safe command may reach the laptop');
-  assert.ok(['open_url', 'open_app'].includes(calls[0]));
+  assert.ok(['open_new_window', 'open_url', 'open_app'].includes(calls[0]), 'a normal browser window is the redirect path: ' + calls[0]);
   assert.ok(!calls.includes('shutdown'), 'the model may never shut the laptop down');
 });
 
@@ -616,7 +616,7 @@ test('the caring layer never answers for a command or a game', async () => {
   assert.ok(opened.some((u) => /youtube/i.test(u)));
 
   const menu = await sophia.handle('play a game');
-  assert.match(menu.text, /Guess the number/);
+  assert.match(menu.text, /Guess the Number/);
 
   const maths = await sophia.handle('what is 25 times 4');
   assert.match(maths.text, /\b100\b/);
@@ -888,4 +888,120 @@ test('she explains how to install Python, including the step people miss', async
   assert.match(r.text, /python\.org/);
   assert.match(r.text, /Add python\.exe to PATH/);
   assert.match(r.text, /Start_Sophia\.bat/);
+});
+
+test('the gamer layer: levels, xp and the arcade code', () => {
+  assert.strictEqual(Brain.levelForXp(0), 1);
+  assert.strictEqual(Brain.levelForXp(99), 1);
+  assert.strictEqual(Brain.levelForXp(100), 2);
+  assert.strictEqual(Brain.xpIntoLevel(120).have, 20);
+  assert.strictEqual(Brain.rankName(1), 'Newcomer');
+  assert.strictEqual(Brain.rankName(20), 'Legend');
+  assert.ok(Brain.isKonami('up up down down left right left right b a'));
+  assert.ok(!Brain.isKonami('up up down'));
+});
+
+test('playing earns xp, and the profile survives a reload', async () => {
+  let store = null;
+  const mk = () => Brain.create({ store: { load: () => store, save: (m) => { store = m; } }, mode: () => 'browser', now: () => new Date('2026-11-10T20:00:00') });
+  let sophia = mk();
+  await sophia.handle('set my player name to Kartikey');
+  await sophia.handle('open nothing at all');
+  await sophia.handle('up up down down left right left right b a');
+  const after = sophia.player();
+  assert.strictEqual(after.xp, 50, 'the code is worth 50 xp');
+  assert.ok(after.achievements.secret);
+  assert.strictEqual(after.name, 'Kartikey');
+
+  // a fresh instance reading the same memory sees the same player
+  sophia = mk();
+  assert.strictEqual(sophia.player().xp, 50);
+  assert.strictEqual(sophia.player().name, 'Kartikey');
+});
+
+test('the daily challenge is five scored questions and it counts them', async () => {
+  let store = null;
+  const sophia = Brain.create({ store: { load: () => store, save: (m) => { store = m; } }, mode: () => 'browser', now: () => new Date('2026-11-10T20:00:00') });
+  let r = await sophia.handle('daily challenge');
+  assert.match(r.text, /Daily Challenge/);
+  assert.match(r.text, /Question 1 of 5/);
+  for (let i = 0; i < 4; i++) await sophia.handle("don't know");
+  r = await sophia.handle("don't know");
+  assert.match(r.text, /0 out of 5/);
+  assert.strictEqual(sophia.player().records.challenge, 1);
+  assert.ok(sophia.player().xp > 0, 'even a bad run earns something for turning up');
+});
+
+test('the game menu shows the player their own progress', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser', now: () => new Date('2026-11-10T20:00:00') });
+  const r = await sophia.handle('play a game');
+  assert.match(r.text, /Level 1 /);
+  assert.match(r.text, /Newcomer/);
+  assert.match(r.text, /day/);
+  assert.match(r.text, /6\. Daily Challenge/);
+  const stats = await sophia.handle('stats');
+  assert.match(stats.text, /level 1/i);
+  assert.match(stats.text, /Achievements:/);
+});
+
+test('guess the number narrows the range and pays out on a win', async () => {
+  let store = null;
+  const sophia = Brain.create({ store: { load: () => store, save: (m) => { store = m; } }, mode: () => 'browser', now: () => new Date('2026-11-10T20:00:00') });
+  await sophia.handle('play a game');
+  let r = await sophia.handle('1');
+  assert.match(r.text, /between 1 and 100/);
+  // binary search, the way a player would
+  let lo = 1, hi = 100, won = false;
+  for (let i = 0; i < 8 && !won; i++) {
+    const mid = Math.floor((lo + hi) / 2);
+    r = await sophia.handle(String(mid));
+    if (/Yes!/.test(r.text)) { won = true; break; }
+    const m = r.text.match(/Range is now (\d+) to (\d+)/);
+    assert.ok(m, 'every wrong guess must narrow the range: ' + r.text);
+    lo = Number(m[1]); hi = Number(m[2]);
+  }
+  assert.ok(won, 'a binary search must win within 8 guesses');
+  assert.ok(sophia.player().wins >= 1);
+  assert.ok(sophia.player().xp > 0);
+});
+
+test('the player card is in the page and wired to the brain', () => {
+  assert.ok(html.includes('id="playerCard"'), 'the card must exist');
+  assert.ok(html.includes('id="xpFill"'), 'the xp bar must exist');
+  assert.ok(html.includes('id="playerGrid"'), 'the stats grid must exist');
+  const page = html.match(/<!-- ===== the page[\s\S]*/)[0];
+  assert.match(page, /renderPlayerCard/);
+});
+
+test('she reports the real machine, and says when she is running from a pendrive', async () => {
+  const info = {
+    name: 'Windows 11 Home', build: '22631', arch: '64-bit', cpu: 'Intel i5', cores: 8, ram_gb: 8,
+    python: '3.12.1', drive: 'E:', portable: true,
+    disks: [
+      { id: 'C:', label: 'OS', kind: 'disk', total_gb: 237, free_gb: 41 },
+      { id: 'E:', label: 'VEGA', kind: 'usb', total_gb: 14.5, free_gb: 12.1 }
+    ],
+    can: { apps: true, files: true, settings: true, screen: true, web: true, games: true }
+  };
+  const sophia = Brain.create({
+    store: { load: () => null, save: () => {} }, mode: () => 'laptop',
+    helper: async (a) => (a === 'where_am_i' ? { ok: true, info } : { ok: true })
+  });
+  const r = await sophia.handle('what computer is this');
+  assert.match(r.text, /Windows 11 Home/);
+  assert.match(r.text, /8 GB RAM/);
+  assert.match(r.text, /removable drive/i);
+  assert.match(r.text, /E:/);
+
+  const s = await sophia.handle('how much space is left');
+  assert.match(s.text, /41 GB free of 237 GB/);
+  assert.match(s.text, /USB drive/);
+  assert.match(s.text, /12.1 GB free/);
+});
+
+test('without the helper she does not pretend to know the machine', async () => {
+  const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser' });
+  const r = await sophia.handle('laptop specs');
+  assert.match(r.text, /Start_Sophia\.bat/);
+  assert.ok(!/Windows 11|GB RAM/.test(r.text), 'she must not invent specs');
 });

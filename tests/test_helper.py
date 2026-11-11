@@ -444,3 +444,43 @@ class FindFileTest(unittest.TestCase):
     def test_find_file_is_registered_and_not_dangerous(self):
         self.assertIn("find_file", helper.ACTIONS)
         self.assertNotIn("find_file", helper.DANGEROUS)
+
+
+class ThisMachineTest(unittest.TestCase):
+    """What Vega says about the computer she is running on."""
+
+    def test_where_am_i_answers_and_lists_what_she_can_do(self):
+        r = helper.action_where_am_i({})
+        self.assertTrue(r["ok"])
+        info = r["info"]
+        for key in ("os", "os_name", "folder", "drive", "portable", "disks", "can"):
+            self.assertIn(key, info, key)
+        self.assertIsInstance(info["disks"], list)
+        # the folder she reports must be the one she actually lives in
+        self.assertTrue(os.path.isdir(info["folder"]))
+        self.assertTrue(info["can"]["web"] and info["can"]["games"])
+        self.assertIsInstance(info["portable"], bool)
+
+    def test_drive_letter_is_read_from_the_path(self):
+        drive = helper._drive_letter_of(os.path.abspath(__file__))
+        self.assertIsInstance(drive, str)
+        if os.name == "nt":
+            self.assertRegex(drive, r"^[A-Z]:$")
+
+    def test_the_new_actions_are_registered(self):
+        for name in ("where_am_i", "open_new_window", "show_folder"):
+            self.assertIn(name, helper.ACTIONS, name)
+
+    def test_open_new_window_refuses_anything_but_web_links(self):
+        for bad in ("", "file:///C:/Windows/System32", "javascript:alert(1)", "cmd.exe", "http://x\n y"):
+            with self.subTest(bad=bad):
+                r = helper.action_open_new_window({"url": bad})
+                self.assertFalse(r["ok"], bad)
+                self.assertIn(r["error"], ("not_allowed", "bad_url"))
+
+    def test_the_start_bat_works_from_any_drive_letter(self):
+        raw = open(os.path.join(ROOT, "Start_Sophia.bat"), "rb").read().decode("utf-8")
+        self.assertIn('cd /d "%~dp0"', raw, "must run from the folder it sits in, not a fixed path")
+        self.assertNotIn("C:\\Vega", raw, "no hard-coded install path")
+        self.assertIn("On drive", raw, "she should say which drive she is on")
+        self.assertIn("%~dp0sophia_helper.py", raw)

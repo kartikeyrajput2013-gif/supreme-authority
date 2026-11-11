@@ -1,4 +1,4 @@
-# Vega &mdash; personal AI assistant (version 3.2)
+# Vega &mdash; personal AI assistant (version 3.3)
 
 **Vega** is the new name of the assistant inside `assistant.html` (she was Nova in 3.0 and Sophia before that). She is the
 same helper you already know, with a new name and a lot more to do: she opens
@@ -156,6 +156,133 @@ steps, including the "Add python.exe to PATH" box most people miss.
 Tests: `tests/test_helper.py` builds a fake home folder and proves the rules above
 &mdash; exact match first, no programs, no password files, honest empty answer,
 human-readable sizes.
+
+---
+
+## 2h. Putting her on a pendrive (new in 3.3)
+
+Vega is a page and a small Python file. That means she can live on a USB stick and
+run on **any Windows computer** you plug it into, without installing anything.
+
+### How to do it
+
+1. Copy the whole folder &mdash; `assistant.html`, `sophia_helper.py`, `Start_Sophia.bat`, `vega.ico` &mdash; onto the pendrive.
+2. On any other Windows computer, open the stick and double-click **`Start_Sophia.bat`**.
+3. She reads that computer herself and tells you what it is.
+
+### What she works out on each new computer
+
+- Which **Windows version** it is, and the build number
+- The **processor** and how many cores it has
+- How much **RAM** it has
+- Every **drive** and how much space is left on each, including the stick she is running from
+- Whether she is on **removable storage** or the computer's own disk
+- Whether **Python** is here, which decides what she can do
+
+She says all of this plainly, in her own words:
+
+> **Windows 11 Home** &middot; build 22631 &middot; 64-bit &middot; Intel i5-1135G7 &middot; 8 cores &middot; 8 GB RAM
+> I am running from a removable drive (E:). That is fine: my files travel with me, and I adapt to each new computer instead of assuming it is yours.
+
+### If the new computer has no Python
+
+She still starts. She opens websites, plays every game and talks normally. She
+cannot open your files or change Windows settings, and she says so instead of
+failing silently. Ask her `how do i install python` for the exact steps.
+
+### The honest part
+
+- Her **memory does not travel**. Saved notes, the player card and reminders live in the browser on each computer, because that is where a browser keeps them. Same stick, different machine, fresh memory.
+- She does **not** copy or search the other computer's files unless you ask her a file question there.
+- Games, chat, facts and websites work the same everywhere. Laptop control depends on Windows and Python, and she tells you which one is missing.
+
+Ask her any of these on a new machine:
+
+```
+what computer is this
+how much space is left
+am i running you from a pendrive
+laptop specs
+```
+
+---
+
+## 2i. Games, the way a gamer expects (new in 3.3)
+
+The games are now a small arcade with a player card, not five toys that forget you.
+
+### Your player
+
+Every game feeds one profile: a name, **XP**, a **level**, a **daily streak**, wins,
+and a record for each game. It is on the page as a card, and it survives a reload.
+
+| Level | Rank | XP to reach it |
+| --- | --- | --- |
+| 1 | Newcomer | 0 |
+| 3 | Rookie | 250 |
+| 6 | Regular | 700 |
+| 10 | Veteran | 1,750 |
+| 15 | Champion | 3,750 |
+| 20 | Legend | 6,250 |
+
+Each level costs a little more than the last: 100, then 150, then 200, and so on.
+
+### What earns XP
+
+| You do | You get |
+| --- | --- |
+| Turn up and play on a new day | 15 XP, plus 5 more for each day in a row (up to +20) |
+| Solve a word scramble | 20 XP, or 35 if you got it first try |
+| Win Guess the Number | 35 XP in 3 guesses or fewer, otherwise 20 |
+| Win a word chain | 20 XP, plus 2 for every word in the chain |
+| Solve a riddle | 30 XP first try, 20 with a hint |
+| Finish the story | 20 XP, plus 4 per turn |
+| Finish the Daily Challenge | 5 XP, plus 18 per correct answer, plus 35 for a perfect run |
+
+### The daily challenge
+
+Five questions, one sitting, scored out of five. The set is picked from the date,
+so **the same day gives the same set** and tomorrow gives a new one. It never
+repeats a question inside a run, and it comes from her own notes, not the internet.
+
+```
+you> daily challenge
+Daily Challenge for 2026-11-10: five questions, one point each.
+Question 1 of 5: How many hearts does an octopus have?
+you> three
+Right. Three. One point. (1 so far)
+Question 2 of 5: ...
+```
+
+Say `don't know` to move on with no penalty. At the end she gives a verdict and
+your XP, and records your best.
+
+### The other upgrades
+
+- **Guess the Number** shows the narrowing range (`Range is now 51 to 100`) and how many guesses are left, so it plays like a real game instead of guesses into the dark.
+- **Word Chain** now has an end: she runs out of words and you win, with your chain length scored and recorded.
+- **Word Scramble** tells you how many tries are left and never repeats a word in one round.
+- **Riddles** keep a session going, and `next riddle` skips one.
+- **`play again`** starts the same game again without going through the menu.
+- **`stats`**, `records` and `achievements` work at any time, even mid-game.
+
+### Badges
+
+`First Win`, `Three Days Running`, `Level 5`, `Three-Guess Wonder`, `Ten-Word Chain`,
+`Riddle Master`, `Word Smith`, `Challenger`, and one more you can find yourself.
+
+<details><summary>If you know the old code</summary>
+
+Type `up up down down left right left right b a` anywhere. It is worth 50 XP and a badge.
+It only pays once.
+
+</details>
+
+### Honest limits
+
+- The profile is stored **in the browser on this computer**. Moving her to a pendrive does not move the scores.
+- There is no online leaderboard and no account. Nothing is uploaded.
+- The Daily Challenge questions come from her built-in notes, so the set is finite and stays the same length each day.
 
 ---
 
@@ -515,7 +642,7 @@ the laptop.
 I cannot reach your laptop from here: nothing on my side can open your folders
 or install anything for you. So the download installs itself.
 
-1. Download **`Vega-3.2.zip`** from GitHub and unzip it.
+1. Download **`Vega-3.3.zip`** from GitHub and unzip it.
 2. Double-click **`INSTALL_SOPHIA.bat`** inside the unzipped folder. (If you
    prefer one single file, download `Vega_Install_One_File.bat` instead and
    double-click that; it does the same thing and unpacks itself.)
@@ -544,8 +671,8 @@ To undo everything: rename `assistant-old-<date>.html` back to
 | `INSTALL_SOPHIA.bat` | One-step installer: copies the files and makes a Desktop shortcut. |
 | `Install_Sophia.ps1` | The PowerShell script behind the installer. |
 | `vega.ico` | Her icon, in six sizes. The installer puts it in the folder and on the shortcut. |
-| `tests/brain.test.js` | 68 tests for what Vega understands. `node --test tests/brain.test.js` |
-| `tests/test_helper.py` | 46 tests for the helper, the file search, the installer and the server. `python3 -m unittest discover tests` |
+| `tests/brain.test.js` | 76 tests for what Vega understands. `node --test tests/brain.test.js` |
+| `tests/test_helper.py` | 51 tests for the helper, the file search, the installer and the server. `python3 -m unittest discover tests` |
 
 Old versions: `git show 09ca826:assistant.html` is the file exactly as you
 first uploaded it, and `git show 5cd7650:assistant.html` is version 2.2 (before

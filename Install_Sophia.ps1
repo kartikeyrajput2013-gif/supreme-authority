@@ -171,8 +171,12 @@ Write-Host ""
 Write-Host "  Next time: double-click Vega on the Desktop." -ForegroundColor White
 Write-Host "  Or double-click Start_Sophia.bat in that folder." -ForegroundColor White
 Write-Host ""
-Write-Host "  What is new: the big list of every app on this laptop, and every" -ForegroundColor Gray
-Write-Host "  Open button now always opens something or tells you why not." -ForegroundColor Gray
+Write-Host "  Going somewhere? Copy that whole folder onto a pendrive. On any other" -ForegroundColor Cyan
+Write-Host "  Windows computer, double-click Start_Sophia.bat on the stick and she" -ForegroundColor Cyan
+Write-Host "  reads that machine herself. Say 'what computer is this'." -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  What is new in 3.3: a player card with levels, XP and daily streaks," -ForegroundColor Gray
+Write-Host "  a scored Daily Challenge, and the pendrive mode above." -ForegroundColor Gray
 Write-Host ""
 Write-Host "  If Windows shows a small warning about Python, Vega still opens" -ForegroundColor Gray
 Write-Host "  in browser mode; she just cannot change volume or play with apps." -ForegroundColor Gray
