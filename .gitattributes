@@ -1,0 +1,2 @@
+# Keep the starter file exactly as Windows expects it (CRLF line endings).
+*.bat -text
