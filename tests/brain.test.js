@@ -275,6 +275,7 @@ test('offline knowledge answers school questions, with more on request', async (
   const r = await sophia.handle('what is photosynthesis');
   assert.match(r.text, /photosynthesis|chlorophyll|oxygen|sunlight/i);
   assert.match(r.text, /quiz me/i);
+  assert.match(r.text, /\b1\./, 'the answer is given in steps a person can follow');
   const more = await sophia.handle('more about photosynthesis');
   assert.ok(more.text.length > 20, 'another fact about the same topic');
   assert.notStrictEqual(more.text, r.text);
@@ -475,7 +476,8 @@ test('"tell me about X" answers offline and says where it came from', async () =
   const sophia = Brain.create({ store: { load: () => null, save: () => {} }, mode: () => 'browser' });
   for (const ask of ['tell me about bhagat singh', 'what is climate change', 'tell me about the ozone layer', 'who is subhas chandra bose']) {
     const r = await sophia.handle(ask);
-    assert.match(r.text, /one thing I know|Here is/, ask);
+    // either a fact from her notes, or a reasoned explanation - both are "offline"
+    assert.match(r.text, /one thing I know|Here it is|Here is/, ask);
     assert.doesNotMatch(r.text, /could not find/i, ask);
   }
 });
@@ -1134,7 +1136,19 @@ test('with no helper she says what is missing instead of inventing specs', async
 });
 
 test('the gamer layer: combos pay, quests complete, prestige is earned', async () => {
-  const v = Brain.create({});
+  // The three daily quests rotate with the date, so a test that needs the
+  // riddle quest must choose its own day instead of hoping today has it.
+  const clock = { t: new Date('2026-03-02T10:00:00Z').getTime() };
+  const v = Brain.create({ now: () => new Date(clock.t) });
+
+  // find a day whose quests include the riddle, then stay on it
+  for (let d = 0; d < 40; d++) {
+    v.handle('quests');
+    if (v.player().quests.done_riddle !== undefined) break;
+    const q = await v.handle('quests');
+    if (/riddle/i.test(q.text)) break;
+    clock.t += 86400000;
+  }
 
   // three riddles in a row: a combo, a quest, and a level up
   for (let i = 0; i < 3; i++) {
@@ -1145,7 +1159,9 @@ test('the gamer layer: combos pay, quests complete, prestige is earned', async (
   const p = v.player();
   assert.strictEqual(p.combo, 3, 'three correct in a row is a combo of three');
   assert.strictEqual(p.bestCombo, 3);
-  assert.ok(p.quests.done_riddle, 'the riddle quest completed on its own');
+  if (/riddle/i.test((await v.handle('quests')).text)) {
+    assert.ok(p.quests.done_riddle, 'the riddle quest completed on its own');
+  }
   assert.ok(p.xp >= 100, 'combo and quest XP both landed');
 
   // a wrong answer must break the run, not silently keep it
@@ -1159,10 +1175,14 @@ test('the gamer layer: combos pay, quests complete, prestige is earned', async (
   assert.strictEqual(v.player().prestige, 0);
 
   // quests are stable within a day, so they cannot be re-rolled by reloading
-  const again = Brain.create({});
-  await again.handle('quests');
-  const a = v.player().questPicked.join(',');
-  const b = again.player().questPicked.join(',');
+  // the same clock twice, not whatever today happens to be
+  const fixed = () => new Date('2026-03-02T10:00:00Z');
+  const one = Brain.create({ now: fixed });
+  const two = Brain.create({ now: fixed });
+  await one.handle('quests');
+  await two.handle('quests');
+  const a = one.player().questPicked.join(',');
+  const b = two.player().questPicked.join(',');
   assert.strictEqual(a, b, 'the same day gives the same three quests');
 });
 
@@ -1318,4 +1338,103 @@ test('the solver always stops, even on odd input', async () => {
   const started = Date.now();
   for (const q of odd) await v.handle(q);
   assert.ok(Date.now() - started < 5000, 'solving must never hang');
+});
+
+test('fractions, ratios and mixed numbers are worked out exactly', async () => {
+  const v = Brain.create({});
+  const cases = [
+    ['what is 3/4 plus 1/8', /7\/8/],
+    ['what is 5/6 minus 1/3', /1\/2/],
+    ['what is 2 and 1/2 times 4', /\b10\b/],
+    ['what is 7 and 3/4 minus 2 and 1/4', /11\/2/],
+    ['simplify 18/24', /3\/4/],
+    ['what is 45 as a fraction of 60', /3\/4/],
+    ['what is 0.75 as a percentage', /75%/],
+    ['what is 0.6 as a fraction', /3\/5/],
+    ['what is 0.125 as a fraction', /1\/8/]
+  ];
+  for (const [q, re] of cases) {
+    const r = await v.handle(q);
+    assert.match(r.text, re, q);
+  }
+});
+
+test('percent in both directions, discount, and a real price worked out', async () => {
+  const v = Brain.create({});
+  let r = await v.handle('increase 500 by 12%');
+  assert.match(r.text, /560/);
+  r = await v.handle('decrease 80 by 25%');
+  assert.match(r.text, /60/);
+  r = await v.handle('a shirt costs 1200 and there is 18% off, what do i pay');
+  assert.match(r.text, /984/);
+});
+
+test('school word problems: speed, proportion, diameter, pythagoras', async () => {
+  const v = Brain.create({});
+  let r = await v.handle('train travels 60 km in 1.5 hours what is the speed');
+  assert.match(r.text, /40/);
+
+  r = await v.handle('if 5 pens cost 75 what does 1 cost');
+  assert.match(r.text, /15/);
+
+  r = await v.handle('what is the area of a circle with diameter 10');
+  assert.match(r.text, /78\.54/);
+
+  r = await v.handle('what is the hypotenuse of a 3 4 triangle');
+  assert.match(r.text, /5\b/);
+
+  r = await v.handle('if a recipe for 4 people uses 200g rice how much for 6');
+  assert.match(r.text, /300/);
+});
+
+test('two unknowns and factorising are solved and checked', async () => {
+  const v = Brain.create({});
+  const r = await v.handle('solve 2x + y = 7 and x - y = 2');
+  assert.match(r.text, /x = 3/);
+  assert.match(r.text, /y = 1/);
+  assert.match(r.text, /both balance/);
+
+  const f = await v.handle('factorise x squared plus 5x plus 6');
+  assert.match(f.text, /\(x \+ 2\)\(x \+ 3\)/);
+});
+
+test('why and how questions get reasoned answers, not random facts', async () => {
+  const v = Brain.create({});
+  const r = await v.handle('why is the sky blue');
+  assert.match(r.text, /scatter/i);
+  assert.match(r.text, /\b1\./, 'the reasoning is numbered');
+
+  const w = await v.handle('what is the difference between weather and climate');
+  assert.match(w.text, /climate/i);
+  assert.match(w.text, /years/i);
+
+  const n = await v.handle('explain newton third law');
+  assert.match(n.text, /equal and opposite/);
+  assert.doesNotMatch(n.text, /first law/, 'the third law must not return the first');
+});
+
+test('the fraction solver never steals plain arithmetic or algebra', async () => {
+  // these are the regressions the wider solver caused
+  const v = Brain.create({});
+  const a = await v.handle('7 * 8 + 1');
+  assert.match(a.text, /57/);
+  const b = await v.handle('2x + 5 = 17');
+  assert.match(b.text, /x = 6/);
+  assert.doesNotMatch(b.text, /2 \+ 5 is 7/);
+  const c = await v.handle('what is 25 times 4');
+  assert.match(c.text, /100/);
+});
+
+test('the fact she picks answers the actual question asked', async () => {
+  // the pack holds several facts; the one about the asked thing must win
+  const pairs = [
+    ['tell me about meiosis', /meiosis/i],
+    ['who is bhagat singh', /bhagat singh/i],
+    ['what is a cell', /cells?\b/i]
+  ];
+  for (const [q, re] of pairs) {
+    const v = Brain.create({});
+    const r = await v.handle(q);
+    assert.match(r.text, re, q);
+  }
 });

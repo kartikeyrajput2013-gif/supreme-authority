@@ -1,4 +1,4 @@
-# Vega &mdash; personal AI assistant (version 3.4)
+# Vega &mdash; personal AI assistant (version 3.5)
 
 **Vega** is the new name of the assistant inside `assistant.html` (she was Nova in 3.0 and Sophia before that). She is the
 same helper you already know, with a new name and a lot more to do: she opens
@@ -16,16 +16,28 @@ It is made for your laptop: Windows 10 Pro, Intel Core i3-4005U, 4 GB RAM,
 1366 x 768. Nothing is installed, nothing is downloaded, and it works offline
 except for the things that need the internet (websites, Wikipedia, voice).
 
+**What 3.5 changed.** She can now work out about twice as much school maths on
+her own &mdash; fractions with mixed numbers, ratio and proportion, percent in
+both directions, discounts, speed, averages, a circle given only its diameter,
+Pythagoras and pairs of equations &mdash; and she answers *why* and *how*
+questions with a numbered argument instead of a single stored fact. The file
+you download is still **`Vega_Install_One_File.bat`**. Section 2j has the
+before-and-after examples.
+
 ---
 
 ## 0. The file to download, named exactly, and the steps
 
-There are **two files on the GitHub page**. You only need one of them.
+**Download `Vega_Install_One_File.bat`. That is the whole answer.** One file,
+one double-click, nothing to unzip.
+
+There are **two files on the GitHub page**. You only need one of them, and the
+first one is the one almost everybody wants.
 
 | The file | Size | Use it when |
 | --- | --- | --- |
 | **`Vega_Install_One_File.bat`** | about 1.5 MB | **Normal case.** One file, nothing to unzip, no folder to lose. |
-| **`Vega-3.4.zip`** | about 330 KB | A browser or antivirus refuses `.bat` downloads, or you want to read the files first. |
+| **`Vega-3.5.zip`** | about 360 KB | A browser or antivirus refuses `.bat` downloads, or you want to read the files first. |
 
 Everything else on the page (the `.html`, the `.py`, the `.ps1`) is the same
 content **for reading**, not for clicking. If you download those separately you
@@ -52,9 +64,9 @@ will get six files that do not know each other.
 8. It asks where to install her (press Enter to accept `C:\Users\You\Vega`),
    unpacks everything, makes the Desktop shortcut, and offers to start her.
 
-### Downloading `Vega-3.4.zip` instead
+### Downloading `Vega-3.5.zip` instead
 
-1. Same page. Find **`Vega-3.4.zip`** in the list.
+1. Same page. Find **`Vega-3.5.zip`** in the list.
 2. Click it, then click the **download icon** at the top right.
 3. In `Downloads`, **right-click the zip and choose Extract All**, then Extract.
    Do not run anything from inside the zip; Windows cannot install from there.
@@ -466,11 +478,14 @@ Try: `play a game`, `quests`, `combo`, `prestige`, `stats`.
 
 ---
 
-## 2j. The reasoning engine: what she works out herself (new in 3.4)
+## 2j. The reasoning engine: what she works out herself (new in 3.4, doubled in 3.5)
 
 3.4 added a real solver under her conversation, so a large class of school
 questions is answered **on the laptop, with no key, no internet and no waiting**.
 The important part is not just the answer, it is the working.
+
+3.5 roughly **doubled the number of things she can work out** and added a second
+engine for *why* and *how* questions, which 3.4 answered with a stored fact.
 
 ### Algebra
 
@@ -499,8 +514,74 @@ x squared minus 6x plus 9 equals 0  -> one answer, x = 3, because the root part 
 x^2 + 1 = 0                         -> no real answer, the part under the root is negative
 ```
 
-Two unknowns at once (`2x + y = 7`) are still out of reach, and she says so
-rather than guessing.
+Two unknowns at once are solved as a pair and both answers are put back in:
+
+```
+solve 2x + y = 7 and x - y = 2
+
+x = 3, y = 1. Put both back in: 2x + y gives 7 and x - y gives 2, so both balance.
+```
+
+Factorising a quadratic goes the other way, and explains the numbers it chose:
+
+```
+factorise x squared plus 5x plus 6
+It factorises to (x + 2)(x + 3), because 2 x 3 is 6 and 2 + 3 is 5.
+```
+
+### Fractions, ratio and proportion (new in 3.5)
+
+```
+what is 3/4 plus 1/8              -> 7/8 (0.875)
+what is 5/6 minus 1/3             -> 1/2 (0.5)
+what is 2 and 1/2 times 4         -> 5/2 times 4 is 10
+what is 7 and 3/4 minus 2 and 1/4 -> 11/2 (5.5)
+simplify 18/24                    -> 3/4, because 6 divides both
+what is 45 as a fraction of 60    -> 3/4, which is 75%
+what is 0.75 as a percentage      -> 75% (multiply by 100)
+```
+
+Mixed numbers are read the way people say them &mdash; `2 and 1/2`, `2 1/2` and
+`2 and a half` are the same thing. The four rules are done in whole numbers, so
+`1/3 + 1/3` is exactly `2/3` and not `0.6666`.
+
+### Percent in both directions, and a real price (new in 3.5)
+
+```
+increase 500 by 12%                                -> adds 60, giving 560
+decrease 80 by 25%                                 -> takes off 20, giving 60
+a shirt costs 1200 and there is 18% off            -> takes off 216, so you pay 984
+```
+
+### Speed, proportion and the rest of the word problems (new in 3.5)
+
+| You ask | She works out |
+| --- | --- |
+| `a train travels 60 km in 1.5 hours, what is the speed` | `distance divided by time: 60 / 1.5 = 40 km per hour` |
+| `if 5 pens cost 75, what does 1 cost` | `75 divided by 5 is 15 each` |
+| `if a recipe for 4 people uses 200g rice, how much for 6` | `for one it is 50g, so for 6 you need 300g` |
+| `what is the area of a circle with diameter 10` | `the radius is half of 10, so 5; pi x 5 x 5 = 78.54` |
+| `what is the hypotenuse of a 3 4 triangle` | `3 squared plus 4 squared is 25, and the root of 25 is 5` |
+| `what is the average of 10 20 and 30` | `the total is 60 and there are 3, so 20` |
+
+### Why and how questions get reasoning instead of a fact (new in 3.5)
+
+In 3.4, `why is the sky blue` was answered by picking a stored fact about
+light. 3.5 has eleven written explanations that argue the answer in numbered
+steps, and it chooses between them by the most specific match, so the third law
+of motion no longer returns the first:
+
+```
+why is the sky blue
+Here it is in steps, so you can follow the reasoning.
+  1. Sunlight looks white but it is every colour mixed together.
+  2. Air is full of molecules much smaller than the wavelength of light.
+  3. ...
+```
+
+The eleven are: blue sky, photosynthesis, earthquakes, seasons, wi-fi and radio,
+dreams, weather against climate, rain, sound and thunder, the phases of the Moon,
+why ice floats, and Newton's three laws.
 
 ### Geometry
 
@@ -998,7 +1079,7 @@ the laptop.
 I cannot reach your laptop from here: nothing on my side can open your folders
 or install anything for you. So the download installs itself.
 
-1. Download **`Vega-3.4.zip`** from GitHub and unzip it.
+1. Download **`Vega-3.5.zip`** from GitHub and unzip it.
 2. Double-click **`INSTALL_SOPHIA.bat`** inside the unzipped folder. (If you
    prefer one single file, download `Vega_Install_One_File.bat` instead and
    double-click that; it does the same thing and unpacks itself.)
@@ -1027,7 +1108,7 @@ To undo everything: rename `assistant-old-<date>.html` back to
 | `INSTALL_SOPHIA.bat` | One-step installer: copies the files and makes a Desktop shortcut. |
 | `Install_Sophia.ps1` | The PowerShell script behind the installer. |
 | `vega.ico` | Her icon, in six sizes. The installer puts it in the folder and on the shortcut. |
-| `tests/brain.test.js` | 95 tests for what Vega understands. `node --test tests/brain.test.js` |
+| `tests/brain.test.js` | 102 tests for what Vega understands. `node --test tests/brain.test.js` |
 | `tests/test_helper.py` | 57 tests for the helper, the file search, the installer and the server. `python3 -m unittest discover tests` |
 
 Old versions: `git show 09ca826:assistant.html` is the file exactly as you
@@ -1057,6 +1138,10 @@ the Vega name, the AI connections and the games).
 * A real AI key needs an adult's account and may cost money. Ask a parent.
 * Windows-only for laptop control. On a Mac or Linux the helper runs in
   preview mode only.
+
+**The full list, in a table, is in [`LIMITATIONS.md`](LIMITATIONS.md)** — twenty
+disadvantages with how bad each one is and how it could be fixed. It is written
+to be read by you, not to make the project look good.
 
 ---
 

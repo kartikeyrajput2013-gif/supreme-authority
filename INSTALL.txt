@@ -1,4 +1,4 @@
-VEGA 3.4 - PUT IT ON YOUR LAPTOP IN ONE STEP
+VEGA 3.5 - PUT IT ON YOUR LAPTOP IN ONE STEP
 ============================================
 
 I cannot reach your laptop from here. No program on my side can open your
@@ -9,9 +9,11 @@ into place.
 WHAT YOU DO (about one minute)
 ------------------------------
 
-1. Download Vega-3.4.zip from GitHub. (Or the single file
-   Vega_Install_One_File.bat, which does the same thing by itself.)
-   Open it, and click "Extract All" (or right-click > Extract All).
+1. The easiest way: download Vega_Install_One_File.bat from GitHub and
+   double-click it. That one file contains everything and needs no unzipping.
+
+   If your browser will not keep a .bat file, download Vega-3.5.zip instead,
+   open it, and click "Extract All" (or right-click > Extract All).
 
 2. Inside the extracted folder, double-click:
 

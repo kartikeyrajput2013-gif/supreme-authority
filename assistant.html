@@ -920,7 +920,7 @@
 const SophiaBrain = (function () {
   'use strict';
 
-  const VERSION = '3.4.0';
+  const VERSION = '3.5.0';
 
   /* ---------------------------------------------------------------- helpers */
   function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
@@ -2444,6 +2444,7 @@ function moodSummary(moods, nowMs) {
     // It runs after the everyday commands so it can never steal one, and before
     // the generic question, so "area of a circle" is answered, not looked up.
     const reasoned = reason(t);
+    if (reasoned && reasoned.reasonMore) return reasoned;
     if (reasoned) {
       // a single number is lifted to the step so callers can read it directly
       const step = { intent: 'reason', reason: reasoned };
@@ -2465,6 +2466,8 @@ function moodSummary(moods, nowMs) {
     const clean = function (x) { return recoverCase(original, x.replace(/\s+(?:please|for me)$/, '').trim()); };
     if ((m = t.match(/^(?:who is|who's|whos|who was|who are|who were) (.+)$/))) return { intent: 'question', qtype: 'who', topic: clean(m[1]), raw: original };
     if ((m = t.match(/^what does (.+?) (?:mean|stand for)$/)) || (m = t.match(/^(?:define|meaning of|the meaning of|what is the meaning of|definition of) (.+)$/))) return { intent: 'question', qtype: 'define', topic: clean(m[1]), raw: original };
+    // a real explanation beats a fact for "why" and "how" questions
+    if (explainFor(original)) return { intent: 'question', qtype: 'why', topic: null, raw: original };
     if ((m = t.match(/^(?:tell me (?:more |something |a bit )?about|know about|information (?:about|on)|info (?:about|on)|explain|describe|what do you know about|teach me about|learn about) (.+)$/))) return { intent: 'question', qtype: 'about', topic: clean(m[1]), raw: original };
     if ((m = t.match(/^(?:what is|what's|whats|what are|what was|what were) (?:a |an |the )?(.+)$/))) return { intent: 'question', qtype: 'what', topic: clean(m[1]), raw: original };
     if ((m = t.match(/^(?:where is|where's|where are) (.+)$/))) return { intent: 'question', qtype: 'where', topic: clean(m[1]), raw: original };
@@ -2970,11 +2973,40 @@ function knowTopic(t) {
   return best;
 }
 
-function nextFact(topic, seen) {
-  const list = topic.facts;
+/**
+ * Pick a fact. When the question names something specific ("third law",
+ * "meiosis"), the fact that mentions it wins over a random one, because a
+ * random fact about the right topic is still the wrong answer to the question.
+ */
+function nextFact(topic, seen, asked) {
+  const list = topic.facts || [];
   const used = seen || [];
   const fresh = list.filter(function (f) { return used.indexOf(f) < 0; });
   const pool = fresh.length ? fresh : list;
+  const q = String(asked || '').toLowerCase();
+  if (q) {
+    const stop = { the: 1, a: 1, an: 1, is: 1, are: 1, was: 1, what: 1, why: 1, how: 1, does: 1, do: 1, of: 1, and: 1, about: 1, explain: 1, tell: 1, me: 1 };
+    const words = (q.match(/[a-z]{3,}/g) || []).filter(function (w) { return !stop[w]; });
+    if (words.length) {
+      // A word that appears in every fact tells us nothing, so it is dropped.
+      // Without this, "newton third law" scores every fact equally on "newton"
+      // and the one fact that says "third law" never wins.
+      const common = words.filter(function (w) {
+        let hits = 0;
+        pool.forEach(function (f) { if (f.toLowerCase().indexOf(w) >= 0) hits++; });
+        return hits > 0 && hits < pool.length * 0.6;
+      });
+      const useWords = common.length ? common : words;
+      let best = null, bestScore = 0;
+      pool.forEach(function (f) {
+        const low = f.toLowerCase();
+        let score = 0;
+        useWords.forEach(function (w) { if (low.indexOf(w) >= 0) score += w.length; });
+        if (score > bestScore) { best = f; bestScore = score; }
+      });
+      if (best) return { fact: best, fresh: true, matched: true };
+    }
+  }
   return { fact: pool[Math.floor(Math.random() * pool.length) % pool.length], fresh: !!fresh.length };
 }
 
@@ -3030,6 +3062,437 @@ function averageOf(t) {
   if (nums.length < 2) return null;
   const sum = nums.reduce(function (a, b) { return a + b; }, 0);
   return { average: sum / nums.length, sum: sum, count: nums.length };
+}
+
+
+
+
+
+/* ---------------------------------------------------------------------------
+   Mathematics, part two: the shapes people actually ask about.
+   Every solver returns a result with a spoken sentence, or null.
+   Nothing here guesses: if the numbers do not fit the shape, it returns null
+   and the question falls through to the next solver.
+   --------------------------------------------------------------------------- */
+
+/* ------------------------------ fractions ------------------------------- */
+function gcdInt(a, b) {
+  a = Math.abs(Math.round(a)); b = Math.abs(Math.round(b));
+  while (b) { const t = b; b = a % b; a = t; }
+  return a || 1;
+}
+function lcmInt(a, b) {
+  a = Math.abs(Math.round(a)); b = Math.abs(Math.round(b));
+  if (!a || !b) return 0;
+  return (a * b) / gcdInt(a, b);
+}
+
+/** "18/24" -> {n:3, d:4}. Mixed "2 1/2" -> {n:5, d:2}. */
+function readFraction(text) {
+  const s = String(text || '').trim();
+  let m = s.match(/^(-?\d+)\s*(?:and\s+)?(\d+)\s*\/\s*(\d+)$/);
+  if (m) {
+    const whole = parseInt(m[1], 10), n = parseInt(m[2], 10), d = parseInt(m[3], 10);
+    if (!d) return null;
+    const sign = whole < 0 ? -1 : 1;
+    return { n: sign * (Math.abs(whole) * d + n), d: d };
+  }
+  m = s.match(/^(-?\d+)\s*\/\s*(\d+)$/);
+  if (m) {
+    const n = parseInt(m[1], 10), d = parseInt(m[2], 10);
+    if (!d) return null;
+    return { n: n, d: d };
+  }
+  return null;
+}
+
+function fracText(f) {
+  const g = gcdInt(f.n, f.d);
+  let n = f.n / g, d = f.d / g;
+  if (d < 0) { n = -n; d = -d; }
+  if (d === 1) return String(n);
+  return n + '/' + d;
+}
+
+function solveFraction(text) {
+  // Never touch an equation or a variable: that belongs to the algebra solvers.
+  const raw = String(text || '');
+  if (raw.indexOf('=') >= 0) return null;
+  const stripped = raw.toLowerCase().replace(/\b(?:what|is|whats|what's|plus|minus|times|multiplied|by|divided|over|and|a|an|the|simplify|reduce|of|as|fraction|calculate|work|out|percent|percentage)\b/g, ' ')
+    .replace(/[0-9.\s\/]/g, '');
+  if (/[a-z]/.test(stripped)) return null;
+  let t = raw.toLowerCase().trim()
+    .replace(/^(?:simplify|reduce)\s+/, '')
+    .replace(/\?+$/, '').trim();
+
+  // simplify 18/24
+  let m = t.match(/^(\d+)\s*\/\s*(\d+)$/);
+  if (m) {
+    const n = parseInt(m[1], 10), d = parseInt(m[2], 10);
+    if (!d) return null;
+    const g = gcdInt(n, d);
+    if (g === 1) return { kind: 'fraction', text: n + '/' + d + ' is already as simple as it gets: nothing but 1 divides both.' };
+    return { kind: 'fraction', text: n + '/' + d + ' simplifies to ' + (n / g) + '/' + (d / g) + ', because ' + g + ' divides both.' };
+  }
+
+  // a + b where both sides are fractions, mixed numbers or whole numbers.
+  // The operator is found by trying the wordiest first, so "3/4 plus 1/8"
+  // never splits on the slash inside 3/4.
+  // Only the words. A bare + - * / belongs to plain arithmetic, and letting
+  // this solver see "7 * 8 + 1" split it at the wrong place.
+  const ops = [
+    [' plus ', 'plus'], [' minus ', 'minus'],
+    [' times ', 'times'], [' multiplied by ', 'times'],
+    [' divided by ', 'divided by'], [' over ', 'divided by']
+  ];
+  let opFound = null, leftText = null, rightText = null;
+  for (let i = 0; i < ops.length; i++) {
+    const k = t.indexOf(ops[i][0]);
+    if (k > 0) { opFound = ops[i][1]; leftText = t.slice(0, k); rightText = t.slice(k + ops[i][0].length); break; }
+  }
+  if (!opFound) {
+    // "2 and a half times 4" and the bare-slash case, only when both sides read
+    const m2 = t.match(/^(.+?)\s*(?:times|multiplied by)\s*(.+)$/);
+    if (m2) { opFound = 'times'; leftText = m2[1]; rightText = m2[2]; }
+  }
+  if (!opFound) return null;
+  const readAny = (piece) => {
+    const f = readFraction(piece);
+    if (f) return f;
+    const whole = parseFloat(String(piece).trim());
+    return isFinite(whole) ? { n: whole, d: 1 } : null;
+  };
+  const left = readAny(leftText), right = readAny(rightText);
+  if (!left || !right) return null;
+  let out;
+  if (opFound === 'plus' || opFound === '+') out = { n: left.n * right.d + right.n * left.d, d: left.d * right.d };
+  else if (opFound === 'minus' || opFound === '-') out = { n: left.n * right.d - right.n * left.d, d: left.d * right.d };
+  else if (opFound === 'times' || opFound === '*') out = { n: left.n * right.n, d: left.d * right.d };
+  else {
+    if (!right.n) return null;
+    out = { n: left.n * right.d, d: left.d * right.n };
+  }
+  const spoken = fracText(out);
+  const decimal = Math.round((out.n / out.d) * 100000) / 100000;
+  return {
+    kind: 'fraction',
+    value: decimal,
+    text: fracText(left) + ' ' + opFound + ' ' + fracText(right) + ' is ' + spoken + ' (' + decimal + ').'
+  };
+}
+
+/* --------------------------- ratio and proportion ------------------------- */
+/** "45 as a fraction of 60" -> 3/4. "what is 45 out of 60" -> 75%. */
+function solveRatio(text) {
+  const t = String(text || '').toLowerCase();
+  let m = t.match(/([\d.]+)\s*(?:as a fraction of|out of|of)\s*([\d.]+)/);
+  if (!m) return null;
+  const part = parseFloat(m[1]), whole = parseFloat(m[2]);
+  if (!whole || !isFinite(part)) return null;
+  const g = gcdInt(part * 1000, whole * 1000);
+  const n = Math.round((part * 1000) / g), d = Math.round((whole * 1000) / g);
+  const pct = Math.round((part / whole) * 10000) / 100;
+  const frac = d === 1 ? String(n) : (n + '/' + d);
+  return {
+    kind: 'ratio',
+    value: pct,
+    text: part + ' out of ' + whole + ' is ' + frac + ' as a fraction, which is ' + pct + '%.'
+  };
+}
+
+/**
+ * Direct proportion, the school version: "if 5 pens cost 75, what does 1 cost",
+ * "a recipe for 4 people uses 200g rice, how much for 6".
+ */
+function solveProportion(text) {
+  const t = String(text || '').toLowerCase().replace(/,/g, ' ');
+  let m = t.match(/(?:if\s+)?([\d.]+)\s*([a-z%]*)\s*(?:cost|costs|use|uses|need|needs|make|makes|takes|give|gives|feed|feeds)?\s*(?:rs\.?|₹|\$)?\s*([\d.]+)\s*(?:[a-z]*)?\s*(?:how much|how many|what does|what will|what about)\s*(?:for|does|will|do)?\s*([\d.]+)?/);
+  if (m) {
+    const a = parseFloat(m[1]), b = parseFloat(m[3]);
+    const target = m[4] ? parseFloat(m[4]) : 1;
+    if (a && isFinite(b) && isFinite(target)) {
+      const per = b / a;
+      const answer = per * target;
+      const r = Math.round(answer * 1000) / 1000;
+      const unitRate = Math.round(per * 1000) / 1000;
+      return {
+        kind: 'proportion',
+        value: r,
+        text: 'First find one: ' + b + ' divided by ' + a + ' is ' + unitRate + ' each. ' +
+          'Then multiply by ' + target + ', which gives ' + groupDigits(r) + '.'
+      };
+    }
+  }
+  // "a recipe for 4 people uses 200g rice, how much for 6"
+  m = t.match(/for\s+([\d.]+)\s*(?:people|persons?|servings?|cups?)?.*?([\d.]+)\s*(g|grams?|kg|ml|litres?|liters?|cups?)\b.*?(?:for|serves?)\s+([\d.]+)/);
+  if (m) {
+    const from = parseFloat(m[1]), amount = parseFloat(m[2]), unit = m[3], to = parseFloat(m[4]);
+    if (from && isFinite(amount) && isFinite(to)) {
+      const r = Math.round((amount / from) * to * 1000) / 1000;
+      return {
+        kind: 'proportion',
+        value: r,
+        text: 'For ' + from + ' you use ' + amount + unit + ', so for one it is ' + (Math.round((amount / from) * 1000) / 1000) +
+          unit + '. For ' + to + ' you need ' + groupDigits(r) + unit + '.'
+      };
+    }
+  }
+  return null;
+}
+
+/* ------------------------------- speed, time ------------------------------ */
+function solveSpeed(text) {
+  const t = String(text || '').toLowerCase();
+  let m = t.match(/([\d.]+)\s*(km|kilometres?|kilometers?|m|metres?|meters?|miles?)\b.*?(?:in|over|for)\s*([\d.]+)\s*(hours?|hrs?|h|minutes?|mins?|seconds?|s)\b/);
+  if (!m) return null;
+  const dist = parseFloat(m[1]);
+  const dUnit = /km|kilo/.test(m[2]) ? 'km' : /^m|metre|meter/.test(m[2]) ? 'm' : 'miles';
+  const time = parseFloat(m[3]);
+  const tUnit = /hour|hr|^h$/.test(m[4]) ? 1 : /min/.test(m[4]) ? 60 : 3600;
+  if (!isFinite(dist) || !isFinite(time) || time <= 0) return null;
+  const hours = time / tUnit;
+  const speed = dist / hours;
+  const r = Math.round(speed * 1000) / 1000;
+  return {
+    kind: 'speed',
+    value: r,
+    text: 'Speed is distance divided by time: ' + dist + ' ' + dUnit + ' in ' + time +
+      (tUnit === 1 ? ' hour' : tUnit === 60 ? ' minutes' : ' seconds') + ' is ' + r + ' ' + dUnit + ' per hour.'
+  };
+}
+
+/* ------------------------------ percentages ------------------------------- */
+/** Everything percent, including the direction the old solver missed. */
+function solvePercentAny(text) {
+  const t = String(text || '').toLowerCase().replace(/,/g, '');
+
+  // "0.6 as a fraction" -> 3/5. A decimal has a denominator of a power of ten,
+  // so this is exact, not rounded.
+  // "45 as a fraction of 60" belongs to the ratio solver, not to this one
+  let df = t.match(/([\d.]+)\s*(?:as|into|to|in)\s*(?:a\s*)?fraction(?!\s*of\s*[\d.])/);
+  if (df) {
+    const dec = parseFloat(df[1]);
+    if (!isFinite(dec)) return null;
+    const places = (df[1].split('.')[1] || '').length;
+    let num = Math.round(dec * Math.pow(10, places)), den = Math.pow(10, places);
+    const g = gcdInt(num, den);
+    num = num / g; den = den / g;
+    return { kind: 'fraction', value: dec, text: groupDigits(df[1]) + ' as a fraction is ' + num + '/' + den + '.' };
+  }
+
+  // "increase 500 by 12%", "decrease 80 by 25%", "a shirt costs 1200 with 18% off"
+  let m = t.match(/(?:increase|raise|grow)\s*([\d.]+)\s*(?:rupees|rs|dollars)?\s*by\s*([\d.]+)\s*(?:%|percent)/);
+  if (m) {
+    const base = parseFloat(m[1]), p = parseFloat(m[2]);
+    const v = base * (1 + p / 100);
+    return { kind: 'percent', value: v, text: 'Increasing ' + groupDigits(base) + ' by ' + p + '% adds ' +
+      groupDigits(Math.round(base * p) / 100) + ', giving ' + groupDigits(Math.round(v * 100) / 100) + '.' };
+  }
+  m = t.match(/(?:decrease|reduce|lower|drop)\s*([\d.]+)\s*(?:rupees|rs|dollars)?\s*by\s*([\d.]+)\s*(?:%|percent)/);
+  if (m) {
+    const base = parseFloat(m[1]), p = parseFloat(m[2]);
+    const v = base * (1 - p / 100);
+    return { kind: 'percent', value: v, text: 'Decreasing ' + groupDigits(base) + ' by ' + p + '% takes off ' +
+      groupDigits(Math.round(base * p) / 100) + ', leaving ' + groupDigits(Math.round(v * 100) / 100) + '.' };
+  }
+  // "a shirt costs 1200 and there is 18% off, what do i pay"
+  m = t.match(/(?:costs?|cost|price[d]?)\s*(?:rs\.?|₹|\$)?\s*([\d.]+).*?([\d.]+)\s*(?:%|percent)\s*(?:off|discount)/);
+  if (!m) m = t.match(/([\d.]+)\s*(?:%|percent)\s*off\s*(?:on\s*)?(?:rs\.?|₹|\$)?\s*([\d.]+)/);
+  if (m) {
+    let base, p;
+    if (m[2] && /off/.test(t.slice(t.indexOf(m[2])))) { base = parseFloat(m[1]); p = parseFloat(m[2]); }
+    else { p = parseFloat(m[1]); base = parseFloat(m[2]); }
+    if (base && isFinite(p)) {
+      const pay = base * (1 - p / 100);
+      return { kind: 'percent', value: pay, text: p + '% off ' + groupDigits(base) + ' takes off ' +
+        groupDigits(Math.round(base * p) / 100) + ', so you pay ' + groupDigits(Math.round(pay * 100) / 100) + '.' };
+    }
+  }
+  // "0.75 as a percentage", "3/4 as a percent"
+  m = t.match(/^([\d.]+|\d+\s*\/\s*\d+)\s*(?:as|into|to)\s*a?\s*(?:%|percentage|percent)/);
+  if (m) {
+    const f = readFraction(m[1]);
+    const v = f ? f.n / f.d : parseFloat(m[1]);
+    if (isFinite(v)) {
+      const pct = Math.round(v * 10000) / 100;
+      return { kind: 'percent', value: pct, text: (f ? fracText(f) : m[1]) + ' is ' + pct + '% (multiply by 100).' };
+    }
+  }
+  // "45 is what percent of 60" / "what percent of 60 is 45"
+  m = t.match(/([\d.]+)\s*is\s*what\s*(?:%|percent)\s*of\s*([\d.]+)/);
+  if (m) {
+    const part = parseFloat(m[1]), whole = parseFloat(m[2]);
+    if (whole) return { kind: 'percent', value: Math.round(1000 * part / whole) / 10,
+      text: part + ' is ' + (Math.round(1000 * part / whole) / 10) + '% of ' + whole + '.' };
+  }
+  // "what is 15% of 240"
+  m = t.match(/([\d.]+)\s*(?:%|percent|per cent)\s*of\s*([\d.]+)/);
+  if (m) {
+    const p = parseFloat(m[1]), whole = parseFloat(m[2]);
+    const v = Math.round(p * whole) / 100;
+    return { kind: 'percent', value: v, text: p + '% of ' + groupDigits(whole) + ' is ' + groupDigits(v) + '.' };
+  }
+  return null;
+}
+
+/* -------------------------------- geometry -------------------------------- */
+/** Circle from a diameter, and the Pythagoras the old solver could not do. */
+function solveShapeExtra(text) {
+  const t = String(text || '').toLowerCase();
+
+  // "area of a circle with diameter 10" -> radius 5
+  let m = t.match(/(?:area of (?:a |the )?)?circle[^.\d]*diameter(?: of)? ([\d.]+)/);
+  if (m) {
+    const r = parseFloat(m[1]) / 2;
+    const a = Math.PI * r * r;
+    return { kind: 'shape', shape: { label: 'a circle with diameter ' + m[1], formula: 'pi x ' + r + ' x ' + r,
+      value: Math.round(a * 100) / 100, kind: 'circle-area' } };
+  }
+  // "circumference of a circle with diameter 10"
+  m = t.match(/circumference[^.\d]*diameter(?: of)? ([\d.]+)/);
+  if (m) {
+    const d = parseFloat(m[1]);
+    return { kind: 'shape', shape: { label: 'the circumference of a circle with diameter ' + d, formula: 'pi x ' + d,
+      value: Math.round(Math.PI * d * 100) / 100, kind: 'circle-circ' } };
+  }
+  // "perimeter of a rectangle 8 by 5"
+  m = t.match(/perimeter[^.\d]*(\d+(?:\.\d+)?)\s*(?:by|and|x|×)\s*(\d+(?:\.\d+)?)/);
+  if (m) {
+    const a = parseFloat(m[1]), b = parseFloat(m[2]);
+    return { kind: 'shape', shape: { label: 'a rectangle ' + a + ' by ' + b, formula: '2 x (' + a + ' + ' + b + ')',
+      value: 2 * (a + b), kind: 'rect-perim' } };
+  }
+  // "hypotenuse of a 3 4 triangle", "right triangle with sides 3 and 4"
+  m = t.match(/(?:hypotenuse|right[- ]angled? triangle|right triangle)[^.\d]*(?:sides? |of )?(\d+(?:\.\d+)?)\s*(?:and|,|by)?\s*(\d+(?:\.\d+)?)(?:\s*and\s*\d+(?:\.\d+)?)?\s*triangle/);
+  if (!m) m = t.match(/(?:hypotenuse|right[- ]angled? triangle|right triangle)[^.\d]*(\d+(?:\.\d+)?)\s*(?:and|,|by)\s*(\d+(?:\.\d+)?)/);
+  if (!m) m = t.match(/(\d+(?:\.\d+)?)\s*(?:and|,)\s*(\d+(?:\.\d+)?)\s*(?:triangle|sides?)/);
+  if (m) {
+    const a = parseFloat(m[1]), b = parseFloat(m[2]);
+    const c = Math.sqrt(a * a + b * b);
+    return { kind: 'shape', shape: { label: 'a right triangle with legs ' + a + ' and ' + b,
+      formula: 'the square root of (' + a + '^2 + ' + b + '^2)', value: Math.round(c * 1000) / 1000, kind: 'pythag' } };
+  }
+  return null;
+}
+
+/* ------------------------- factorising quadratics ------------------------- */
+/** "factorise x squared plus 5x plus 6" -> (x + 2)(x + 3) */
+function solveFactorise(text) {
+  let t = String(text || '').toLowerCase().trim()
+    .replace(/^(?:factorise|factorize|factor|split the middle term of)\s+/, '')
+    .replace(/=0$/, '').replace(/\s+/g, '');
+  if (!/squared|\^2/.test(t)) return null;
+  const v = (t.match(/[a-z]/) || ['x'])[0];
+  t = t.replace(new RegExp(v + 'squared', 'g'), v + '^2');
+  t = t.replace(/plus/g, '+').replace(/minus/g, '-');
+  // read the three parts by the same hand parser used for quadratics
+  let A = 0, B = 0, C = 0, i = 0, sign = 1;
+  while (i < t.length) {
+    const ch = t[i];
+    if (ch === '+') { sign = 1; i++; continue; }
+    if (ch === '-') { sign = -1; i++; continue; }
+    let numText = '';
+    while (i < t.length && /[0-9.]/.test(t[i])) { numText += t[i]; i++; }
+    const hasNum = numText.length > 0, num = hasNum ? parseFloat(numText) : 1;
+    if (t.startsWith(v + '^2', i)) { A += sign * num; i += v.length + 2; sign = 1; continue; }
+    if (t[i] === v) { B += sign * num; i++; sign = 1; continue; }
+    if (hasNum) { C += sign * num; sign = 1; continue; }
+    return null;
+  }
+  if (A !== 1) return null;
+  // two numbers that multiply to C and add to B
+  for (let p = -Math.abs(C) - 20; p <= Math.abs(C) + 20; p++) {
+    if (!Number.isInteger(p) || p === 0) continue;
+    if (C % p !== 0) continue;
+    const q = C / p;
+    if (p + q === B) {
+      const fmt = (n) => (n < 0 ? '- ' + Math.abs(n) : '+ ' + n);
+      const first = '(' + v + ' ' + fmt(p) + ')(' + v + ' ' + fmt(q) + ')';
+      return { kind: 'factor', text: 'It factorises to ' + first +
+        ', because ' + p + ' x ' + q + ' is ' + C + ' and ' + p + ' + ' + q + ' is ' + B + '.' };
+    }
+  }
+  return { kind: 'factor', text: 'Those numbers do not split into whole parts, so it does not factorise neatly. The quadratic formula still works here.' };
+}
+
+/* --------------------- two unknowns, by elimination ---------------------- */
+/** "solve 2x + y = 7 and x - y = 2" -> x = 3, y = 1 */
+function solveSystem(text) {
+  const t = String(text || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const parts = t.split(/\s*(?:and|,|;|\n)\s*/).filter(Boolean);
+  if (parts.length !== 2) return null;
+  function row(s) {
+    s = s.replace(/^(?:solve|find|calculate|work out)\s+/, '');
+    const m = s.match(/^(-?[\d.]*)\s*x\s*([+-]\s*[\d.]*)\s*y\s*=\s*(-?[\d.]+)$/);
+    if (!m) return null;
+    const read = (piece, fallback) => {
+      if (piece === '' || piece === undefined) return fallback;
+      const neg = piece.indexOf('-') >= 0;
+      const digits = piece.replace(/[^0-9.]/g, '');
+      const v = digits === '' ? 1 : parseFloat(digits);
+      return neg ? -v : v;
+    };
+    return { a: read(m[1], 1), b: read(m[2], 1), c: parseFloat(m[3]) };
+  }
+  const r1 = row(parts[0]), r2 = row(parts[1]);
+  if (!r1 || !r2) return null;
+  const det = r1.a * r2.b - r2.a * r1.b;
+  if (Math.abs(det) < 1e-12) return null;
+  const x = (r1.c * r2.b - r2.c * r1.b) / det;
+  const y = (r1.a * r2.c - r2.a * r1.c) / det;
+  const rd = (n) => Math.round(n * 10000) / 10000;
+  // check both equations before claiming anything
+  const ok1 = Math.abs(r1.a * x + r1.b * y - r1.c) < 1e-6;
+  const ok2 = Math.abs(r2.a * x + r2.b * y - r2.c) < 1e-6;
+  if (!ok1 || !ok2) return null;
+  return { kind: 'system', x: rd(x), y: rd(y),
+    text: 'Two equations, two unknowns. Eliminating one at a time gives x = ' + rd(x) + ' and y = ' + rd(y) +
+      '. I put both back into both equations and both balance, so it is right.' };
+}
+
+/* ------------------------------- averages -------------------------------- */
+/** "average of 4, 8 and 10", and the missing-number version. */
+function solveAverage(text) {
+  const t = String(text || '').toLowerCase();
+  const avg = averageOf(t);
+  if (avg) {
+    const r = Math.round(avg.average * 1000) / 1000;
+    return { kind: 'average', value: r, text: 'The average of those ' + avg.count + ' numbers is ' + r +
+      ' (they add up to ' + groupDigits(avg.sum) + ').' };
+  }
+  // "average of 4 numbers is 10, three are 8 9 12, what is the fourth"
+  const m = t.match(/average of ([\d.]+) numbers? is ([\d.]+).*?(?:three|other|remaining|first).*?((?:[\d.]+\s*,?\s*){1,})/);
+  if (m) {
+    const count = parseFloat(m[1]), mean = parseFloat(m[2]);
+    const known = (m[3].match(/[\d.]+/g) || []).map(Number);
+    if (count && isFinite(mean) && known.length && known.length < count) {
+      const total = count * mean;
+      const sum = known.reduce((a, b) => a + b, 0);
+      const missing = total - sum;
+      return { kind: 'average', value: missing,
+        text: 'All ' + count + ' numbers must add up to ' + groupDigits(total) + '. The ones you gave add up to ' +
+          groupDigits(sum) + ', so the missing one is ' + groupDigits(Math.round(missing * 1000) / 1000) + '.' };
+    }
+  }
+  return null;
+}
+
+/** One door for part two; returns null when nothing fits. */
+function reasonMore(raw) {
+  if (!raw) return null;
+  // "what is 15% of 240", "simplify 18/24", "solve 2x + y = 7 and x - y = 2"
+  const t = String(raw).trim()
+    .replace(/^\s*(?:what is|what's|whats|how much is|how many|calculate|compute|work out|tell me|find|please)\s+/i, '')
+    .trim();
+  if (!t) return null;
+  const order = [solveSystem, solveFactorise, solveShapeExtra, solveSpeed, solveProportion,
+                 solvePercentAny, solveRatio, solveFraction, solveAverage];
+  for (let i = 0; i < order.length; i++) {
+    let r = null;
+    try { r = order[i](t); } catch (e) { r = null; }
+    if (r) return r;
+  }
+  return null;
 }
 
 /* ---------------------------------------------------------------------------
@@ -3413,6 +3876,14 @@ function solveMoney(text) {
 function reason(text) {
   const t = String(text || '').trim();
   if (!t) return null;
+  // part two runs first: its shapes are more specific, so it can never be
+  // shadowed by a looser rule in part one
+  const more = reasonMore(t);
+  if (more) {
+    const step = { intent: 'reason', reasonMore: more };
+    if (more.value !== undefined) step.value = more.value;
+    return step;
+  }
   const shape = solveShape(t);
   if (shape) return { kind: 'shape', shape: shape };
   const quad = solveQuadratic(t);
@@ -3429,6 +3900,165 @@ function reason(text) {
   const nums = solveNumbers(t);
   if (nums) return { kind: 'number', number: nums };
   return null;
+}
+
+
+
+/* ---------------------------------------------------------------------------
+   Explanations: the "why" and "how" questions a facts list cannot answer.
+   Each entry is a short reasoned answer in two or three steps, not a trivia
+   line. Matching is by meaning-carrying keywords, and the most specific entry
+   wins, so "difference between weather and climate" beats plain "weather".
+   --------------------------------------------------------------------------- */
+const EXPLAIN = [
+  {
+    id: 'sky-blue',
+    match: /why (?:is |isn't |isnt )?the sky (?:so )?blue|why is the sky blue|sky blue|blue sky/i,
+    title: 'why the sky is blue',
+    steps: [
+      'Sunlight looks white, but it is every colour mixed together.',
+      'When it enters the air, it hits tiny gas molecules and scatters. Blue light has a shorter wavelength, so it scatters far more than red.',
+      'That scattered blue reaches your eyes from every direction, which is why the whole sky glows blue instead of just the sun.'
+    ],
+    extra: 'At sunset the light travels through much more air, the blue gets scattered away before it reaches you, and what is left is red and orange.'
+  },
+  {
+    id: 'plants-food',
+    match: /how do plants (?:make (?:their )?food|eat|get (?:their )?food|grow)|how does photosynthesis work|what is photosynthesis/i,
+    title: 'how plants make food',
+    steps: [
+      'Plants take in water through their roots and carbon dioxide through tiny holes in their leaves.',
+      'Using the green pigment chlorophyll and energy from sunlight, they join those two into sugar. That process is photosynthesis.',
+      'The plant uses the sugar to grow, and releases oxygen as a leftover, which is the oxygen we breathe.'
+    ],
+    extra: 'The short version of the equation is: carbon dioxide + water + light gives sugar + oxygen.'
+  },
+  {
+    id: 'earthquakes',
+    match: /what causes earthquakes?|why do earthquakes happen|how (?:do )?earthquakes happen|what is an earthquake/i,
+    title: 'what causes earthquakes',
+    steps: [
+      'The Earth\'s outer shell is broken into huge plates that float on softer rock and move a few centimetres a year.',
+      'Where two plates press against each other, the rock bends and stores energy for decades.',
+      'When the rock finally slips, all that stored energy is released at once as waves through the ground, and that is the earthquake.'
+    ],
+    extra: 'The slipping point is the focus, and the place on the surface above it is the epicentre.'
+  },
+  {
+    id: 'seasons',
+    match: /why do we have seasons?|what causes (?:the )?seasons?|why (?:is it|does it get) (?:cold|hot) in (?:winter|summer)|why are there seasons/i,
+    title: 'why there are seasons',
+    steps: [
+      'It is not because the Earth is closer to the Sun. The Earth\'s distance changes by only about 3%, which is far too little.',
+      'It is because the Earth is tilted at about 23.5 degrees. As it goes around the Sun, one half leans towards the Sun and the other leans away.',
+      'The half leaning towards the Sun gets sunlight at a steeper angle and for more hours, so it is summer there while the other half has winter.'
+    ],
+    extra: 'That is also why the seasons are opposite in the northern and southern hemispheres at the same moment.'
+  },
+  {
+    id: 'wifi',
+    match: /how does (?:wifi|wi-fi|wireless internet) work|what is wifi|how do (?:radio waves|mobile phones|phones) work|how does the internet work/i,
+    title: 'how wifi works',
+    steps: [
+      'Wifi is radio. Your router and your phone both have tiny aerials that send and receive radio waves.',
+      'Data is turned into a pattern of waves on a frequency around 2.4 or 5 gigahertz, and the other side turns the pattern back into data.',
+      'The router is also plugged into the internet, so it passes your data along to the wider network and back.'
+    ],
+    extra: 'That is why walls and distance weaken it: they absorb and scatter the radio waves, exactly like the blue sky scatters light.'
+  },
+  {
+    id: 'dreams',
+    match: /why do we dream|what are dreams|what is (?:a )?dream(?:ing)?|do dreams mean anything/i,
+    title: 'why we dream',
+    steps: [
+      'During REM sleep the brain is almost as active as when you are awake, but your body is switched off so you cannot act it out.',
+      'The leading idea is that the brain is sorting the day: replaying memories, linking them to old ones, and practising situations.',
+      'Nobody has proved what dreams are for. What is known is that losing sleep damages memory and mood, so dreaming is part of real work the brain is doing.'
+    ],
+    extra: 'An honest answer includes the uncertainty: the function of dreams is still an open question in neuroscience.'
+  },
+  {
+    id: 'weather-climate',
+    match: /difference between weather and climate|weather versus climate|weather vs climate|what is climate change|what is global warming/i,
+    title: 'weather and climate',
+    steps: [
+      'Weather is what is happening outside right now: today is rainy, this week is hot.',
+      'Climate is the pattern of that weather over many years: what a place usually gets, and how often extremes happen.',
+      'So one cold day does not disprove a warming climate, and one hot day does not prove it. The signal is in the decades, not the days.'
+    ],
+    extra: 'Global warming means the average surface temperature is rising, mostly because burning fuel adds carbon dioxide that traps heat.'
+  },
+  {
+    id: 'rain',
+    match: /why does it rain|what causes rain|how (?:does rain|do clouds) form|why (?:do )?clouds form/i,
+    title: 'why it rains',
+    steps: [
+      'The Sun heats water on the ground, and the water evaporates into invisible vapour in the air.',
+      'As that air rises it cools, and cool air cannot hold as much vapour, so the vapour condenses onto dust into tiny droplets, which is a cloud.',
+      'Droplets bump into each other and grow. When they are heavy enough for gravity to beat the rising air, they fall, and that is rain.'
+    ],
+    extra: 'Hail is the same droplets caught in a strong updraft, frozen and thrown up again until they are too heavy.'
+  },
+  {
+    id: 'sound',
+    match: /why is there (?:thunder|lightning)|what causes thunder|how does sound travel|why can't we hear in space|what is sound/i,
+    title: 'sound and thunder',
+    steps: [
+      'Sound is a pressure wave. Something vibrates and pushes the air next to it, which pushes the next air, and the wave travels outwards.',
+      'In space there is almost no air to push, so there is nothing to carry the wave. Space is silent not because it is empty of things, but because it is empty of a medium for sound.',
+      'Thunder is that pressure wave from lightning. The lightning heats the air to about 30,000 degrees in a fraction of a second, the air expands explosively, and you hear the bang.'
+    ],
+    extra: 'That is also why you see lightning before you hear it: light travels about a million times faster than sound.'
+  },
+  {
+    id: 'moon-phases',
+    match: /why does the moon (?:change (?:shape|phase)s?|have phases)|what are (?:the )?moon phases|why is the moon sometimes (?:full|half)/i,
+    title: 'the phases of the Moon',
+    steps: [
+      'The Moon does not make its own light. It reflects sunlight, and half of it is always lit.',
+      'As the Moon goes around the Earth, we see that lit half from different angles, so the bright shape we see changes.',
+      'It is not the Earth\'s shadow. That only happens during a lunar eclipse, a few times a year.'
+    ],
+    extra: 'The full cycle from full moon to full moon takes about 29.5 days, which is why old calendars counted months by it.'
+  },
+  {
+    id: 'newton-three',
+    match: /newton'?s? (?:three|3) laws?|laws of motion|newton'?s? first law|newton'?s? second law|newton'?s? third law|what are newton'?s? laws/i,
+    title: "Newton's three laws",
+    steps: [
+      'First law: a thing keeps still or keeps moving in a straight line unless a force acts on it. That is why you lurch forward when a bus brakes.',
+      'Second law: force equals mass times acceleration, F = ma. Push the same force on twice the mass and it accelerates half as fast.',
+      'Third law: every action has an equal and opposite reaction. A rocket pushes gas down, and the gas pushes the rocket up.'
+    ],
+    extra: 'The third law is the one people find hardest to believe: the force on each body is the same size, but the lighter body moves more because a = F/m.'
+  },
+  {
+    id: 'ice-float',
+    match: /why does ice float|why (?:does )?ice float on water|why is ice lighter than water/i,
+    title: 'why ice floats',
+    steps: [
+      'Water molecules normally pack close together. When water freezes, the molecules lock into a crystal with open gaps in it.',
+      'Those gaps make ice less dense than liquid water, so a litre of ice weighs less than a litre of water.',
+      'Anything less dense than the liquid around it floats, which is why icebergs float and fish survive under frozen lakes.'
+    ],
+    extra: 'Almost every other substance gets denser when it freezes. Water is the exception, and life here depends on it.'
+  }
+];
+
+/** The best explanation for a question, or null. Most specific match wins. */
+function explainFor(text) {
+  const t = String(text || '');
+  if (!t) return null;
+  let best = null, bestLen = 0;
+  for (let i = 0; i < EXPLAIN.length; i++) {
+    const e = EXPLAIN[i];
+    if (e.match.test(t) && e.id.length + t.length > 0) {
+      // a longer, more specific pattern beats a shorter one
+      const specificity = (e.match.source || '').length;
+      if (specificity > bestLen) { best = e; bestLen = specificity; }
+    }
+  }
+  return best;
 }
 
 /* ------------------------------------------------------------- more topics */
@@ -5214,6 +5844,18 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
 
     async function doQuestion(step, out, meta) {
       if (await askAI(meta.text, out)) return;
+      // a reasoned explanation, before any lookup. This is the answer to
+      // "why is the sky blue", and it is built to be followed, not read once.
+      const explained = explainFor(String(step.raw || meta.text || ''));
+      if (explained) {
+        out.say('Here it is in steps, so you can follow the reasoning.');
+        explained.steps.forEach(function (line, i) { out.say('  ' + (i + 1) + '. ' + line); });
+        if (explained.extra) out.say(explained.extra, { silent: true });
+        // a matching quiz pack, when one exists, so the answer can be tested
+        const pack = knowTopic(explained.id + ' ' + explained.title + ' ' + String(step.raw || ''));
+        if (pack) out.say('Say "quiz me on ' + pack.label + '" when you want to test yourself.', { silent: true });
+        return;
+      }
       if (step.topic && step.qtype !== 'open') {
         let page = null;
         try { page = env.wiki ? await env.wiki(step.topic) : null; } catch (e) { page = null; }
@@ -5233,10 +5875,10 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
     function teachLine(topic, fact) {
       return fact + '\nAsk me "quiz me on ' + topic.label + '" when you want to test yourself.';
     }
-    function nextSeen(topic) {
+    function nextSeen(topic, asked) {
       const key = 'k:' + topic.id;
       const list = mem.seen[key] || [];
-      const f = nextFact(topic, list);
+      const f = nextFact(topic, list, asked);
       const out = list.concat([f.fact]).slice(-40);
       mem.seen[key] = out;
       saveMemory();
@@ -5246,7 +5888,7 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       if (step.topic) {
         const topic = knowTopic(step.topic);
         if (topic) {
-          out.say(nextSeen(topic));
+          out.say(nextSeen(topic, step.raw || step.topic));
           out.say('That came from my built-in notes. For more depth I can look it up on Wikipedia.', { silent: true });
           return;
         }
@@ -5363,6 +6005,13 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
     function doReason(r, out) {
       if (!r) { out.say('I could not work that one out. Try writing it as numbers, like "25 times 4".'); return; }
       function say(text, silent) { out.say(text, { silent: !!silent }); }
+
+      // part two: the shapes people meet in school every day
+      if (r.kind === 'fraction' || r.kind === 'ratio' || r.kind === 'proportion' ||
+          r.kind === 'speed' || r.kind === 'average' || r.kind === 'factor' || r.kind === 'system') {
+        say(r.text);
+        return;
+      }
 
       if (r.kind === 'quadratic') {
         say(r.quad.text);
@@ -6128,11 +6777,12 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
     }
 
     /* ---- a whole knowledge topic ---- */
-    function doKnowledge(topic, out) {
+    function doKnowledge(topic, out, asked) {
       const t = knowTopic(topic);
       if (!t) return false;
+      asked = asked || (typeof topic === 'string' ? topic : '');
       out.say('Here is one thing I know about ' + t.label + ':');
-      out.say(nextSeen(t));
+      out.say(nextSeen(t, asked));
       out.say('Say "more about ' + t.label.replace(/^the /, '') + '" for another fact, or "quiz me on ' + t.label.replace(/^the /, '') + '".', { silent: true });
       return true;
     }
@@ -6235,7 +6885,7 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
           offerSearch(out, String(step.topic || meta.text || '').replace(/[?!.]+$/, ''), office);
           return;
         }
-        if (step.topic && step.qtype !== 'open' && doKnowledge(step.topic, out)) return;
+        if (step.topic && step.qtype !== 'open' && doKnowledge(step.topic, out, meta.text || step.raw)) return;
         return doQuestion(step, out, meta);
       }
       if (it === 'fact') return doFact(step, out);
@@ -6441,7 +7091,7 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       if (it === 'game.stop') return doGame(step, out);
       if (it === 'ask.ai') return doAskAi(step, out);
       if (it === 'capital') return doCapitals(step, out);
-      if (it === 'reason') return doReason(step.reason, out);
+      if (it === 'reason') return doReason(step.reasonMore || step.reason, out);
       if (it === 'convert') return doConvert(step, out);
       if (it === 'average') {
         out.say('The average of those numbers is ' + fmtNumber(Math.round(step.avg.average * 1000) / 1000) + '.');
