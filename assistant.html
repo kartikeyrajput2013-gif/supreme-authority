@@ -3485,8 +3485,212 @@ function reasonMore(raw) {
     .replace(/^\s*(?:what is|what's|whats|how much is|how many|calculate|compute|work out|tell me|find|please)\s+/i, '')
     .trim();
   if (!t) return null;
+  // part three first: "log base 2 of 8" must never be read as a ratio
+  const high = reasonHigher(t);
+  if (high) return high;
   const order = [solveSystem, solveFactorise, solveShapeExtra, solveSpeed, solveProportion,
                  solvePercentAny, solveRatio, solveFraction, solveAverage];
+  for (let i = 0; i < order.length; i++) {
+    let r = null;
+    try { r = order[i](t); } catch (e) { r = null; }
+    if (r) return r;
+  }
+  return null;
+}
+
+/* ---------------------------------------------------------------------------
+   Mathematics, part three: the rest of school.
+   Trigonometry, logarithms, roots, combinations, matrices, vectors and a small
+   derivative. Every answer is either exact or refused; nothing is rounded into
+   a lie, and every trig value is taken from a table written by hand so it can
+   be checked against a textbook.
+   --------------------------------------------------------------------------- */
+
+/** sin/cos/tan for the angles a school paper asks for, in degrees. */
+const TRIG_EXACT = {
+  0:   { sin: 0, cos: 1, tan: 0 },
+  30:  { sin: 0.5, cos: 0.8660254037844386, tan: 0.5773502691896257 },
+  45:  { sin: 0.7071067811865476, cos: 0.7071067811865476, tan: 1 },
+  60:  { sin: 0.8660254037844386, cos: 0.5, tan: 1.7320508075688772 },
+  90:  { sin: 1, cos: 0, tan: null },
+  120: { sin: 0.8660254037844386, cos: -0.5, tan: -1.7320508075688772 },
+  135: { sin: 0.7071067811865476, cos: -0.7071067811865476, tan: -1 },
+  150: { sin: 0.5, cos: -0.8660254037844386, tan: -0.5773502691896257 },
+  180: { sin: 0, cos: -1, tan: 0 },
+  270: { sin: -1, cos: 0, tan: null },
+  360: { sin: 0, cos: 1, tan: 0 }
+};
+
+function tidy(n) {
+  // 0.5 prints as 0.5, 3.0000000000000004 as 3, and 1.7320508075 as 1.7321
+  if (!isFinite(n)) return String(n);
+  const r = Math.round(n * 1e10) / 1e10;
+  if (Math.abs(r - Math.round(r)) < 1e-9) return String(Math.round(r));
+  return String(Math.round(r * 10000) / 10000);
+}
+
+/** "sin 30", "cos of 60 degrees", "tan 45" -> a value, or null. */
+function solveTrig(text) {
+  const m = String(text || '').toLowerCase().match(/^(sin|cos|tan)\s*(?:of\s*)?(?:(\d+(?:\.\d+)?)\s*(?:degrees?|deg|°)?)$/);
+  if (!m) return null;
+  const fn = m[1], angle = Number(m[2]);
+  const row = TRIG_EXACT[angle];
+  if (!row) return null;
+  const v = row[fn];
+  if (v === null) {
+    return { kind: 'trig', value: Infinity, text: 'The ' + fn + ' of ' + angle + ' degrees is not defined: at that angle the same point is straight above (or below), so there is no horizontal part to divide by.' };
+  }
+  const exact = { 'sin 30': '1/2', 'sin 90': '1', 'sin 0': '0', 'cos 60': '1/2', 'cos 0': '1', 'cos 90': '0',
+                  'tan 45': '1', 'tan 0': '0' }[fn + ' ' + angle];
+  return {
+    kind: 'trig',
+    value: v,
+    text: 'The ' + fn + ' of ' + angle + ' degrees is ' + tidy(v) + (exact ? ' (exactly ' + exact + ')' : '') + '.'
+  };
+}
+
+/** "log 100", "log base 2 of 8", "ln e" -> a value, or null. */
+function solveLog(text) {
+  const t = String(text || '').toLowerCase().trim();
+  let m = t.match(/^log\s*base\s*(\d+(?:\.\d+)?)\s*(?:of\s*)?(\d+(?:\.\d+)?)$/);
+  if (m) {
+    const b = Number(m[1]), x = Number(m[2]);
+    if (b <= 0 || b === 1 || x <= 0) return null;
+    const v = Math.log(x) / Math.log(b);
+    const rounded = Math.round(v * 1e10) / 1e10;
+    const whole = Math.abs(rounded - Math.round(rounded)) < 1e-9;
+    return { kind: 'log', value: rounded, text: 'log base ' + b + ' of ' + x + ' is ' + tidy(rounded) +
+      (whole ? ', because ' + b + ' to the power ' + Math.round(rounded) + ' is ' + x + '.' : '.') };
+  }
+  m = t.match(/^(log|ln)\s*(\d+(?:\.\d+)?)$/);
+  if (m) {
+    const x = Number(m[2]);
+    if (x <= 0) return null;
+    const base = m[1] === 'ln' ? Math.E : 10;
+    const v = Math.log(x) / Math.log(base);
+    const rounded = Math.round(v * 1e10) / 1e10;
+    const whole = Math.abs(rounded - Math.round(rounded)) < 1e-9;
+    const name = m[1] === 'ln' ? 'The natural log' : 'log (base 10)';
+    return { kind: 'log', value: rounded, text: name + ' of ' + x + ' is ' + tidy(rounded) +
+      (whole ? ', because ' + (m[1] === 'ln' ? 'e' : '10') + ' to the power ' + Math.round(rounded) + ' is ' + x + '.' : '.') };
+  }
+  return null;
+}
+
+/** nCr and nPr: "5c2", "ncr 5 2", "5 choose 2", "5p2". */
+function solveChoose(text) {
+  const t = String(text || '').toLowerCase().trim();
+  let m = t.match(/^(?:ncr\s*|choose\s*)?(\d+)\s*(?:c|choose)\s*(\d+)$/) ||
+          t.match(/^ncr\s*(\d+)\s+(\d+)$/) || t.match(/^(\d+)\s*choose\s*(\d+)$/);
+  if (m) {
+    const n = Number(m[1]), r = Number(m[2]);
+    if (r > n || n > 30) return null;
+    let v = 1;
+    for (let i = 1; i <= r; i++) v = (v * (n - r + i)) / i;
+    v = Math.round(v);
+    return { kind: 'choose', value: v, text: n + ' choose ' + r + ' is ' + v + ': the number of ways to pick ' + r +
+      ' things out of ' + n + ' when the order does not matter.' };
+  }
+  m = t.match(/^(?:npr\s*)?(\d+)\s*p\s*(\d+)$/) || t.match(/^npr\s*(\d+)\s+(\d+)$/);
+  if (m) {
+    const n = Number(m[1]), r = Number(m[2]);
+    if (r > n || n > 20) return null;
+    let v = 1;
+    for (let i = 0; i < r; i++) v *= (n - i);
+    return { kind: 'perm', value: v, text: n + ' permute ' + r + ' is ' + v + ': the number of ways to arrange ' + r +
+      ' things out of ' + n + ' when the order does matter.' };
+  }
+  return null;
+}
+
+/** "determinant of 1 2 3 4", "matrix 1 2 3 4 determinant". */
+function solveMatrix(text) {
+  const t = String(text || '').toLowerCase();
+  const m = t.match(/(?:determinant|det)\s*(?:of\s*)?(?:the\s*)?(?:matrix\s*)?(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)/);
+  if (!m) return null;
+  const [a, b, c, d] = m.slice(1).map(Number);
+  const det = a * d - b * c;
+  return {
+    kind: 'matrix', value: det,
+    text: 'The determinant of [' + a + ' ' + b + '; ' + c + ' ' + d + '] is (' + a + ' x ' + d + ') - (' + b + ' x ' + c +
+      ') = ' + tidy(a * d) + ' - ' + tidy(b * c) + ' = ' + tidy(det) + '.'
+  };
+}
+
+/** "dot product of 1 2 3 and 4 5 6", "1 2 3 dot 4 5 6". */
+function solveVector(text) {
+  const t = String(text || '').toLowerCase().replace(/[(),[\]]/g, ' ');
+  const m = t.match(/(?:dot product(?: of)?\s*)?(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*(?:dot|\.|and)\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/);
+  if (!m) return null;
+  const a = m.slice(1, 4).map(Number), b = m.slice(4, 7).map(Number);
+  const dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const mag = Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]) * Math.sqrt(b[0] * b[0] + b[1] * b[1] + b[2] * b[2]);
+  let extra = '';
+  if (mag > 0) extra = ' The angle between them is about ' +
+    (Math.round(Math.acos(Math.max(-1, Math.min(1, dot / mag))) * 180 / Math.PI * 10) / 10) + ' degrees.';
+  const pairs = [a[0] + 'x' + b[0], a[1] + 'x' + b[1], a[2] + 'x' + b[2]];
+  return {
+    kind: 'vector', value: dot,
+    text: 'The dot product multiplies matching parts and adds them: ' + pairs.join(' + ') + ' = ' +
+      [a[0] * b[0], a[1] * b[1], a[2] * b[2]].map(tidy).join(' + ') + ' = ' + tidy(dot) + '.' + extra
+  };
+}
+
+/** A term-by-term derivative of a polynomial. Nothing clever, nothing wrong. */
+function solveDerivative(text) {
+  const source = String(text || '').toLowerCase();
+  // an equation is somebody else's job. Check the words BEFORE the spaces are
+  // stripped, otherwise "equals" becomes "equals" with no word edges left.
+  if (source.indexOf('=') >= 0 || /\bequals\b/.test(source)) return null;
+  const t = source
+    .replace(/^(?:what is |find |calculate |work out |the )?(?:the )?(?:derivative|differentiate)\s*(?:of\s*)?/, '')
+    .replace(/\s+/g, '');
+  if (!t) return null;
+  // a plain constant is the one case with no x and still an answer: d/dx of 7 is 0
+  if (/^-?\d*\.?\d+$/.test(t)) {
+    return { kind: 'derivative', value: '0',
+      text: 'A plain number does not change, so its derivative is 0.' };
+  }
+  if (!/[x]/.test(t)) return null;
+  // split into signed terms: 3x^2, -5x, +7
+  const terms = t.replace(/-/g, '+-').split('+').filter(Boolean);
+  const out = [];
+  let any = false;
+  for (const term of terms) {
+    let m = term.match(/^(-?\d*\.?\d*)\*?x(?:\^(-?\d+))?$/) || term.match(/^(-?\d*\.?\d*)\*?x/);
+    if (m) {
+      let coef = m[1];
+      let coefNum = coef === '' || coef === '+' ? 1 : coef === '-' ? -1 : Number(coef);
+      if (!isFinite(coefNum)) return null;
+      let power = m[2] !== undefined ? Number(m[2]) : 1;
+      if (!isFinite(power)) return null;
+      if (power === 0) { any = true; out.push('0'); continue; }
+      const nc = coefNum * power, np = power - 1;
+      any = true;
+      if (np === 0) out.push(tidy(nc));
+      else if (np === 1) out.push(tidy(nc) + 'x');
+      else out.push(tidy(nc) + 'x^' + np);
+      continue;
+    }
+    let c = term.match(/^(-?\d*\.?\d+)$/);
+    if (c) { any = true; out.push('0'); continue; }
+    return null;
+  }
+  if (!any) return null;
+  const clean = out.filter((s) => s !== '0');
+  const result = clean.length ? clean.join(' + ').replace(/\+ -/g, '- ') : '0';
+  return {
+    kind: 'derivative', value: result,
+    text: 'Differentiating term by term (multiply by the power, then lower the power by one): the derivative is ' + result + '.'
+  };
+}
+
+function reasonHigher(raw) {
+  const t = String(raw || '').trim()
+    .replace(/^\s*(?:what is|what's|whats|how much is|calculate|compute|work out|tell me|find|please|so)\s+/i, '')
+    .trim();
+  if (!t) return null;
+  const order = [solveTrig, solveLog, solveChoose, solveMatrix, solveVector, solveDerivative];
   for (let i = 0; i < order.length; i++) {
     let r = null;
     try { r = order[i](t); } catch (e) { r = null; }
@@ -6006,9 +6210,11 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       if (!r) { out.say('I could not work that one out. Try writing it as numbers, like "25 times 4".'); return; }
       function say(text, silent) { out.say(text, { silent: !!silent }); }
 
-      // part two: the shapes people meet in school every day
+      // part two and part three: the shapes people meet in school every day
       if (r.kind === 'fraction' || r.kind === 'ratio' || r.kind === 'proportion' ||
-          r.kind === 'speed' || r.kind === 'average' || r.kind === 'factor' || r.kind === 'system') {
+          r.kind === 'speed' || r.kind === 'average' || r.kind === 'factor' || r.kind === 'system' ||
+          r.kind === 'trig' || r.kind === 'log' || r.kind === 'choose' || r.kind === 'perm' ||
+          r.kind === 'matrix' || r.kind === 'vector' || r.kind === 'derivative') {
         say(r.text);
         return;
       }
@@ -8335,7 +8541,9 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
 
   /* ------------------------------------------------------- wave drawing */
   const canvas = document.getElementById('wave');
-  const ctx = canvas.getContext('2d');
+  // A browser can refuse a 2D context (old build, canvas disabled, no GPU).
+  // The wave is decoration: if it is unavailable the page must still work.
+  const ctx = (canvas && canvas.getContext) ? canvas.getContext('2d') : null;
   const waveValue = document.getElementById('waveValue');
   const waveLabel = document.getElementById('waveLabel');
   const wave = {
@@ -8356,6 +8564,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
       return { w: w, h: h };
     },
     draw() {
+      if (!ctx) return;
       const s = this.size();
       ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
       ctx.clearRect(0, 0, s.w, s.h);

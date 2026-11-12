@@ -583,6 +583,25 @@ The eleven are: blue sky, photosynthesis, earthquakes, seasons, wi-fi and radio,
 dreams, weather against climate, rain, sound and thunder, the phases of the Moon,
 why ice floats, and Newton's three laws.
 
+### The rest of school: trigonometry, logs, combinations, matrices, derivatives
+
+```
+sin 30                      -> 0.5 (exactly 1/2)
+tan 90                      -> not defined, and why
+log 100                     -> 2, because 10 to the power 2 is 100
+log base 2 of 8             -> 3, because 2 to the power 3 is 8
+5c2  /  5 choose 2          -> 10
+5p2                         -> 20
+determinant of 1 2 3 4      -> -2
+dot product of 1 2 3 and 4 5 6 -> 32, with the working and the angle
+derivative of 3x^2 + 5x + 7 -> 6x + 5
+derivative of 7             -> 0, a plain number does not change
+```
+
+The trig values come from a table written by hand, so they can be checked
+against a textbook. Anything outside the table is refused rather than rounded
+into a plausible-looking answer.
+
 ### Geometry
 
 | You ask | She says |
@@ -1108,7 +1127,8 @@ To undo everything: rename `assistant-old-<date>.html` back to
 | `INSTALL_SOPHIA.bat` | One-step installer: copies the files and makes a Desktop shortcut. |
 | `Install_Sophia.ps1` | The PowerShell script behind the installer. |
 | `vega.ico` | Her icon, in six sizes. The installer puts it in the folder and on the shortcut. |
-| `tests/brain.test.js` | 102 tests for what Vega understands. `node --test tests/brain.test.js` |
+| `tests/brain.test.js` | 106 tests for what Vega understands. `node --test tests/brain.test.js` |
+| `tests/page.test.mjs` | 4 tests that load the real `assistant.html` and type into the real box. Needs `npm i jsdom`; skips politely without it. |
 | `tests/test_helper.py` | 57 tests for the helper, the file search, the installer and the server. `python3 -m unittest discover tests` |
 
 Old versions: `git show 09ca826:assistant.html` is the file exactly as you
@@ -1139,9 +1159,10 @@ the Vega name, the AI connections and the games).
 * Windows-only for laptop control. On a Mac or Linux the helper runs in
   preview mode only.
 
-**The full list, in a table, is in [`LIMITATIONS.md`](LIMITATIONS.md)** — twenty
-disadvantages with how bad each one is and how it could be fixed. It is written
-to be read by you, not to make the project look good.
+**The full list, in a table, is in [`LIMITATIONS.md`](LIMITATIONS.md)** — the
+disadvantages ordered from lowest to supreme, with the root cause last and how
+each one could be fixed. It is written to be read by you, not to make the
+project look good.
 
 ---
 

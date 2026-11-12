@@ -1438,3 +1438,62 @@ test('the fact she picks answers the actual question asked', async () => {
     assert.match(r.text, re, q);
   }
 });
+
+test('trigonometry uses a hand-checked table, never a guess', async () => {
+  const v = Brain.create({});
+  const cases = [
+    ['sin 30', /0\.5/], ['cos 60', /0\.5/], ['tan 45', /1\b/],
+    ['sin 90', /1\b/], ['cos 90', /0\b/], ['cos 180', /-1/], ['sin 150', /0\.5/]
+  ];
+  for (const [q, re] of cases) {
+    const r = await v.handle(q);
+    assert.match(r.text, re, q);
+  }
+  const t = await v.handle('tan 90');
+  assert.match(t.text, /not defined/, 'tan 90 is refused honestly');
+});
+
+test('logarithms and combinations are right, and log is never read as a ratio', async () => {
+  const v = Brain.create({});
+  let r = await v.handle('log 100');
+  assert.match(r.text, /2\b/);
+  assert.match(r.text, /10 to the power 2/);
+
+  // this one used to be answered as "2 out of 8 is 25%"
+  r = await v.handle('log base 2 of 8');
+  assert.match(r.text, /3\b/);
+  assert.doesNotMatch(r.text, /25%/);
+
+  r = await v.handle('5c2');
+  assert.match(r.text, /\b10\b/);
+  r = await v.handle('5p2');
+  assert.match(r.text, /\b20\b/);
+});
+
+test('matrices, vectors and a polynomial derivative', async () => {
+  const v = Brain.create({});
+  let r = await v.handle('determinant of 1 2 3 4');
+  assert.match(r.text, /-2/);
+
+  r = await v.handle('dot product of 1 2 3 and 4 5 6');
+  assert.match(r.text, /32/);
+  assert.match(r.text, /1x4 \+ 2x5 \+ 3x6/, 'the working shows the matching parts');
+
+  r = await v.handle('derivative of 3x^2 + 5x + 7');
+  assert.match(r.text, /6x \+ 5/);
+
+  r = await v.handle('derivative of 7');
+  assert.match(r.text, /\b0\b/, 'a constant differentiates to zero');
+});
+
+test('the new solvers never steal algebra', async () => {
+  // the derivative solver matched "x/4 = 9" and quadratics before this guard
+  const v = Brain.create({});
+  let r = await v.handle('x/4 = 9');
+  assert.match(r.text, /x = 36/);
+  assert.doesNotMatch(r.text, /derivative/i);
+
+  r = await v.handle('x squared plus 3x minus 10 equals 0');
+  assert.match(r.text, /x = -5/);
+  assert.doesNotMatch(r.text, /derivative/i);
+});
