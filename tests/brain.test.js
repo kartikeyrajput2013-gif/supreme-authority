@@ -1497,3 +1497,82 @@ test('the new solvers never steal algebra', async () => {
   assert.match(r.text, /x = -5/);
   assert.doesNotMatch(r.text, /derivative/i);
 });
+
+test('the trust dial is real: strict refuses shutdown, low runs without asking', async () => {
+  const calls = [];
+  const store = { d: null, load() { return this.d; }, save(v) { this.d = v; } };
+  const v = Brain.create({
+    store,
+    mode: () => 'laptop',
+    helper: async (a, p) => { calls.push(a); return { ok: true, opened: (p && p.name) || 'x' }; }
+  });
+
+  // default is normal: she must ask, not act
+  let r = await v.handle('shut down');
+  assert.match(r.text, /Do you want me to shut down/);
+  assert.strictEqual(calls.length, 0, 'nothing ran before the confirmation');
+
+  r = await v.handle('trust strict');
+  assert.match(r.text, /Strict/);
+  r = await v.handle('shut down');
+  assert.match(r.text, /Strict, so I do not/);
+  assert.strictEqual(calls.length, 0, 'strict never runs it');
+
+  r = await v.handle('trust low');
+  r = await v.handle('shut down');
+  assert.strictEqual(calls.length, 1, 'low runs it without asking');
+  assert.strictEqual(calls[0], 'shutdown');
+
+  // the choice survives a restart
+  const again = Brain.create({ store, mode: () => 'laptop', helper: async () => ({ ok: true }) });
+  assert.match((await again.handle('trust')).text, /Low/);
+});
+
+test('the action log records what she really did, and can be erased', async () => {
+  const store = { d: null, load() { return this.d; }, save(v) { this.d = v; } };
+  const v = Brain.create({
+    store,
+    mode: () => 'laptop',
+    helper: async (a, p) => ({ ok: true, opened: (p && p.name) || (p && p.url) || 'x' })
+  });
+
+  let r = await v.handle('what have you done');
+  assert.match(r.text, /not actually done anything/);
+
+  await v.handle('open notepad');
+  await v.handle('open youtube');
+  r = await v.handle('what have you done');
+  assert.match(r.text, /Opened an app/);
+  assert.match(r.text, /notepad/);
+  assert.match(r.text, /Opened a website/);
+
+  r = await v.handle('erase the log');
+  assert.match(r.text, /empty again/);
+  r = await v.handle('what have you done');
+  assert.match(r.text, /not actually done anything/);
+});
+
+test('a failed action is logged as failed, not hidden', async () => {
+  const store = { d: null, load() { return this.d; }, save(v) { this.d = v; } };
+  const v = Brain.create({ store, mode: () => 'laptop', helper: async () => ({ ok: false, error: 'not_found' }) });
+  await v.handle('open notepad');
+  const r = await v.handle('what have you done');
+  assert.match(r.text, /not_found/, 'the failure is in the log');
+});
+
+test('"and 30" reuses the last sum instead of being ignored', async () => {
+  const v = Brain.create({});
+  await v.handle('25 times 4');
+  let r = await v.handle('and 30');
+  assert.match(r.text, /120/, 'thirty times four');
+
+  await v.handle('what is 15% of 200');
+  r = await v.handle('and 300');
+  assert.match(r.text, /600/, 'fifteen percent of three hundred');
+});
+
+test('a follow-up with no previous sum does not invent one', async () => {
+  const v = Brain.create({});
+  const r = await v.handle('and 30');
+  assert.doesNotMatch(r.text, /120/);
+});

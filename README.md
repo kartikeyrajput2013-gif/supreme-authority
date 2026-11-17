@@ -1,4 +1,4 @@
-# Vega &mdash; personal AI assistant (version 3.5)
+# Vega &mdash; personal AI assistant (version 3.6)
 
 **Vega** is the new name of the assistant inside `assistant.html` (she was Nova in 3.0 and Sophia before that). She is the
 same helper you already know, with a new name and a lot more to do: she opens
@@ -15,6 +15,14 @@ right way. Her files still live under their old names (`sophia_helper.py`,
 It is made for your laptop: Windows 10 Pro, Intel Core i3-4005U, 4 GB RAM,
 1366 x 768. Nothing is installed, nothing is downloaded, and it works offline
 except for the things that need the internet (websites, Wikipedia, voice).
+
+**What 3.6 changed.** She now has **the three things a "Jarvis"-class assistant
+is judged on** and Vega did not have: a **trust dial** you set (low, normal,
+strict) that decides whether she may shut the laptop down at all; an **action
+log** of every real thing she did, which you can read and erase; and a **local
+model** option, so she can answer any question on your own laptop through
+Ollama with no key and no bill. She also understands follow-ups: after
+`25 times 4`, `and 30` means `30 times 4`.
 
 **What 3.5 changed.** She can now work out about twice as much school maths on
 her own &mdash; fractions with mixed numbers, ratio and proportion, percent in
@@ -37,7 +45,7 @@ first one is the one almost everybody wants.
 | The file | Size | Use it when |
 | --- | --- | --- |
 | **`Vega_Install_One_File.bat`** | about 1.5 MB | **Normal case.** One file, nothing to unzip, no folder to lose. |
-| **`Vega-3.5.zip`** | about 360 KB | A browser or antivirus refuses `.bat` downloads, or you want to read the files first. |
+| **`Vega-3.6.zip`** | about 365 KB | A browser or antivirus refuses `.bat` downloads, or you want to read the files first. |
 
 Everything else on the page (the `.html`, the `.py`, the `.ps1`) is the same
 content **for reading**, not for clicking. If you download those separately you
@@ -64,9 +72,9 @@ will get six files that do not know each other.
 8. It asks where to install her (press Enter to accept `C:\Users\You\Vega`),
    unpacks everything, makes the Desktop shortcut, and offers to start her.
 
-### Downloading `Vega-3.5.zip` instead
+### Downloading `Vega-3.6.zip` instead
 
-1. Same page. Find **`Vega-3.5.zip`** in the list.
+1. Same page. Find **`Vega-3.6.zip`** in the list.
 2. Click it, then click the **download icon** at the top right.
 3. In `Downloads`, **right-click the zip and choose Extract All**, then Extract.
    Do not run anything from inside the zip; Windows cannot install from there.
@@ -787,6 +795,86 @@ works with no key at all.
 
 ---
 
+## 3a-ter. The three things a Jarvis-class assistant has (new in 3.6)
+
+Every serious Jarvis project is judged on three things beyond conversation.
+Vega 3.5 had none of them. All three are here now, and none of them needs a key.
+
+### 1. A trust dial you set, not a surprise
+
+```
+You:  trust
+Vega: My trust level is Normal. She asks before anything that cannot be undone:
+      shutdown, restart, sleep, sign out. Everything else is free.
+      You can say "trust low", "trust normal" or "trust strict" to change it.
+
+You:  trust strict
+Vega: Trust level is now Strict. She never shuts down or restarts. She still
+      opens apps, finds files and answers questions.
+
+You:  shut down
+Vega: My trust level is Strict, so I do not shut down the laptop at all.
+      Say "trust normal" and I will ask you first instead.
+```
+
+| Level | Shutdown, restart, sleep | Everything else |
+| --- | --- | --- |
+| **Low** | runs immediately, and says so | free |
+| **Normal** | asks "say yes to confirm" first | free |
+| **Strict** | refused outright | free |
+
+The setting is saved, so it survives a restart. An AI model can never trigger
+these commands at all, at any level &mdash; only you can.
+
+### 2. An honest log of what she really did
+
+```
+You:  what have you done
+Vega: Here is every real thing I did, newest first:
+        2026-11-17 10:50  Opened a website in its own window - youtube.com
+        2026-11-17 10:50  Opened an app - notepad
+      Say "erase the log" and I will forget the whole list.
+```
+
+Every call that reaches your laptop is written down **at the one place all of
+them pass through**, so nothing can slip past it. Failures are logged too, with
+the reason (`not_found`, `unreachable`). It holds the last 300 actions, stays on
+your laptop, and `erase the log` really erases it.
+
+### 3. A local model: any question, no key, no bill
+
+Settings &rarr; **AI model for open questions** &rarr;
+**Local model on this laptop - Ollama**. The address fills in by itself.
+
+```
+1. Install Ollama for Windows from ollama.com
+2. In a terminal:   ollama pull qwen2.5:1.5b
+3. Then:            ollama serve
+4. In Vega: choose the local model, press Test connection, pick the model
+```
+
+The honest part, which the reels leave out:
+
+* A model small enough for this laptop is **slower and weaker** than a paid one.
+  A 1.5B model fits in 4 GB; a 70B model does not, and no setting changes that.
+* Windows may block the page from reaching `localhost`. If Test connection
+  fails, that is the cause, not your key (there is no key).
+* It is genuinely free and genuinely private: nothing leaves the laptop.
+
+### And follow-ups
+
+```
+You: 25 times 4
+Vega: 25 times 4 is 100 (100).
+You: and 30
+Vega: Same sum with 30 instead:
+      30 times 4 is 120 (120).
+```
+
+This also works for percentages: after `15% of 200`, `and 300` gives `600`.
+
+---
+
 ## 3a-bis. Putting real ChatGPT inside the window (new in 3.4)
 
 There are two different things and people mix them up constantly:
@@ -1098,7 +1186,7 @@ the laptop.
 I cannot reach your laptop from here: nothing on my side can open your folders
 or install anything for you. So the download installs itself.
 
-1. Download **`Vega-3.5.zip`** from GitHub and unzip it.
+1. Download **`Vega-3.6.zip`** from GitHub and unzip it.
 2. Double-click **`INSTALL_SOPHIA.bat`** inside the unzipped folder. (If you
    prefer one single file, download `Vega_Install_One_File.bat` instead and
    double-click that; it does the same thing and unpacks itself.)
@@ -1127,7 +1215,7 @@ To undo everything: rename `assistant-old-<date>.html` back to
 | `INSTALL_SOPHIA.bat` | One-step installer: copies the files and makes a Desktop shortcut. |
 | `Install_Sophia.ps1` | The PowerShell script behind the installer. |
 | `vega.ico` | Her icon, in six sizes. The installer puts it in the folder and on the shortcut. |
-| `tests/brain.test.js` | 106 tests for what Vega understands. `node --test tests/brain.test.js` |
+| `tests/brain.test.js` | 111 tests for what Vega understands. `node --test tests/brain.test.js` |
 | `tests/page.test.mjs` | 4 tests that load the real `assistant.html` and type into the real box. Needs `npm i jsdom`; skips politely without it. |
 | `tests/test_helper.py` | 57 tests for the helper, the file search, the installer and the server. `python3 -m unittest discover tests` |
 
