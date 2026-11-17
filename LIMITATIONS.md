@@ -1,4 +1,4 @@
-# Vega 3.5 — the disadvantages, ordered from lowest to supreme
+# Vega 3.6 — the disadvantages, ordered from lowest to supreme
 
 Read this table from the top down: everything near the top is small and mostly
 fixed, and the rows at the **bottom** are the ones that actually matter. The
@@ -22,15 +22,15 @@ says so and gives the before/after.
 | 8 | 8 | **No updates, no crash reporting** | If 3.5 has a fault, nothing tells me. You have to notice and say so. | **Medium** — this is how two bugs survived into a release | Yes, with a version check. Not built yet. |
 | 9 | 9 | **Tuned for one laptop** | Windows 10, i3-4005U, 4 GB RAM, 1366×768. It runs elsewhere but was optimised for that screen and that little memory. | **Medium** — it is your machine, so the tuning fits | Yes, but there is no reason to. |
 | 10 | 10 | **One 602 KB HTML file** | All her logic is in `assistant.html` (~8,970 lines). Editing one half can break the other, and no build step catches it. | **Medium** — invisible to you, painful to maintain | **Partly done.** Two new tools (`rebuild_installer.py`, `verify_payloads.py`) stop the release from drifting. |
-| 11 | 11 | **Shutdown / restart / sleep have no undo** | She asks "say yes to confirm" and warns that unsaved work is lost, but after yes there is no undo. | **Medium** — guarded, but irreversible | No. The operating system has no undo. |
-| 12 | 12 | **The helper is genuinely powerful** | Shutdown, volume, brightness, apps, files. Protected by a random token, a host check, an origin check and a site check, and it listens on localhost only — but close the black window when done. | **Medium** — the most powerful part of the app | Partly. Keep the checks; never run it on a shared machine. |
+| 11 | 11 | **Shutdown / restart / sleep have no undo** | At **Normal** she asks "say yes to confirm" and warns that unsaved work is lost; at **Strict** she refuses outright; at **Low** she does it without asking. | **Medium — now your choice** | No undo exists, but 3.6 makes the risk a setting you own instead of a surprise. |
+| 12 | 12 | **The helper is genuinely powerful** | Shutdown, volume, brightness, apps, files. Protected by a random token, a host check, an origin check and a site check, and it listens on localhost only. | **Medium — reduced in 3.6** | **Partly done.** 3.6 added a trust dial (Strict refuses shutdown outright) and a log of every real action, so its power is now visible and bounded. Still: close the black window when done. |
 | 13 | 13 | **No Gmail login, no account counting** | She can open Gmail in your browser. She cannot log in, read your mail, or count your saved accounts. | **Medium** — but by design | No, and it should not be. It would need your password. |
 | 14 | 14 | **Windows + Python only for laptop control** | Shutdown, restart, sleep, lock, volume, brightness, opening apps and reading files need Windows **and** Python. On a phone or a Mac she can only open websites. | **Medium** | Only by rewriting the helper per platform. |
 | 15 | 15 | **Maths still has a ceiling** | 3.5 added trigonometry, logs, roots, `nCr`/`nPr`, 2×2 determinants, 3-D dot products and a polynomial derivative. Still missing: integration, 3×3 matrices, sine/cosine rules, statistics beyond the mean, and proof writing. She returns *null* rather than guessing. | **Medium** — the ceiling moved up a lot, but it is still a ceiling | Yes, one solver at a time. |
 | 16 | 16 | **Every message with a real key costs money** | The `/models` test button is free; talking is billed to your account. | **Medium–High** — it is a money limit, not a feature limit | No. That is how AI services price. Check the price first. |
 | 17 | 17 | **The API key sits in the browser** | Stored in this browser's `localStorage` on this laptop and sent straight to the AI service. Not encrypted. | **High** — fine at home, wrong on a shared or college PC | No, without a server to keep the secret. |
 | 18 | 18 | **Not a real language model, and it needs your own key for open questions** | Without a key she answers from ~9 knowledge packs, 11 written explanations and the maths solvers. "Who won the world cup" → *"I cannot answer that by myself yet."* With a key, free-form answers work — at your cost, with your key. | **High to start, reduced in 3.5** | **Partly.** The offline answer set roughly doubled, but a general assistant still needs a key. |
-| **19** | **19** | **THE SUPREME LIMIT: she has no model of her own** | Everything above is a consequence of this one line. She cannot learn from a conversation, cannot hold a long argument, cannot write an essay from a blank page, and cannot know anything that was not written into her by hand or fetched live. The maths solvers are exact because they are narrow; the moment a question leaves their shape, the intelligence stops. | **Supreme — this is the root cause, not a symptom** | **Not without a server and a budget.** A key borrows somebody else's model; it does not give her one. Any claim of "10000% more intelligence" would be a lie, because this row would still be true. |
+| **19** | **19** | **THE SUPREME LIMIT: she has no model of her own** | Everything above is a consequence of this one line. She cannot learn from a conversation, cannot hold a long argument, cannot write an essay from a blank page, and cannot know anything that was not written into her by hand or fetched live. The maths solvers are exact because they are narrow; the moment a question leaves their shape, the intelligence stops. | **Supreme — this is the root cause, not a symptom** | **Reduced in 3.6, not removed.** The new local-model option gives her a real general model with no key and no bill, if you install Ollama. It does not give her a *good* one: a model small enough for 4 GB of RAM is weaker than a paid service. A key borrows somebody else's model; Ollama borrows a small one you run yourself. Neither gives her a mind of her own, and any claim of "10000% more intelligence" would still be a lie. |
 
 ## Reading the table honestly
 
@@ -59,6 +59,19 @@ says so and gives the before/after.
 
 The last two are why row 10 and row 15 can be rated lower than they were when
 the first version of this table was written.
+
+### What 3.6 actually raised
+
+| Was | Now |
+| --- | --- |
+| Shutdown ran on a yes/no question with no setting above it | A **trust dial** (low / normal / strict) that Strict uses to refuse outright |
+| No record of what she had done | An **action log** of the last 300 real actions, including failures, which you can read and erase |
+| A general model meant paying somebody | A **local model** option (Ollama) with no key and no bill |
+| `and 30` after `25 times 4` was ignored | `120`, with the working |
+
+Three of these four close gaps the first table listed as open. The fourth
+(row 19) is only reduced, and saying otherwise would be the exact dishonesty
+this file exists to avoid.
 
 ## What is *not* a disadvantage
 

@@ -782,6 +782,7 @@
         <option value="builtin">Built-in brain only (no key, private)</option>
         <option value="gemini">Google Gemini (API key)</option>
         <option value="openai">OpenAI-compatible (API key)</option>
+        <option value="ollama">Local model on this laptop - Ollama (free, no key)</option>
       </select>
       <div class="hint" id="providerHint">The built-in brain handles commands, maths, memory and small talk. An AI model adds free-form answers to questions it does not know.</div>
     </div>
@@ -920,7 +921,7 @@
 const SophiaBrain = (function () {
   'use strict';
 
-  const VERSION = '3.5.0';
+  const VERSION = '3.6.0';
 
   /* ---------------------------------------------------------------- helpers */
   function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
@@ -5045,7 +5046,9 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
         moods: Array.isArray(m.moods) ? m.moods.filter(function (x) { return x && typeof x.f === 'string'; }) : [],
         seen: m.seen && typeof m.seen === 'object' ? m.seen : {},
         quiz: m.quiz && typeof m.quiz === 'object' ? Object.assign({ score: 0, asked: 0, streak: 0, best: 0 }, m.quiz) : { score: 0, asked: 0, streak: 0, best: 0 },
-        player: playerShape(m.player)
+        player: playerShape(m.player),
+        trust: typeof m.trust === 'string' && ['low', 'normal', 'strict'].indexOf(m.trust) >= 0 ? m.trust : 'normal',
+        audit: Array.isArray(m.audit) ? m.audit.filter(function (x) { return x && typeof x.what === 'string'; }).slice(0, 300) : []
       };
     }
     function saveMemory() { try { if (env.store && env.store.save) env.store.save(mem); } catch (e) { /* storage full or blocked */ } }
@@ -5092,12 +5095,132 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
 
     async function helper(action, params) {
       if (!env.helper) return { ok: false, error: 'no_helper' };
+      const label = helperLabel(action, params);
       try {
         const r = await env.helper(action, params || {});
-        return r && typeof r === 'object' ? r : { ok: false, error: 'bad_response' };
-      } catch (e) { return { ok: false, error: 'unreachable' }; }
+        const good = r && typeof r === 'object' ? r : { ok: false, error: 'bad_response' };
+        // every real action lands in the log, success or failure
+        auditAdd(label.what, label.detail, good.ok ? (good.preview ? 'preview' : 'ok') : (good.error || 'failed'));
+        return good;
+      } catch (e) {
+        auditAdd(label.what, label.detail, 'unreachable');
+        return { ok: false, error: 'unreachable' };
+      }
+    }
+
+    /** Turn a helper call into words a person can read back later. */
+    function helperLabel(action, params) {
+      const p = params || {};
+      const names = {
+        shutdown: ['Shut down the laptop'], restart: ['Restarted the laptop'], sleep: ['Put the laptop to sleep'],
+        lock: ['Locked the laptop'], signout: ['Signed out of Windows'], cancel_shutdown: ['Cancelled the shutdown'],
+        volume: ['Changed the volume'], brightness: ['Changed the brightness'], open_app: ['Opened an app'],
+        close_app: ['Closed an app'], screenshot: ['Took a screenshot'], find_file: ['Searched your folders'],
+        open_file: ['Opened a file'], open_path: ['Opened a folder']
+      };
+      if (helperLabel.extra[action]) names[action] = [helperLabel.extra[action]];
+      const pair = names[action] || ['Used the laptop helper: ' + action.replace(/_/g, ' ')];
+      let detail = p.name || p.query || p.file || p.path || p.url || '';
+      if (!detail && p.level !== undefined) detail = 'level ' + p.level;
+      if (detail && /^https?:\/\//.test(detail)) detail = detail.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+      return { what: pair[0], detail: detail };
+    }
+    // actions nobody would recognise by their code name need a plain label
+    helperLabel.extra = {
+      open_new_window: 'Opened a website in its own window',
+      cancel: 'Cancelled the shutdown',
+      status: 'Checked the laptop status',
+      list_apps: 'Read the list of installed apps'
     }
     function lostHelper(r) { return r && (r.error === 'unreachable' || r.error === 'no_helper'); }
+    /* =====================================================================
+       SECURITY AND CONTROL: the trust levels, and the log of what she did.
+       Two things a "Jarvis"-class assistant must have and 3.5 did not:
+       1. a dial the owner sets, so "she can shut my laptop down" is a choice
+          rather than a surprise;
+       2. an honest record of every real action, which the owner can read,
+          export, and erase.
+       Nothing here sends anything anywhere. The log is in this browser.
+       ===================================================================== */
+
+    const TRUST_KEY = 'vega.trust.v1';
+    const AUDIT_KEY = 'vega.audit.v1';
+    const AUDIT_MAX = 300;
+
+    // low, normal, strict. What each level permits is spelled out in words so
+    // the consequence is never hidden behind a name.
+    const TRUST_LEVELS = {
+      low: {
+        label: 'Low',
+        says: 'She does everything. Shutting down, restarting, sleeping and locking all just run, with no question.',
+        permits: { power: true, powerAsks: false, closeApp: true, files: true, open: true }
+      },
+      normal: {
+        label: 'Normal',
+        says: 'She asks before anything that cannot be undone: shutdown, restart, sleep, sign out. Everything else is free.',
+        permits: { power: true, powerAsks: true, closeApp: true, files: true, open: true }
+      },
+      strict: {
+        label: 'Strict',
+        says: 'She never shuts down or restarts. She still opens apps, finds files and answers questions.',
+        permits: { power: false, powerAsks: true, closeApp: true, files: true, open: true }
+      }
+    };
+
+    function trustLevel() {
+      const name = mem.trust && TRUST_LEVELS[mem.trust] ? mem.trust : 'normal';
+      return { name: name, def: TRUST_LEVELS[name] };
+    }
+    function setTrustLevel(name, out) {
+      if (!TRUST_LEVELS[name]) return false;
+      mem.trust = name;
+      saveMemory();
+      const d = TRUST_LEVELS[name];
+      out.say('Trust level is now ' + d.label + '. ' + d.says);
+      return true;
+    }
+
+    /** Append one line to the action log. Never throws, never blocks an action. */
+    function auditAdd(what, detail, outcome) {
+      try {
+        mem.audit.unshift({
+          at: new Date(now()).toISOString().slice(0, 16).replace('T', ' '),
+          what: what, detail: String(detail || '').slice(0, 80), outcome: outcome || 'ok'
+        });
+        while (mem.audit.length > AUDIT_MAX) mem.audit.pop();
+        saveMemory();
+      } catch (e) { /* a log must never break the action it is logging */ }
+    }
+    function auditList() { return mem.audit; }
+
+    /** "what have you done" - the log, in plain words, newest first. */
+    function doAudit(out, n) {
+      const list = auditList();
+      if (!list.length) {
+        out.say('I have not actually done anything to this laptop yet. Everything so far was answering you in the window.');
+        return;
+      }
+      const shown = list.slice(0, n || 12);
+      out.say('Here is every real thing I did, newest first:');
+      out.say(shown.map(function (e) {
+        return '  ' + e.at + '  ' + e.what + (e.detail ? ' - ' + e.detail : '') + (e.outcome !== 'ok' ? ' [' + e.outcome + ']' : '');
+      }).join('\n'), { silent: true });
+      if (list.length > shown.length) out.say('There are ' + (list.length - shown.length) + ' older ones. Say "show all of it" to see them.', { silent: true });
+      out.say('Say "erase the log" and I will forget the whole list.', { silent: true });
+    }
+
+    /** A follow-up like "and 30" or "what about 12" reuses the last sum. */
+    function followUp(text) {
+      const t = String(text || '').trim().toLowerCase();
+      const m = t.match(/^(?:and|what about|how about|then|now|also)\s+(.+)$/);
+      if (!m) return null;
+      if (!state.lastMath || !state.lastMath.template) return null;
+      const arg = m[1].trim().replace(/[?.!]+$/, '');
+      // only a bare number or a short sum, never a whole new sentence
+      if (!/^[-+]?\d+(?:\.\d+)?(?:\s*[-+*/x]\s*\d+(?:\.\d+)?)*$/.test(arg)) return null;
+      return { template: state.lastMath.template, arg: arg };
+    }
+
     const LOST = 'I lost the connection to my laptop helper. Please run Start_Sophia.bat again.';
     function needLaptop(what) {
       if (!state.tips.laptop) {
@@ -5499,6 +5622,21 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
         const words = { shutdown: 'shut down the laptop', restart: 'restart the laptop', sleep: 'put the laptop to sleep', signout: 'sign you out of Windows' };
         if (step.fromAI) { out.say('I only ' + words[it] + ' when you ask me yourself.'); return; }
         if (md === 'browser') { out.say(needLaptop(words[it])); return; }
+        const trust = trustLevel();
+        if (!trust.def.permits.power) {
+          out.say('My trust level is ' + trust.def.label + ', so I do not ' + words[it] + ' at all. ' +
+            'Say "trust normal" and I will ask you first instead.');
+          return;
+        }
+        if (!trust.def.permits.powerAsks) {
+          // low trust: run it, but still say so out loud
+          out.say('Trust is set to ' + trust.def.label + ', so I am doing it now: ' + words[it] + '.');
+          const r0 = await helper(it, {});
+          if (lostHelper(r0)) { out.say(LOST); return; }
+          if (r0.preview) { out.say(previewLine(words[it])); return; }
+          out.say(r0.ok ? 'Done.' : 'I could not ' + words[it] + '.');
+          return;
+        }
         out.say('Do you want me to ' + words[it] + '?' + (it === 'sleep' ? '' : ' Unsaved work will be lost.') + ' Say yes to confirm.');
         state.pending = {
           yes: async function (o) {
@@ -7399,8 +7537,50 @@ QUICK_FACTS.push.apply(QUICK_FACTS, EXTRA_FACTS);
       state.usedAI = false;
       if (!text) { out.say('I did not catch that. Please say it again.'); return finish(out, ['empty']); }
 
+      /* ---- the owner's dials: trust, the action log, and a follow-up sum ---- */
+      const low = String(text).toLowerCase().trim();
+      let m = low.match(/^(?:set )?(?:your )?trust(?: level)?(?: to| is| be)? (low|normal|strict)$/) ||
+              low.match(/^(?:be|act) (low|normal|strict)$/);
+      if (m) { setTrustLevel(m[1], out); return finish(out, ['trust']); }
+      if (/^(?:what is |what's |which is )?(?:your )?trust(?: level)?\??$|^(?:how (?:much|far) do you trust|are you (?:set to )?strict)/.test(low)) {
+        const t = trustLevel();
+        out.say('My trust level is ' + t.def.label + '. ' + t.def.says +
+          ' You can say "trust low", "trust normal" or "trust strict" to change it.');
+        return finish(out, ['trust']);
+      }
+      if (/^(?:what have you done|what did you do|show (?:me )?(?:the |your )?(?:log|activity|history)|your log|activity log|show all of it|what have you actually done)\??$/.test(low)) {
+        doAudit(out, /show all/i.test(low) ? 300 : 12);
+        return finish(out, ['audit']);
+      }
+      if (/^(?:erase|clear|delete|forget)(?: the| your)? (?:log|activity|history)$/.test(low)) {
+        mem.audit = [];
+        saveMemory();
+        out.say('The log is empty again. I cannot get those lines back.');
+        return finish(out, ['audit.clear']);
+      }
+      const fu = followUp(text);
+      if (fu) {
+        // "and 30" after "25 times 4" means the same sum with a new number.
+        // Run it back through parse so it is answered exactly like the first one.
+        const redo = fu.template.replace(/@/g, fu.arg);
+        const steps2 = parse(redo, parseCtx()).steps;
+        if (steps2.length === 1 && (steps2[0].intent === 'math' || steps2[0].intent === 'reason')) {
+          out.say('Same sum with ' + fu.arg + ' instead:', { silent: true });
+          await runStep(steps2[0], out, { text: redo, depth: 0, source: 'followup' });
+          return finish(out, ['followup']);
+        }
+      }
+
       const parsed = parse(text, parseCtx());
       let steps = parsed.steps;
+      // remember the shape of a sum so "and 30" can do the same thing with 30
+      const sole = steps.length === 1 ? steps[0] : null;
+      const worked = sole && (sole.intent === 'math' ||
+        (sole.intent === 'reason' && (sole.reasonMore || sole.reason)));
+      if (worked && !sole.error && sole.value !== undefined) {
+        const tmpl = String(text).replace(/\d+(?:\.\d+)?/, '@');
+        if (tmpl !== String(text)) state.lastMath = { template: tmpl, at: now().getTime() };
+      }
       const intents = steps.map(function (s) { return s.intent; });
       const first = steps[0] ? steps[0].intent : 'empty';
 
@@ -7959,7 +8139,9 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
   }
 
   async function aiChat(messages) {
-    if (!settings.key) throw new Error('No API key saved.');
+    const local = settings.provider === 'ollama';
+    if (!settings.key && !local) throw new Error('No API key saved.');
+    if (local && !settings.key) settings.key = 'ollama'; // Ollama ignores the value
     const system = messages.filter(function (m) { return m.role === 'system'; }).map(function (m) { return m.content; }).join('\n\n');
     const rest = messages.filter(function (m) { return m.role !== 'system'; });
     if (settings.provider === 'gemini') {
@@ -7986,7 +8168,12 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
 
     const base = (settings.base || '').replace(/\/+$/, '');
     if (!/^https?:\/\//.test(base)) throw new Error('The base URL must start with https://');
-    const style = apiStyle();
+    // a model on this laptop is reached over plain http on localhost, and must be
+    if (/^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?/i.test(base) === false && settings.provider === 'ollama') {
+      throw new Error('The local model address must look like http://localhost:11434/v1');
+    }
+    // Ollama speaks chat completions. Asking for the Responses API just fails.
+    const style = settings.provider === 'ollama' ? 'chat' : apiStyle();
     const errors = [];
 
     async function callChat() {
@@ -8660,11 +8847,13 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
     document.getElementById('setProvider').value = settings.provider;
     document.getElementById('setKey').value = settings.key || '';
     document.getElementById('setBase').value = settings.base || '';
-    const needsKey = settings.provider !== 'builtin';
+    const local = settings.provider === 'ollama';
+    const needsKey = settings.provider !== 'builtin' && !local;
     document.getElementById('keyField').hidden = !needsKey;
-    document.getElementById('baseField').hidden = settings.provider !== 'openai';
+    document.getElementById('baseField').hidden = settings.provider !== 'openai' && !local;
+    if (local && !settings.base) settings.base = 'http://localhost:11434/v1';
     const styleField = document.getElementById('apiStyleField');
-    if (styleField) styleField.hidden = settings.provider !== 'openai';
+    if (styleField) styleField.hidden = settings.provider !== 'openai' && settings.provider !== 'ollama';
     const stylePick = document.getElementById('setApiStyle');
     if (stylePick) stylePick.value = settings.apiStyle || 'auto';
     const baseBox = document.getElementById('setBase');
@@ -8674,7 +8863,9 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
       ? 'The built-in brain handles commands, maths, memory and small talk. An AI model adds free-form answers to questions it does not know.'
       : settings.provider === 'gemini'
         ? 'Gemini answers open questions. Tip: create a key at aistudio.google.com, then press "Test connection" to load the model list. Ask a parent first.'
-        : 'Any OpenAI-compatible service works (OpenAI, Groq, OpenRouter, Ollama). Press "Test connection" to load the model list.';
+        : local
+          ? 'This is a model running on your own laptop through Ollama. It is free and needs no key, but it is slower and weaker than a paid model. First install Ollama, then run: ollama pull qwen2.5:1.5b, then ollama serve. Windows must also allow this page to reach it.'
+          : 'Any OpenAI-compatible service works (OpenAI, Groq, OpenRouter, Ollama). Press "Test connection" to load the model list.';
     const sel = document.getElementById('setModel');
     const list = settings.modelList && settings.modelList.length ? settings.modelList : (settings.model ? [{ id: settings.model, label: settings.model }] : []);
     sel.innerHTML = '';
@@ -8940,6 +9131,7 @@ if (typeof window !== 'undefined') window.SophiaBrain = SophiaBrain;
   document.getElementById('testAi').addEventListener('click', async function () {
     settings.provider = document.getElementById('setProvider').value;
     settings.key = document.getElementById('setKey').value.trim();
+    if (settings.provider === 'ollama' && !settings.key) settings.key = 'ollama';
     settings.base = document.getElementById('setBase').value.trim() || 'https://api.openai.com/v1';
     const stylePick = document.getElementById('setApiStyle');
     if (stylePick) settings.apiStyle = stylePick.value;
